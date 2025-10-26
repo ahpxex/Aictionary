@@ -1,13 +1,18 @@
-bin/
-obj/
+**/bin/
+**/obj/
 /packages/
 riderModule.iml
 /_ReSharper.Caches/
 Aictionary.sln.DotSettings.user
 .DS_Store
+
 # NUKE Build
 artifacts/
-.nuke/
+.nuke/temp/
+.tmp
 build/bin/
 build/obj/
-.tmp
+
+# Keep NUKE configuration
+!.nuke/build.schema.json
+!.nuke/parameters.json

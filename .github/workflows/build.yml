@@ -1,0 +1,306 @@
+name: Build and Package
+
+on:
+  push:
+    branches: [ main, master ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build-linux:
+    strategy:
+      matrix:
+        arch: [amd64, arm64]
+    runs-on: ubuntu-22.04
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+    
+    - name: Build Linux ${{ matrix.arch }}
+      run: |
+        dotnet run --project build/build.csproj -- PublishLinux${{ matrix.arch == 'amd64' && 'Amd64' || 'Arm64' }}
+        dotnet run --project build/build.csproj -- PublishLinux${{ matrix.arch == 'amd64' && 'Amd64' || 'Arm64' }}FrameworkDependent
+    
+    - name: Create Linux tar.gz archives
+      run: |
+        cd artifacts
+        if [ -d "linux-${{ matrix.arch }}" ]; then
+          tar -czf "Aictionary-linux-${{ matrix.arch }}.tar.gz" -C "linux-${{ matrix.arch }}" .
+        fi
+        if [ -d "linux-${{ matrix.arch }}-framework-dependent" ]; then
+          tar -czf "Aictionary-linux-${{ matrix.arch }}-framework-dependent.tar.gz" -C "linux-${{ matrix.arch }}-framework-dependent" .
+        fi
+    
+    - name: Upload Linux ${{ matrix.arch }} Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: linux-${{ matrix.arch }}-packages
+        path: |
+          artifacts/*.tar.gz
+          artifacts/linux-${{ matrix.arch }}/
+          artifacts/linux-${{ matrix.arch }}-framework-dependent/
+
+  build-windows:
+    strategy:
+      matrix:
+        arch: [amd64, arm64]
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+    
+    - name: Build Windows ${{ matrix.arch }}
+      run: |
+        dotnet run --project build/build.csproj -- PublishWindows${{ matrix.arch == 'amd64' && 'Amd64' || 'Arm64' }}
+        dotnet run --project build/build.csproj -- PublishWindows${{ matrix.arch == 'amd64' && 'Amd64' || 'Arm64' }}FrameworkDependent
+    
+    - name: Create Windows ZIP archives
+      run: |
+        cd artifacts
+        if (Test-Path "windows-${{ matrix.arch }}") {
+          Compress-Archive -Path "windows-${{ matrix.arch }}\*" -DestinationPath "Aictionary-windows-${{ matrix.arch }}.zip"
+        }
+        if (Test-Path "windows-${{ matrix.arch }}-framework-dependent") {
+          Compress-Archive -Path "windows-${{ matrix.arch }}-framework-dependent\*" -DestinationPath "Aictionary-windows-${{ matrix.arch }}-framework-dependent.zip"
+        }
+    
+    - name: Upload Windows ${{ matrix.arch }} Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: windows-${{ matrix.arch }}-packages
+        path: artifacts/*.zip
+
+  build-macos:
+    strategy:
+      matrix:
+        arch: [intel, arm64]
+    runs-on: macos-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+    
+    - name: Install create-dmg
+      run: brew install create-dmg
+    
+    - name: Build macOS ${{ matrix.arch }}
+      run: |
+        dotnet run --project build/build.csproj -- PublishMacOS${{ matrix.arch == 'intel' && 'Intel' || 'Arm64' }}
+        dotnet run --project build/build.csproj -- PublishMacOS${{ matrix.arch == 'intel' && 'Intel' || 'Arm64' }}FrameworkDependent
+    
+    - name: Create DMG for ${{ matrix.arch }}
+      run: |
+        if [ "${{ matrix.arch }}" = "arm64" ]; then
+          dotnet run --project build/build.csproj -- CreateMacOSDmg
+        else
+          # Create DMG for Intel too
+          dmg_file="artifacts/macos-${{ matrix.arch }}/Aictionary.dmg"
+          app_bundle="artifacts/macos-${{ matrix.arch }}/Aictionary.app"
+          if [ -d "$app_bundle" ]; then
+            create-dmg --volname "Aictionary" --window-pos 200 120 --window-size 800 400 --icon-size 128 --app-drop-link 600 185 "$dmg_file" "$app_bundle"
+          fi
+        fi
+    
+    - name: Upload macOS ${{ matrix.arch }} Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: macos-${{ matrix.arch }}-packages
+        path: artifacts/macos-${{ matrix.arch }}/*.dmg
+
+  build-deb:
+    needs: build-linux
+    strategy:
+      matrix:
+        type: [self-contained, framework-dependent]
+    runs-on: ubuntu-22.04
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Download Linux AMD64 Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: linux-amd64-packages
+        path: artifacts/
+    
+    - name: Download Linux ARM64 Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: linux-arm64-packages
+        path: artifacts/
+    
+    - name: Install packaging tools
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y dpkg-dev fakeroot
+    
+    - name: Build DEB packages (${{ matrix.type }})
+      run: |
+        chmod +x scripts/build-deb.sh
+        ./scripts/build-deb.sh ${{ matrix.type }}
+    
+    - name: Upload DEB packages
+      uses: actions/upload-artifact@v4
+      with:
+        name: deb-packages-${{ matrix.type }}
+        path: "aictionary*${{ matrix.type == 'framework-dependent' && '-framework-dependent' || '' }}_*_*.deb"
+
+  build-arch:
+    needs: build-linux
+    strategy:
+      matrix:
+        type: [self-contained, framework-dependent]
+    runs-on: ubuntu-22.04
+    container: archlinux:latest
+    
+    steps:
+    - name: Install dependencies
+      run: |
+        pacman -Syu --noconfirm
+        pacman -S --noconfirm base-devel git dotnet-runtime
+    
+    - uses: actions/checkout@v4
+    
+    - name: Download Linux AMD64 Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: linux-amd64-packages
+        path: artifacts/
+    
+    - name: Download Linux ARM64 Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: linux-arm64-packages
+        path: artifacts/
+    
+    - name: Create non-root user for makepkg
+      run: |
+        useradd -m builder
+        echo 'builder ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
+        chown -R builder:builder .
+    
+    - name: Build Arch package (${{ matrix.type }})
+      run: |
+        chmod +x scripts/build-arch.sh
+        sudo -u builder ./scripts/build-arch.sh ${{ matrix.type }}
+    
+    - name: Upload Arch package
+      uses: actions/upload-artifact@v4
+      with:
+        name: arch-packages-${{ matrix.type }}
+        path: "aictionary*${{ matrix.type == 'framework-dependent' && '-framework-dependent' || '' }}-*-*.pkg.tar.zst"
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [build-linux, build-windows, build-macos, build-deb, build-arch]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: release-artifacts
+    
+    - name: List artifacts
+      run: |
+        echo "Available artifacts:"
+        find release-artifacts -type f -name "*" | sort
+    
+    - name: Create Release
+      uses: actions/create-release@v1
+      id: create_release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref_name }}
+        release_name: Aictionary ${{ github.ref_name }}
+        draft: false
+        prerelease: false
+        body: |
+          ## 下载说明
+          
+          ### 桌面应用
+          | 平台 | 自包含版本 | 框架依赖版本 |
+          |------|------------|-------------|
+          | Windows AMD64 | Aictionary-windows-amd64.zip | Aictionary-windows-amd64-framework-dependent.zip |
+          | Windows ARM64 | Aictionary-windows-arm64.zip | Aictionary-windows-arm64-framework-dependent.zip |
+          | macOS Intel | Aictionary-intel.dmg | - |
+          | macOS ARM64 | Aictionary-arm64.dmg | - |
+          | Linux AMD64 | Aictionary-linux-amd64.tar.gz | Aictionary-linux-amd64-framework-dependent.tar.gz |
+          | Linux ARM64 | Aictionary-linux-arm64.tar.gz | Aictionary-linux-arm64-framework-dependent.tar.gz |
+          
+          ### Linux包管理器
+          | 包类型 | 自包含版本 | 框架依赖版本 |
+          |--------|------------|-------------|
+          | Debian AMD64 | aictionary_*_amd64.deb | aictionary-framework-dependent_*_amd64.deb |
+          | Debian ARM64 | aictionary_*_arm64.deb | aictionary-framework-dependent_*_arm64.deb |
+          | Arch AMD64 | aictionary-*-x86_64.pkg.tar.zst | aictionary-framework-dependent-*-x86_64.pkg.tar.zst |
+          | Arch ARM64 | aictionary-*-aarch64.pkg.tar.zst | aictionary-framework-dependent-*-aarch64.pkg.tar.zst |
+          
+          **依赖说明：**
+          - **自包含版本**：无需安装.NET运行时，体积较大
+          - **框架依赖版本**：需要安装.NET 8运行时，体积较小
+          
+          **安装.NET 8运行时：**
+          - Windows: 从 [Microsoft官网](https://dotnet.microsoft.com/download/dotnet/8.0) 下载
+          - Ubuntu/Debian: `sudo apt install dotnet-runtime-8.0`
+          - Arch Linux: `sudo pacman -S dotnet-runtime`
+          - macOS: `brew install dotnet`
+    
+    - name: Upload all release assets
+      run: |
+        # Upload Windows ZIP files
+        for zip in release-artifacts/windows-*-packages/*.zip; do
+          if [ -f "$zip" ]; then
+            gh release upload ${{ github.ref_name }} "$zip" --clobber
+          fi
+        done
+        
+        # Upload Linux tar.gz files
+        for tar in release-artifacts/linux-*-packages/*.tar.gz; do
+          if [ -f "$tar" ]; then
+            gh release upload ${{ github.ref_name }} "$tar" --clobber
+          fi
+        done
+        
+        # Upload macOS DMG files
+        for dmg in release-artifacts/macos-*-packages/*.dmg; do
+          if [ -f "$dmg" ]; then
+            gh release upload ${{ github.ref_name }} "$dmg" --clobber
+          fi
+        done
+        
+        # Upload DEB packages (both types)
+        for deb in release-artifacts/deb-packages-*/*.deb; do
+          if [ -f "$deb" ]; then
+            gh release upload ${{ github.ref_name }} "$deb" --clobber
+          fi
+        done
+        
+        # Upload Arch packages (both types)
+        for pkg in release-artifacts/arch-packages-*/*.pkg.tar.zst; do
+          if [ -f "$pkg" ]; then
+            gh release upload ${{ github.ref_name }} "$pkg" --clobber
+          fi
+        done
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

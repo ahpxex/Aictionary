@@ -4,7 +4,6 @@
 
 <img width="900" height="728" alt="image" src="https://github.com/user-attachments/assets/f340fb79-87de-482e-87b7-cf363d6ac646" />
 
-
 ---
 
 ## 功能特性
@@ -22,16 +21,39 @@
 
 ## 下载与安装
 
-构建完成后，所有产物都会落在 `artifacts/` 目录下，也可在发布页直接获取：
+构建完成后，所有产物都会落在 `artifacts/` 目录下：
 
-| 平台 | 自包含产物 | 体积更小的框架依赖产物 |
-| --- | --- | --- |
-| macOS | `artifacts/macos/Aictionary.app`<br>`artifacts/macos/Aictionary.dmg` | `artifacts/macos-framework-dependent/Aictionary.app` |
-| Windows | `artifacts/windows/Aictionary-win-x64` | `artifacts/windows-framework-dependent/Aictionary-win-x64` |
+| 平台    | 自包含产物                                                               | 体积更小的框架依赖产物                                       |
+| ------- | ------------------------------------------------------------------------ | ------------------------------------------------------------ |
+| macOS   | `artifacts/macos/Aictionary.app<br>``artifacts/macos/Aictionary.dmg` | `artifacts/macos-framework-dependent/Aictionary.app`       |
+| Windows | `artifacts/windows/Aictionary-win-x64`                                 | `artifacts/windows-framework-dependent/Aictionary-win-x64` |
+| Linux   | `artifacts/linux-amd64/Aictionary`                                     | `artifacts/linux-amd64-framework-dependent/Aictionary`     |
 
 - macOS 建议直接打开 `Aictionary.dmg`，将 App 拖入 `Applications` 即可；
 - Windows 可按是否安装 .NET 运行时选择对应文件夹；
-- Linux 用户可使用源码编译运行（参考下文“开发构建”）。
+- Linux 用户可直接运行可执行文件或使用源码编译（参考下文"开发构建"）。
+
+### Linux 发行版包管理
+
+**Debian/Ubuntu 系统：**
+```bash
+# 构建 DEB 包
+./scripts/build-deb.sh                    # 自包含版本
+./scripts/build-deb.sh framework-dependent # 框架依赖版本
+
+# 安装
+sudo dpkg -i aictionary_*.deb
+```
+
+**Arch Linux 系统：**
+```bash
+# 构建 Arch 包
+./scripts/build-arch.sh                    # 自包含版本
+./scripts/build-arch.sh framework-dependent # 框架依赖版本
+
+# 安装
+sudo pacman -U aictionary-*.pkg.tar.zst
+```
 
 > 初次使用别忘了在设置页配置 OpenAI API Key，当本地词库缺少词条时会调用大模型补充释义。
 
@@ -49,7 +71,7 @@
 
 ## 开发构建
 
-项目使用 [NUKE](https://nuke.build/) 编排构建流程，运行以下命令即可生成全部发行包：
+项目使用 [NUKE](https://nuke.build/) 编排构建流程，运行以下命令即可生成全部发行包，注意构建之前要保证电脑中有dotnet-sdk：
 
 ```bash
 dotnet run --project build/build.csproj
@@ -58,7 +80,8 @@ dotnet run --project build/build.csproj
 执行后会在 `artifacts/` 目录生成：
 
 - macOS 自包含 App、框架依赖 App 以及 DMG 安装包；
-- Windows 自包含与框架依赖版本。
+- Windows 自包含与框架依赖版本；
+- Linux 自包含与框架依赖版本。
 
 如需自定义流程，可阅读 `build/Build.cs` 中各个 target 的实现。
 
