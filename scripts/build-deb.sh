@@ -39,6 +39,19 @@ build_deb() {
         echo "Warning: Binary not found in artifacts/$artifact_dir/"
         return 1
     fi
+    # Copy additional files for framework-dependent version
+    if [ "$package_type" = "framework-dependent" ]; then
+        find "artifacts/$artifact_dir" \
+            -name "*.dll" -o -name "*.so" -o -name "*.json" -o -name "*.pdb" | while read file; do
+            if [ -f "$file" ]; then
+                cp "$file" "$pkg_dir/usr/lib/aictionary/"
+            fi
+        done
+        # Copy Assets directory if exists
+        if [ -d "artifacts/$artifact_dir/Assets" ]; then
+            cp -r "artifacts/$artifact_dir/Assets" "$pkg_dir/usr/lib/aictionary/"
+        fi
+    fi
 
     # Create wrapper script
     cat > "$pkg_dir/usr/bin/Aictionary" << EOF
