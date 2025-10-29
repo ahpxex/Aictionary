@@ -33,6 +33,17 @@
 - Windows 可按是否安装 .NET 运行时选择对应文件夹；
 - Linux 用户可直接运行可执行文件或使用源码编译（参考下文"开发构建"）。
 
+### Windows 平台包管理
+
+目前可以通过 scoop 安装：
+
+```sh
+# 添加新的 scoop 桶
+scoop bucket add jin https://github.com/jinzhongjia/scoop-bucket
+# 使用 scoop 安装
+scoop install jin/aictionary
+```
+
 ### Linux 发行版包管理
 
 **Debian/Ubuntu 系统：**
