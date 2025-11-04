@@ -25,7 +25,7 @@
 
 | 平台    | 自包含产物                                                               | 体积更小的框架依赖产物                                       |
 | ------- | ------------------------------------------------------------------------ | ------------------------------------------------------------ |
-| macOS   | `artifacts/macos/Aictionary.app<br>``artifacts/macos/Aictionary.dmg` | `artifacts/macos-framework-dependent/Aictionary.app`       |
+| macOS   | `artifacts/macos/Aictionary.app`<br>`artifacts/macos/Aictionary.dmg` | `artifacts/macos-framework-dependent/Aictionary.app`       |
 | Windows | `artifacts/windows/Aictionary-win-x64`                                 | `artifacts/windows-framework-dependent/Aictionary-win-x64` |
 | Linux   | `artifacts/linux-amd64/Aictionary`                                     | `artifacts/linux-amd64-framework-dependent/Aictionary`     |
 
