@@ -1,32 +1,20 @@
 import { Check } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useSettings } from "@/features/settings/hooks/use-settings";
 import { cn } from "@/lib/utils";
 
-const themeOptions = [
-  {
-    value: "system",
-    label: "Match system",
-    description: "Automatically switch between light and dark.",
-  },
-  {
-    value: "light",
-    label: "Light",
-    description: "Bright UI with higher contrast.",
-  },
-  {
-    value: "dark",
-    label: "Dark",
-    description: "Dim UI that is easier on the eyes at night.",
-  },
-] satisfies Array<{
-  value: "system" | "light" | "dark";
-  label: string;
-  description: string;
-}>;
+const themeModeOptions = [
+  { value: "light", label: "Light" },
+  { value: "system", label: "System" },
+  { value: "dark", label: "Dark" },
+] satisfies Array<{ value: "system" | "light" | "dark"; label: string }>;
 
 const accentOptions = [
   { value: "blue", label: "Blue", className: "bg-blue-500" },
@@ -40,106 +28,81 @@ export function AppearanceTab() {
   const { settings, updateTheme } = useSettings();
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1.6fr_1fr]">
-      <Card>
-        <CardHeader>
-          <CardTitle>Theme</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-4">
-          <RadioGroup
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle>Theme</CardTitle>
+        <CardDescription>
+          Choose the overall appearance and highlight color.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-6">
+        <div className="space-y-2">
+          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Mode
+          </span>
+          <ToggleGroup
+            type="single"
+            variant="outline"
+            spacing={0}
+            size="sm"
             value={settings.theme.mode}
-            onValueChange={(value) =>
-              updateTheme({ mode: value as (typeof themeOptions)[number]["value"] })
-            }
-            className="grid gap-3"
+            onValueChange={(value) => {
+              if (!value) return;
+              updateTheme({
+                mode: value as (typeof themeModeOptions)[number]["value"],
+              });
+            }}
+            className="w-fit rounded-lg border border-input bg-muted/40 p-1"
           >
-            {themeOptions.map((option) => (
-              <label
-                key={option.value}
-                className={cn(
-                  "border-input hover:border-foreground/50 flex cursor-pointer flex-col gap-1 rounded-lg border p-3 transition-colors",
-                  settings.theme.mode === option.value && "border-foreground"
-                )}
-              >
-                <div className="flex items-center gap-3">
-                  <RadioGroupItem value={option.value} />
-                  <span className="font-medium">{option.label}</span>
-                </div>
-                <span className="text-muted-foreground text-sm">
-                  {option.description}
-                </span>
-              </label>
+            {themeModeOptions.map((option) => (
+              <ToggleGroupItem key={option.value} value={option.value}>
+                {option.label}
+              </ToggleGroupItem>
             ))}
-          </RadioGroup>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Accent color</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <p className="text-muted-foreground text-sm">
-            Adjust the primary highlight color across the interface.
+          </ToggleGroup>
+          <p className="text-muted-foreground text-xs">
+            System follows your device preference automatically.
           </p>
-          <div className="grid grid-cols-5 gap-3">
+        </div>
+        <div className="space-y-3">
+          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Accent Color
+          </span>
+          <div className="flex flex-wrap gap-3">
             {accentOptions.map((accent) => {
               const isSelected = settings.theme.accent === accent.value;
+
               return (
-                <Button
+                <button
                   key={accent.value}
                   type="button"
-                  variant={isSelected ? "default" : "outline"}
-                  className={cn("flex h-16 flex-col items-center gap-2")}
+                  aria-pressed={isSelected}
                   onClick={() => updateTheme({ accent: accent.value })}
+                  className={cn(
+                    "group flex items-center gap-2 rounded-lg border bg-background px-3 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                    isSelected
+                      ? "border-foreground text-foreground shadow-sm"
+                      : "border-border text-muted-foreground hover:border-input hover:text-foreground"
+                  )}
                 >
                   <span
                     className={cn(
-                      "flex size-8 items-center justify-center rounded-full transition-colors",
-                      accent.className,
-                      isSelected && "ring-2 ring-offset-2"
+                      "flex size-8 items-center justify-center rounded-full border border-border bg-muted/60 transition",
+                      isSelected && "border-foreground"
                     )}
                   >
-                    {isSelected && <Check className="size-4 text-white" />}
+                    <span
+                      className={cn("size-4 rounded-full", accent.className)}
+                    />
                   </span>
-                  <span className="text-xs font-medium">{accent.label}</span>
-                </Button>
+                  <span>{accent.label}</span>
+                  {isSelected && <Check className="ml-auto size-4" />}
+                </button>
               );
             })}
           </div>
-        </CardContent>
-      </Card>
-
-      <Card className="lg:col-span-2">
-        <CardHeader>
-          <CardTitle>Preview</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-2">
-          <div className="rounded-lg border bg-muted/40 p-4">
-            <Label className="text-xs uppercase text-muted-foreground">
-              Heading
-            </Label>
-            <p className="text-foreground text-xl font-semibold">
-              Adapt to your workspace
-            </p>
-            <p className="text-muted-foreground text-sm">
-              The app will follow the selected theme automatically. Accent
-              colors apply to buttons, links, and highlights.
-            </p>
-          </div>
-          <div className="rounded-lg border bg-background p-4 shadow-inner">
-            <Label className="text-xs uppercase text-muted-foreground">
-              Buttons
-            </Label>
-            <div className="mt-2 flex gap-2">
-              <Button size="sm">Primary</Button>
-              <Button size="sm" variant="outline">
-                Outline
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
