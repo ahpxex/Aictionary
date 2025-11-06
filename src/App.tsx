@@ -1,10 +1,13 @@
 import "./App.css";
-import { Button } from "./components/ui/button";
+import { AppProviders } from "@/app/providers";
+import { AppRouter } from "@/app/router";
 
 function App() {
-  return <>
-  <Button>Click me im here</Button>
-  </>;
+  return (
+    <AppProviders>
+      <AppRouter />
+    </AppProviders>
+  );
 }
 
 export default App;
