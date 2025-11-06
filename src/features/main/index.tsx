@@ -3,7 +3,6 @@ import { ComparisonList } from "@/features/main/components/comparison-list";
 import { DefinitionsList } from "@/features/main/components/definitions-list";
 import { SearchForm } from "@/features/main/components/search-form";
 import { WordSummaryCard } from "@/features/main/components/word-summary";
-import { Card, CardContent } from "@/components/ui/card";
 
 export function MainPage() {
   const { isSearching, result, search } = useDictionarySearch();
@@ -26,12 +25,9 @@ export function MainPage() {
       {result && (
         <div className="flex flex-col gap-6">
           <WordSummaryCard definition={result} />
-          <Card>
-            <CardContent className="flex flex-col gap-6 py-6">
-              <h2 className="text-2xl font-semibold">Definitions</h2>
-              <DefinitionsList definition={result} />
-            </CardContent>
-          </Card>
+          <div className="flex flex-col gap-4">
+            <DefinitionsList definition={result} />
+          </div>
           <ComparisonList definition={result} />
         </div>
       )}
