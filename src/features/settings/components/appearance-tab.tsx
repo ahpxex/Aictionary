@@ -90,31 +90,29 @@ export function AppearanceTab() {
           <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Accent Color
           </span>
-          <div className="flex flex-wrap gap-3">
-            {accentOptions.map((accent) => {
-              const isSelected = settings.theme.accent === accent.value;
+          <ToggleGroup
+            type="single"
+            variant="outline"
+            size="sm"
+            value={settings.theme.accent}
+            onValueChange={(value) => {
+              if (!value) return;
+              updateTheme({ accent: value as typeof accentOptions[number]["value"] });
+            }}
+            className="w-fit flex-wrap justify-start"
+          >
+            {accentOptions.map((accent) => (
+              <ToggleGroupItem
+                key={accent.value}
+                value={accent.value}
+              >
+                <span
+                  className={cn("size-4 rounded-full", accent.className)}
+                />
 
-              return (
-                <button
-                  key={accent.value}
-                  type="button"
-                  aria-pressed={isSelected}
-                  onClick={() => updateTheme({ accent: accent.value })}
-                  className={cn(
-                    "group flex items-center gap-2 rounded-lg border bg-background px-3 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                    isSelected
-                      ? `text-foreground shadow-sm ${accent.borderClassName}`
-                      : "border-border text-muted-foreground hover:border-input hover:text-foreground"
-                  )}
-                >
-                  <span
-                    className={cn("size-4 rounded-full", accent.className)}
-                  />
-                  {isSelected && <Check className="ml-auto size-4" />}
-                </button>
-              );
-            })}
-          </div>
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
         </div>
       </CardContent>
     </Card>
