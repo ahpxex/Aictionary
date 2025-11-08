@@ -17,11 +17,36 @@ const themeModeOptions = [
 ] satisfies Array<{ value: "system" | "light" | "dark"; label: string }>;
 
 const accentOptions = [
-  { value: "blue", label: "Blue", className: "bg-blue-500" },
-  { value: "purple", label: "Purple", className: "bg-purple-500" },
-  { value: "green", label: "Green", className: "bg-emerald-500" },
-  { value: "orange", label: "Orange", className: "bg-orange-500" },
-  { value: "rose", label: "Rose", className: "bg-rose-500" },
+  {
+    value: "blue",
+    label: "Blue",
+    className: "bg-blue-500",
+    borderClassName: "border-blue-500",
+  },
+  {
+    value: "purple",
+    label: "Purple",
+    className: "bg-purple-500",
+    borderClassName: "border-purple-500",
+  },
+  {
+    value: "green",
+    label: "Green",
+    className: "bg-emerald-500",
+    borderClassName: "border-emerald-500",
+  },
+  {
+    value: "orange",
+    label: "Orange",
+    className: "bg-orange-500",
+    borderClassName: "border-orange-500",
+  },
+  {
+    value: "rose",
+    label: "Rose",
+    className: "bg-rose-500",
+    borderClassName: "border-rose-500",
+  },
 ] as const;
 
 export function AppearanceTab() {
@@ -29,14 +54,14 @@ export function AppearanceTab() {
 
   return (
     <Card>
-      <CardHeader >
+      <CardHeader>
         <CardTitle>Theme</CardTitle>
         <CardDescription>
           Choose the overall appearance and highlight color.
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        <div className="space-y-2">
+      <CardContent className="flex gap-4">
+        <div className="space-y-3">
           <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Mode
           </span>
@@ -52,7 +77,7 @@ export function AppearanceTab() {
                 mode: value as (typeof themeModeOptions)[number]["value"],
               });
             }}
-            className="w-fit rounded-lg  bg-transparent p-1"
+            className="w-fit rounded-lg  bg-transparent"
           >
             {themeModeOptions.map((option) => (
               <ToggleGroupItem key={option.value} value={option.value}>
@@ -60,7 +85,6 @@ export function AppearanceTab() {
               </ToggleGroupItem>
             ))}
           </ToggleGroup>
-
         </div>
         <div className="space-y-3">
           <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -79,21 +103,13 @@ export function AppearanceTab() {
                   className={cn(
                     "group flex items-center gap-2 rounded-lg border bg-background px-3 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                     isSelected
-                      ? "border-foreground text-foreground shadow-sm"
+                      ? `text-foreground shadow-sm ${accent.borderClassName}`
                       : "border-border text-muted-foreground hover:border-input hover:text-foreground"
                   )}
                 >
                   <span
-                    className={cn(
-                      "flex size-8 items-center justify-center rounded-full border border-border bg-muted/60 transition",
-                      isSelected && "border-foreground"
-                    )}
-                  >
-                    <span
-                      className={cn("size-4 rounded-full", accent.className)}
-                    />
-                  </span>
-                  <span>{accent.label}</span>
+                    className={cn("size-4 rounded-full", accent.className)}
+                  />
                   {isSelected && <Check className="ml-auto size-4" />}
                 </button>
               );
