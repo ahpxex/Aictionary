@@ -1,5 +1,117 @@
 {
+  "app": {
+    "name": "AIctionary",
+    "loading": "Loading…"
+  },
+  "nav": {
+    "dictionary": "Dictionary",
+    "statistics": "Statistics",
+    "settings": "Settings"
+  },
+  "error": {
+    "page_not_found": {
+      "title": "Page not found",
+      "description": "We could not find the page you were looking for.",
+      "go_home": "Go back home"
+    }
+  },
+  "main": {
+    "empty_state": "Enter a word to see its definitions.",
+    "search": {
+      "placeholder": "Search a word…",
+      "searching": "Searching…",
+      "button": "Search"
+    },
+    "history": {
+      "title": "Recent queries"
+    },
+    "quick_actions": {
+      "statistics": {
+        "title": "Open statistics",
+        "description": "Review learned words and export your study log."
+      },
+      "settings": {
+        "title": "Configure settings",
+        "description": "Adjust appearance, providers, and keyboard shortcuts."
+      },
+      "button": "Go"
+    },
+    "comparison": {
+      "title": "Compare with",
+      "description": "Understand nuances between related words."
+    },
+    "definitions": {
+      "example_label_zh": "例句：",
+      "example_label_en": "Example:"
+    },
+    "word_summary": {
+      "word_forms": "词形",
+      "third_person": "第三人称",
+      "past_tense": "过去式",
+      "past_participle": "过去分词",
+      "present_participle": "现在分词"
+    }
+  },
+  "statistics": {
+    "title": "Statistics",
+    "description": "Review your dictionary usage and export study materials.",
+    "export": {
+      "learned_words": "Export learned words",
+      "query_counts": "Export query counts"
+    },
+    "overview": {
+      "learned_words": {
+        "title": "Learned words",
+        "hint_none": "No learned words yet. Start querying to track!",
+        "hint_one": "One word learned so far. Keep exploring!",
+        "hint_few": "{{count}} words learned. You're building momentum!",
+        "hint_many": "{{count}} words learned. Great progress!",
+        "hint_lots": "{{count}} words learned. Impressive vocabulary!"
+      },
+      "total_queries": {
+        "title": "Total queries",
+        "queried_times": "Queried {{count}} times."
+      },
+      "most_frequent": {
+        "title": "Most frequent"
+      }
+    },
+    "top_words": {
+      "title": "Top words",
+      "description": "Words with the highest frequency across all time.",
+      "empty_state": "Search a word to start tracking statistics.",
+      "table": {
+        "word": "Word",
+        "times_queried": "Times queried",
+        "last_queried": "Last queried"
+      }
+    },
+    "metrics": {
+      "title": "Time-based trends",
+      "description": "Track how your learning evolves across different timeframes.",
+      "empty_state": "No data yet for this period.",
+      "periods": {
+        "daily": "Daily",
+        "weekly": "Weekly",
+        "monthly": "Monthly",
+        "yearly": "Yearly",
+        "total": "Total"
+      },
+      "table": {
+        "word": "Word",
+        "count": "Count"
+      }
+    }
+  },
   "settings": {
+    "tabs": {
+      "appearance": "Appearance",
+      "language": "Language",
+      "llm": "LLM Providers",
+      "dictionary": "Dictionary",
+      "keyboard": "Keyboard",
+      "about": "About"
+    },
     "appearance": {
       "title": "Theme",
       "description": "Choose the overall appearance and highlight color.",
@@ -16,12 +128,112 @@
         "green": "Green",
         "orange": "Orange",
         "rose": "Rose"
-      },
-      "language": {
-        "label": "Language",
+      }
+    },
+    "language": {
+      "title": "Language",
+      "description": "Select your preferred language.",
+      "label": "Display Language",
+      "options": {
         "en": "English",
         "zh": "简体中文"
       }
+    },
+    "llm": {
+      "title": "Provider connection",
+      "description": "Configure the base URL and authentication for your LLM endpoint.",
+      "models": {
+        "gpt-4o-mini": "OpenAI GPT-4o mini",
+        "gpt-4.1": "OpenAI GPT-4.1",
+        "claude-3.7-sonnet": "Anthropic Claude 3.7 Sonnet",
+        "deepseek-r1": "DeepSeek R1"
+      },
+      "base_url": {
+        "label": "Base URL",
+        "placeholder": "https://api.example.com"
+      },
+      "api_key": {
+        "label": "API key",
+        "placeholder": "sk-..."
+      },
+      "model": {
+        "label": "Model",
+        "placeholder": "Select model"
+      },
+      "test_connection": "Test connection",
+      "testing": "Testing…",
+      "tips": {
+        "title": "Usage tips",
+        "description": "These settings control how AI is used for semantic explanations and comparisons.",
+        "tip1": "Keep the base URL pointed to a gateway that is accessible from your machine.",
+        "tip2": "The API key is stored locally only. Rotate it regularly for security.",
+        "tip3": "Pick a model that balances accuracy and latency for your workflow."
+      },
+      "toast": {
+        "success": "Provider settings look good!",
+        "error": "Failed to reach the provider. Double-check the base URL and API key."
+      }
+    },
+    "dictionary": {
+      "cache": {
+        "title": "Cache management",
+        "label": "Cache directory",
+        "button_redownload": "Re-download cache",
+        "button_show": "Show in Finder",
+        "button_clear": "Clear path",
+        "last_updated": "Last updated:",
+        "never": "Never"
+      },
+      "why": {
+        "title": "Why cache?",
+        "items": [
+          "The dictionary data is stored locally to enable fast lookups without internet access.",
+          "Re-download only if the cache becomes corrupted or outdated."
+        ]
+      },
+      "toast": {
+        "redownload_success": "Cache re-downloaded successfully!",
+        "redownload_error": "Failed to re-download cache.",
+        "show_error": "Failed to open directory.",
+        "clear_success": "Cache path cleared."
+      }
+    },
+    "keyboard": {
+      "shortcuts": {
+        "title": "Shortcuts",
+        "quick_query": "Quick query",
+        "new_query": "New query",
+        "reset": "Reset to defaults"
+      },
+      "usage": {
+        "title": "Usage",
+        "items": [
+          "Quick query: Focus the search input from anywhere in the app.",
+          "New query: Clear the search and start fresh."
+        ]
+      },
+      "toast": {
+        "reset": "Keyboard shortcuts restored."
+      }
+    },
+    "about": {
+      "info": {
+        "title": "Application info",
+        "table": {
+          "name": "Name",
+          "version": "Version",
+          "build": "Build",
+          "environment": "Environment"
+        }
+      },
+      "resources": {
+        "title": "Resources",
+        "tauri": "Tauri documentation",
+        "shadcn": "shadcn/ui"
+      }
     }
+  },
+  "common": {
+    "theme_toggle": "Toggle theme"
   }
 }

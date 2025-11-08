@@ -5,8 +5,10 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useSettings } from "@/features/settings/hooks/use-settings";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 export function KeyboardTab() {
+  const { t } = useTranslation();
   const { settings, updateKeyboard } = useSettings();
 
   const handleReset = () => {
@@ -14,21 +16,21 @@ export function KeyboardTab() {
       quickQuery: "Mod+Enter",
       newQuery: "Mod+Shift+K",
     });
-    toast.success("Keyboard shortcuts restored.");
+    toast.success(t("settings.keyboard.toast.reset"));
   };
 
   return (
     <div className="grid gap-6 md:grid-cols-[1.1fr_1fr]">
       <Card>
         <CardHeader>
-          <CardTitle>Shortcuts</CardTitle>
+          <CardTitle>{t("settings.keyboard.shortcuts.title")}</CardTitle>
           <CardDescription>
             Configure the key combinations for quick interactions.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
           <div className="grid gap-2">
-            <Label htmlFor="shortcut-quick">Quick query</Label>
+            <Label htmlFor="shortcut-quick">{t("settings.keyboard.shortcuts.quick_query")}</Label>
             <Input
               id="shortcut-quick"
               value={settings.keyboard.quickQuery}
@@ -39,7 +41,7 @@ export function KeyboardTab() {
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="shortcut-new">New query</Label>
+            <Label htmlFor="shortcut-new">{t("settings.keyboard.shortcuts.new_query")}</Label>
             <Input
               id="shortcut-new"
               value={settings.keyboard.newQuery}
@@ -50,23 +52,18 @@ export function KeyboardTab() {
             />
           </div>
           <Button variant="outline" onClick={handleReset}>
-            Reset to defaults
+            {t("settings.keyboard.shortcuts.reset")}
           </Button>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>Usage</CardTitle>
+          <CardTitle>{t("settings.keyboard.usage.title")}</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-3 text-sm text-muted-foreground">
-          <p>
-            • Quick query focuses the search bar and submits automatically when
-            text is highlighted.
-          </p>
-          <p>
-            • New query opens a fresh search input regardless of current state.
-          </p>
+          <p>• {t("settings.keyboard.usage.items.0")}</p>
+          <p>• {t("settings.keyboard.usage.items.1")}</p>
           <Separator />
           <p>
             Shortcuts follow the format `Mod` = `⌘` on macOS and `Ctrl` on

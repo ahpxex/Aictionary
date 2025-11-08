@@ -1,30 +1,38 @@
+import { useTranslation } from "react-i18next";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AppearanceTab } from "@/features/settings/components/appearance-tab";
+import { LanguageTab } from "@/features/settings/components/language-tab";
 import { LlmProvidersTab } from "@/features/settings/components/llm-tab";
 import { DictionaryTab } from "@/features/settings/components/dictionary-tab";
 import { KeyboardTab } from "@/features/settings/components/keyboard-tab";
 import { AboutTab } from "@/features/settings/components/about-tab";
 
 const tabs = [
-  { value: "appearance", label: "Appearance" },
-  { value: "llm", label: "LLM Providers" },
-  { value: "dictionary", label: "Dictionary" },
-  { value: "keyboard", label: "Keyboard" },
-  { value: "about", label: "About" },
+  { value: "appearance", labelKey: "settings.tabs.appearance" },
+  { value: "language", labelKey: "settings.tabs.language" },
+  { value: "llm", labelKey: "settings.tabs.llm" },
+  { value: "dictionary", labelKey: "settings.tabs.dictionary" },
+  { value: "keyboard", labelKey: "settings.tabs.keyboard" },
+  { value: "about", labelKey: "settings.tabs.about" },
 ] as const;
 
 export function SettingsPage() {
+  const { t } = useTranslation();
+
   return (
     <Tabs defaultValue="appearance" className="flex flex-1 flex-col gap-6">
       <TabsList>
         {tabs.map((tab) => (
           <TabsTrigger key={tab.value} value={tab.value}>
-            {tab.label}
+            {t(tab.labelKey)}
           </TabsTrigger>
         ))}
       </TabsList>
       <TabsContent value="appearance">
         <AppearanceTab />
+      </TabsContent>
+      <TabsContent value="language">
+        <LanguageTab />
       </TabsContent>
       <TabsContent value="llm">
         <LlmProvidersTab />

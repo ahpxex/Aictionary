@@ -1,26 +1,28 @@
+import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 import { Settings, LineChart } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
-const CARDS = [
-  {
-    title: "Open statistics",
-    description: "Review learned words and export your study log.",
-    to: "/statistics",
-    icon: <LineChart className="size-4" />,
-    variant: "default" as const,
-  },
-  {
-    title: "Configure settings",
-    description: "Adjust appearance, providers, and keyboard shortcuts.",
-    to: "/settings",
-    icon: <Settings className="size-4" />,
-    variant: "outline" as const,
-  },
-];
-
 export function QuickActions() {
+  const { t } = useTranslation();
+
+  const CARDS = [
+    {
+      title: t("main.quick_actions.statistics.title"),
+      description: t("main.quick_actions.statistics.description"),
+      to: "/statistics",
+      icon: <LineChart className="size-4" />,
+      variant: "default" as const,
+    },
+    {
+      title: t("main.quick_actions.settings.title"),
+      description: t("main.quick_actions.settings.description"),
+      to: "/settings",
+      icon: <Settings className="size-4" />,
+      variant: "outline" as const,
+    },
+  ];
   return (
     <div className="grid gap-4 md:grid-cols-2">
       {CARDS.map((card) => (
@@ -34,7 +36,7 @@ export function QuickActions() {
           <CardContent className="flex flex-col gap-4">
             <p className="text-muted-foreground text-sm">{card.description}</p>
             <Button asChild variant={card.variant}>
-              <Link to={card.to}>Go</Link>
+              <Link to={card.to}>{t("main.quick_actions.button")}</Link>
             </Button>
           </CardContent>
         </Card>

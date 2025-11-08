@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { HistoryIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -11,6 +12,7 @@ type SearchHistoryProps = {
 };
 
 export function SearchHistory({ history, onSelect }: SearchHistoryProps) {
+  const { t } = useTranslation();
   if (history.length === 0) return null;
 
   const unique = Array.from(
@@ -28,7 +30,7 @@ export function SearchHistory({ history, onSelect }: SearchHistoryProps) {
         <div className="flex items-center gap-2">
           <HistoryIcon className="size-4" />
           <h2 className="text-sm font-semibold uppercase tracking-wide">
-            Recent queries
+            {t("main.history.title")}
           </h2>
         </div>
       </div>

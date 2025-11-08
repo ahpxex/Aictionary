@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useDictionarySearch } from "@/features/main/hooks/use-dictionary-search";
 import { ComparisonList } from "@/features/main/components/comparison-list";
 import { DefinitionsList } from "@/features/main/components/definitions-list";
@@ -5,6 +6,7 @@ import { SearchForm } from "@/features/main/components/search-form";
 import { WordSummaryCard } from "@/features/main/components/word-summary";
 
 export function MainPage() {
+  const { t } = useTranslation();
   const { isSearching, result, search } = useDictionarySearch();
 
   return (
@@ -17,7 +19,7 @@ export function MainPage() {
         />
         {!result && (
           <p className="text-muted-foreground text-sm">
-            Enter a word to see its definitions.
+            {t("main.empty_state")}
           </p>
         )}
       </div>

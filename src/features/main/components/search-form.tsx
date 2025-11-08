@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +15,7 @@ export function SearchForm({
   isSearching,
   initialValue = "",
 }: SearchFormProps) {
+  const { t } = useTranslation();
   const [value, setValue] = useState(initialValue);
 
   useEffect(() => {
@@ -34,12 +36,12 @@ export function SearchForm({
       <Input
         value={value}
         onChange={(event) => setValue(event.target.value)}
-        placeholder="Search a word…"
+        placeholder={t("main.search.placeholder")}
         className="border-none text-base shadow-none focus-visible:ring-0"
         autoFocus
       />
       <Button type="submit" disabled={isSearching}>
-        {isSearching ? "Searching…" : "Search"}
+        {isSearching ? t("main.search.searching") : t("main.search.button")}
       </Button>
     </form>
   );

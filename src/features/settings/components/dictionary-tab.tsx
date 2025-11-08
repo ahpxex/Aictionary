@@ -2,6 +2,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { invoke } from "@tauri-apps/api/core";
 import { openPath } from "@tauri-apps/plugin-opener";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -17,6 +18,7 @@ import { useSettings } from "@/features/settings/hooks/use-settings";
 import { formatDistanceToNow } from "date-fns";
 
 export function DictionaryTab() {
+  const { t } = useTranslation();
   const { settings, updateDictionary } = useSettings();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -28,10 +30,10 @@ export function DictionaryTab() {
       });
       const timestamp = new Date().toISOString();
       updateDictionary({ lastUpdated: timestamp });
-      toast.success("Dictionary cache refreshed.");
+      toast.success(t("settings.dictionary.toast.redownload_success"));
     } catch (error) {
       console.warn(error);
-      toast.error("Unable to refresh the dictionary cache.");
+      toast.error(t("settings.dictionary.toast.redownload_error"));
     } finally {
       setIsRefreshing(false);
     }
@@ -39,14 +41,14 @@ export function DictionaryTab() {
 
   const handleOpenCache = async () => {
     if (!settings.dictionary.cachePath) {
-      toast.error("Set a cache location first.");
+      toast.error(t("settings.dictionary.toast.show_error"));
       return;
     }
     try {
       await openPath(settings.dictionary.cachePath);
     } catch (error) {
       console.warn(error);
-      toast.error("Failed to open the cache folder.");
+      toast.error(t("settings.dictionary.toast.show_error"));
     }
   };
 
@@ -54,14 +56,14 @@ export function DictionaryTab() {
     <div className="grid gap-6 md:grid-cols-[1.2fr_1fr]">
       <Card>
         <CardHeader>
-          <CardTitle>Cache management</CardTitle>
+          <CardTitle>{t("settings.dictionary.cache.title")}</CardTitle>
           <CardDescription>
-            The dictionary cache keeps offline results for faster lookups.
+            {t("settings.dictionary.why.items.0")}
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
           <div className="grid gap-2">
-            <Label htmlFor="cache-path">Cache directory</Label>
+            <Label htmlFor="cache-path">{t("settings.dictionary.cache.label")}</Label>
             <Input
               id="cache-path"
               placeholder="/path/to/cache"
@@ -72,29 +74,30 @@ export function DictionaryTab() {
             />
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span>Last updated:</span>
+            <span>{t("settings.dictionary.cache.last_updated")}</span>
             <span className="font-medium text-foreground">
               {settings.dictionary.lastUpdated
                 ? formatDistanceToNow(new Date(settings.dictionary.lastUpdated), {
                     addSuffix: true,
                   })
-                : "Never"}
+                : t("settings.dictionary.cache.never")}
             </span>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button onClick={handleRedownload} disabled={isRefreshing}>
-              {isRefreshing ? "Refreshing…" : "Re-download cache"}
+              {isRefreshing ? "Refreshing…" : t("settings.dictionary.cache.button_redownload")}
             </Button>
             <Button variant="secondary" onClick={handleOpenCache}>
-              Show in Finder
+              {t("settings.dictionary.cache.button_show")}
             </Button>
             <Button
               variant="outline"
-              onClick={() =>
-                updateDictionary({ cachePath: "", lastUpdated: null })
-              }
+              onClick={() => {
+                updateDictionary({ cachePath: "", lastUpdated: null });
+                toast.success(t("settings.dictionary.toast.clear_success"));
+              }}
             >
-              Clear path
+              {t("settings.dictionary.cache.button_clear")}
             </Button>
           </div>
         </CardContent>
@@ -102,11 +105,11 @@ export function DictionaryTab() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Why cache?</CardTitle>
+          <CardTitle>{t("settings.dictionary.why.title")}</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-3 text-sm text-muted-foreground">
-          <p>• Keep key vocabulary available even without network access.</p>
-          <p>• Reduce latency for frequently queried words.</p>
+          <p>• {t("settings.dictionary.why.items.0")}</p>
+          <p>• {t("settings.dictionary.why.items.1")}</p>
           <Separator />
           <p>
             The cache will be refreshed automatically after the next successful

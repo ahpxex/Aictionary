@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import {
   Card,
   CardContent,
@@ -21,28 +22,29 @@ type TopWordsTableProps = {
 };
 
 export function TopWordsTable({ metrics }: TopWordsTableProps) {
+  const { t } = useTranslation();
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Top words</CardTitle>
+        <CardTitle>{t("statistics.top_words.title")}</CardTitle>
         <CardDescription>
-          Words with the highest frequency across all time.
+          {t("statistics.top_words.description")}
         </CardDescription>
       </CardHeader>
       <CardContent className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Word</TableHead>
-              <TableHead className="text-right">Times queried</TableHead>
-              <TableHead className="text-right">Last queried</TableHead>
+              <TableHead>{t("statistics.top_words.table.word")}</TableHead>
+              <TableHead className="text-right">{t("statistics.top_words.table.times_queried")}</TableHead>
+              <TableHead className="text-right">{t("statistics.top_words.table.last_queried")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {metrics.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={3} className="text-center text-muted-foreground">
-                  Search a word to start tracking statistics.
+                  {t("statistics.top_words.empty_state")}
                 </TableCell>
               </TableRow>
             ) : (

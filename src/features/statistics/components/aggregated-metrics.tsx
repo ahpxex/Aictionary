@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import {
   Card,
   CardContent,
@@ -20,15 +21,16 @@ type AggregatedMetricsProps = {
   aggregates: AggregatedMetric[];
 };
 
-const PERIOD_LABEL: Record<AggregatedMetric["period"], string> = {
-  day: "Daily",
-  week: "Weekly",
-  month: "Monthly",
-  year: "Yearly",
-  total: "Total",
-};
-
 export function AggregatedMetrics({ aggregates }: AggregatedMetricsProps) {
+  const { t } = useTranslation();
+
+  const PERIOD_LABEL: Record<AggregatedMetric["period"], string> = {
+    day: t("statistics.metrics.periods.daily"),
+    week: t("statistics.metrics.periods.weekly"),
+    month: t("statistics.metrics.periods.monthly"),
+    year: t("statistics.metrics.periods.yearly"),
+    total: t("statistics.metrics.periods.total"),
+  };
   const ordered = ["day", "week", "month", "year", "total"] as const;
   const available = ordered
     .map((period) => aggregates.find((item) => item.period === period))
@@ -37,9 +39,9 @@ export function AggregatedMetrics({ aggregates }: AggregatedMetricsProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Time-based trends</CardTitle>
+        <CardTitle>{t("statistics.metrics.title")}</CardTitle>
         <CardDescription>
-          Track how your learning evolves across different timeframes.
+          {t("statistics.metrics.description")}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -55,7 +57,7 @@ export function AggregatedMetrics({ aggregates }: AggregatedMetricsProps) {
             <TabsContent key={item.period} value={item.period}>
               {item.buckets.length === 0 ? (
                 <div className="text-muted-foreground text-sm">
-                  No data yet for this period.
+                  {t("statistics.metrics.empty_state")}
                 </div>
               ) : (
                 <div className="grid gap-4">
@@ -73,9 +75,9 @@ export function AggregatedMetrics({ aggregates }: AggregatedMetricsProps) {
                         <Table>
                           <TableHeader>
                             <TableRow>
-                              <TableHead>Word</TableHead>
+                              <TableHead>{t("statistics.metrics.table.word")}</TableHead>
                               <TableHead className="text-right">
-                                Count
+                                {t("statistics.metrics.table.count")}
                               </TableHead>
                             </TableRow>
                           </TableHeader>

@@ -10,11 +10,6 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useSettings } from "@/features/settings/hooks/use-settings";
 import { cn } from "@/lib/utils";
 
-const languageOptions = [
-  { value: "en", labelKey: "settings.appearance.language.en" },
-  { value: "zh", labelKey: "settings.appearance.language.zh" },
-] as const;
-
 const accentOptions = [
   {
     value: "blue",
@@ -50,7 +45,7 @@ const accentOptions = [
 
 export function AppearanceTab() {
   const { t } = useTranslation();
-  const { settings, updateTheme, updateLanguage } = useSettings();
+  const { settings, updateTheme } = useSettings();
 
   return (
     <Card>
@@ -114,29 +109,6 @@ export function AppearanceTab() {
                   className={cn("size-4 rounded-full", accent.className)}
                 />
 
-              </ToggleGroupItem>
-            ))}
-          </ToggleGroup>
-        </div>
-        <div className="space-y-3">
-          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            {t("settings.appearance.language.label")}
-          </span>
-          <ToggleGroup
-            type="single"
-            variant="outline"
-            spacing={0}
-            size="sm"
-            value={settings.language}
-            onValueChange={(value) => {
-              if (!value) return;
-              updateLanguage(value as "en" | "zh");
-            }}
-            className="w-fit rounded-lg bg-transparent"
-          >
-            {languageOptions.map((option) => (
-              <ToggleGroupItem key={option.value} value={option.value}>
-                {t(option.labelKey)}
               </ToggleGroupItem>
             ))}
           </ToggleGroup>

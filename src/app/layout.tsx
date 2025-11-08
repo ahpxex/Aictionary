@@ -1,26 +1,29 @@
 import { Outlet, NavLink } from "react-router";
 import { BookOpenText, LineChart, Settings } from "lucide-react";
 import { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 
 type NavItem = {
   to: string;
-  label: string;
+  labelKey: string;
   icon: ReactNode;
 };
 
 const NAV_ITEMS: NavItem[] = [
-  { to: "/", label: "Dictionary", icon: <BookOpenText className="size-4" /> },
-  { to: "/statistics", label: "Statistics", icon: <LineChart className="size-4" /> },
-  { to: "/settings", label: "Settings", icon: <Settings className="size-4" /> },
+  { to: "/", labelKey: "nav.dictionary", icon: <BookOpenText className="size-4" /> },
+  { to: "/statistics", labelKey: "nav.statistics", icon: <LineChart className="size-4" /> },
+  { to: "/settings", labelKey: "nav.settings", icon: <Settings className="size-4" /> },
 ];
 
 export function AppLayout() {
+  const { t } = useTranslation();
+
   return (
     <div className="bg-background text-foreground flex min-h-screen flex-col">
       <header className="border-b">
         <nav className="mx-auto flex h-14 w-full max-w-6xl items-center justify-center gap-1 px-4 text-sm font-medium">
-          {NAV_ITEMS.map(({ to, label, icon }) => (
+          {NAV_ITEMS.map(({ to, labelKey, icon }) => (
             <NavLink
               key={to}
               to={to}
@@ -34,7 +37,7 @@ export function AppLayout() {
               }
             >
               {icon}
-              {label}
+              {t(labelKey)}
             </NavLink>
           ))}
         </nav>

@@ -1,4 +1,5 @@
 import { Download, FileText } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { AggregatedMetrics } from "@/features/statistics/components/aggregated-metrics";
@@ -7,6 +8,7 @@ import { TopWordsTable } from "@/features/statistics/components/top-words-table"
 import { useStatistics } from "@/features/statistics/hooks/use-statistics";
 
 export function StatisticsPage() {
+  const { t } = useTranslation();
   const { snapshot, exportLearnedWords, exportQueryMetrics } = useStatistics();
   const totalQueries = snapshot.queryMetrics.reduce(
     (acc, metric) => acc + metric.count,
@@ -17,9 +19,9 @@ export function StatisticsPage() {
   return (
     <div className="flex flex-1 flex-col gap-6">
       <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-semibold">Statistics</h1>
+        <h1 className="text-3xl font-semibold">{t("statistics.title")}</h1>
         <p className="text-muted-foreground">
-          Review your dictionary usage and export study materials.
+          {t("statistics.description")}
         </p>
       </div>
 
@@ -27,11 +29,11 @@ export function StatisticsPage() {
         <CardContent className="flex flex-wrap gap-3 py-5">
           <Button onClick={exportLearnedWords}>
             <Download className="mr-2 size-4" />
-            Export learned words
+            {t("statistics.export.learned_words")}
           </Button>
           <Button variant="outline" onClick={exportQueryMetrics}>
             <FileText className="mr-2 size-4" />
-            Export query counts
+            {t("statistics.export.query_counts")}
           </Button>
         </CardContent>
       </Card>

@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { WordDefinition } from "@/shared/types/dictionary";
@@ -7,6 +8,7 @@ type ComparisonListProps = {
 };
 
 export function ComparisonList({ definition }: ComparisonListProps) {
+  const { t } = useTranslation();
   if (definition.comparison.length === 0) {
     return null;
   }
@@ -14,9 +16,9 @@ export function ComparisonList({ definition }: ComparisonListProps) {
   return (
     <div className="rounded-xl border">
       <div className="border-b px-4 py-3">
-        <h2 className="text-lg font-semibold">Compare with</h2>
+        <h2 className="text-lg font-semibold">{t("main.comparison.title")}</h2>
         <p className="text-muted-foreground text-sm">
-          Understand nuances between related words.
+          {t("main.comparison.description")}
         </p>
       </div>
       <ScrollArea className="max-h-80">

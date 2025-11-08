@@ -6,6 +6,7 @@ import {
   createRoutesFromElements,
 } from "react-router";
 import { Loader2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { AppLayout } from "./layout";
 import { Button } from "@/components/ui/button";
 
@@ -24,12 +25,14 @@ const StatisticsPage = lazy(() =>
 );
 
 function SuspenseBoundary({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
+
   return (
     <Suspense
       fallback={
         <div className="flex flex-1 items-center justify-center gap-2 text-muted-foreground">
           <Loader2 className="size-5 animate-spin" />
-          Loading…
+          {t("app.loading")}
         </div>
       }
     >
@@ -39,16 +42,18 @@ function SuspenseBoundary({ children }: { children: ReactNode }) {
 }
 
 function NotFoundRoute() {
+  const { t } = useTranslation();
+
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
       <div>
-        <p className="text-2xl font-semibold">Page not found</p>
+        <p className="text-2xl font-semibold">{t("error.page_not_found.title")}</p>
         <p className="text-muted-foreground">
-          We could not find the page you were looking for.
+          {t("error.page_not_found.description")}
         </p>
       </div>
       <Button variant="default" asChild>
-        <a href="#/">Go back home</a>
+        <a href="#/">{t("error.page_not_found.go_home")}</a>
       </Button>
     </div>
   );

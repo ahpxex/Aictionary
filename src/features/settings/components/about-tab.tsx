@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -12,6 +13,7 @@ import { useSettings } from "@/features/settings/hooks/use-settings";
 import { getName, getVersion } from "@tauri-apps/api/app";
 
 export function AboutTab() {
+  const { t } = useTranslation();
   const { settings } = useSettings();
   const [appVersion, setAppVersion] = useState(settings.about.version);
   const [appName, setAppName] = useState("AIctionary");
@@ -29,7 +31,7 @@ export function AboutTab() {
     <div className="grid gap-6 md:grid-cols-[1fr_0.8fr]">
       <Card>
         <CardHeader>
-          <CardTitle>Application info</CardTitle>
+          <CardTitle>{t("settings.about.info.title")}</CardTitle>
           <CardDescription>
             Build details for debugging and support references.
           </CardDescription>
@@ -38,19 +40,19 @@ export function AboutTab() {
           <Table>
             <TableBody>
               <TableRow>
-                <TableCell className="font-medium">Name</TableCell>
+                <TableCell className="font-medium">{t("settings.about.info.table.name")}</TableCell>
                 <TableCell>{appName}</TableCell>
               </TableRow>
               <TableRow>
-                <TableCell className="font-medium">Version</TableCell>
+                <TableCell className="font-medium">{t("settings.about.info.table.version")}</TableCell>
                 <TableCell>{appVersion}</TableCell>
               </TableRow>
               <TableRow>
-                <TableCell className="font-medium">Build</TableCell>
+                <TableCell className="font-medium">{t("settings.about.info.table.build")}</TableCell>
                 <TableCell>{settings.about.build}</TableCell>
               </TableRow>
               <TableRow>
-                <TableCell className="font-medium">Environment</TableCell>
+                <TableCell className="font-medium">{t("settings.about.info.table.environment")}</TableCell>
                 <TableCell>{import.meta.env.MODE}</TableCell>
               </TableRow>
             </TableBody>
@@ -60,7 +62,7 @@ export function AboutTab() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Resources</CardTitle>
+          <CardTitle>{t("settings.about.resources.title")}</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-3">
           <p className="text-muted-foreground text-sm">
@@ -74,7 +76,7 @@ export function AboutTab() {
                 target="_blank"
                 rel="noreferrer"
               >
-                Tauri documentation
+                {t("settings.about.resources.tauri")}
               </a>
             </Button>
             <Button asChild variant="outline">
@@ -83,7 +85,7 @@ export function AboutTab() {
                 target="_blank"
                 rel="noreferrer"
               >
-                shadcn/ui
+                {t("settings.about.resources.shadcn")}
               </a>
             </Button>
           </div>
