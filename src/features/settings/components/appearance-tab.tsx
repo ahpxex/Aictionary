@@ -29,13 +29,13 @@ export function AppearanceTab() {
 
   return (
     <Card>
-      <CardHeader className="pb-2">
+      <CardHeader >
         <CardTitle>Theme</CardTitle>
         <CardDescription>
           Choose the overall appearance and highlight color.
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col gap-6">
+      <CardContent className="flex flex-col gap-4">
         <div className="space-y-2">
           <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Mode
@@ -52,7 +52,7 @@ export function AppearanceTab() {
                 mode: value as (typeof themeModeOptions)[number]["value"],
               });
             }}
-            className="w-fit rounded-lg border border-input bg-muted/40 p-1"
+            className="w-fit rounded-lg  bg-transparent p-1"
           >
             {themeModeOptions.map((option) => (
               <ToggleGroupItem key={option.value} value={option.value}>
@@ -60,9 +60,7 @@ export function AppearanceTab() {
               </ToggleGroupItem>
             ))}
           </ToggleGroup>
-          <p className="text-muted-foreground text-xs">
-            System follows your device preference automatically.
-          </p>
+
         </div>
         <div className="space-y-3">
           <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
