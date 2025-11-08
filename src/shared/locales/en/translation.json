@@ -1,0 +1,27 @@
+{
+  "settings": {
+    "appearance": {
+      "title": "Theme",
+      "description": "Choose the overall appearance and highlight color.",
+      "mode": {
+        "label": "Mode",
+        "light": "Light",
+        "system": "System",
+        "dark": "Dark"
+      },
+      "accent": {
+        "label": "Accent Color",
+        "blue": "Blue",
+        "purple": "Purple",
+        "green": "Green",
+        "orange": "Orange",
+        "rose": "Rose"
+      },
+      "language": {
+        "label": "Language",
+        "en": "English",
+        "zh": "简体中文"
+      }
+    }
+  }
+}

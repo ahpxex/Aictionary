@@ -1,4 +1,4 @@
-import { Check } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import {
   Card,
   CardContent,
@@ -10,11 +10,10 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useSettings } from "@/features/settings/hooks/use-settings";
 import { cn } from "@/lib/utils";
 
-const themeModeOptions = [
-  { value: "light", label: "Light" },
-  { value: "system", label: "System" },
-  { value: "dark", label: "Dark" },
-] satisfies Array<{ value: "system" | "light" | "dark"; label: string }>;
+const languageOptions = [
+  { value: "en", labelKey: "settings.appearance.language.en" },
+  { value: "zh", labelKey: "settings.appearance.language.zh" },
+] as const;
 
 const accentOptions = [
   {
@@ -50,20 +49,21 @@ const accentOptions = [
 ] as const;
 
 export function AppearanceTab() {
-  const { settings, updateTheme } = useSettings();
+  const { t } = useTranslation();
+  const { settings, updateTheme, updateLanguage } = useSettings();
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Theme</CardTitle>
+        <CardTitle>{t("settings.appearance.title")}</CardTitle>
         <CardDescription>
-          Choose the overall appearance and highlight color.
+          {t("settings.appearance.description")}
         </CardDescription>
       </CardHeader>
       <CardContent className="flex gap-4">
         <div className="space-y-3">
           <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Mode
+            {t("settings.appearance.mode.label")}
           </span>
           <ToggleGroup
             type="single"
@@ -74,21 +74,25 @@ export function AppearanceTab() {
             onValueChange={(value) => {
               if (!value) return;
               updateTheme({
-                mode: value as (typeof themeModeOptions)[number]["value"],
+                mode: value as "system" | "light" | "dark",
               });
             }}
             className="w-fit rounded-lg  bg-transparent"
           >
-            {themeModeOptions.map((option) => (
-              <ToggleGroupItem key={option.value} value={option.value}>
-                {option.label}
-              </ToggleGroupItem>
-            ))}
+            <ToggleGroupItem value="light">
+              {t("settings.appearance.mode.light")}
+            </ToggleGroupItem>
+            <ToggleGroupItem value="system">
+              {t("settings.appearance.mode.system")}
+            </ToggleGroupItem>
+            <ToggleGroupItem value="dark">
+              {t("settings.appearance.mode.dark")}
+            </ToggleGroupItem>
           </ToggleGroup>
         </div>
         <div className="space-y-3">
           <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Accent Color
+            {t("settings.appearance.accent.label")}
           </span>
           <ToggleGroup
             type="single"
@@ -110,6 +114,29 @@ export function AppearanceTab() {
                   className={cn("size-4 rounded-full", accent.className)}
                 />
 
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
+        </div>
+        <div className="space-y-3">
+          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            {t("settings.appearance.language.label")}
+          </span>
+          <ToggleGroup
+            type="single"
+            variant="outline"
+            spacing={0}
+            size="sm"
+            value={settings.language}
+            onValueChange={(value) => {
+              if (!value) return;
+              updateLanguage(value as "en" | "zh");
+            }}
+            className="w-fit rounded-lg bg-transparent"
+          >
+            {languageOptions.map((option) => (
+              <ToggleGroupItem key={option.value} value={option.value}>
+                {t(option.labelKey)}
               </ToggleGroupItem>
             ))}
           </ToggleGroup>

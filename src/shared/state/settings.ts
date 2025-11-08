@@ -7,6 +7,7 @@ export const defaultSettings: AppSettings = {
     mode: "system",
     accent: "blue",
   },
+  language: "en",
   llm: {
     baseUrl: "",
     apiKey: "",

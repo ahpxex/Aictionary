@@ -1,0 +1,27 @@
+{
+  "settings": {
+    "appearance": {
+      "title": "主题",
+      "description": "选择整体外观和高亮颜色。",
+      "mode": {
+        "label": "模式",
+        "light": "浅色",
+        "system": "跟随系统",
+        "dark": "深色"
+      },
+      "accent": {
+        "label": "强调色",
+        "blue": "蓝色",
+        "purple": "紫色",
+        "green": "绿色",
+        "orange": "橙色",
+        "rose": "玫瑰红"
+      },
+      "language": {
+        "label": "语言",
+        "en": "English",
+        "zh": "简体中文"
+      }
+    }
+  }
+}

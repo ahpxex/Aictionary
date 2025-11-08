@@ -72,6 +72,16 @@ export function useSettings() {
     [updateSettings]
   );
 
+  const updateLanguage = useCallback(
+    (language: AppSettings["language"]) => {
+      updateSettings((current) => ({
+        ...current,
+        language,
+      }));
+    },
+    [updateSettings]
+  );
+
   return {
     settings,
     updateSettings,
@@ -79,6 +89,7 @@ export function useSettings() {
     updateLlm,
     updateDictionary,
     updateKeyboard,
+    updateLanguage,
   };
 }
 

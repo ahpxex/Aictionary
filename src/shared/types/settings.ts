@@ -3,6 +3,8 @@ export type ThemePreference = {
   accent: "blue" | "purple" | "green" | "orange" | "rose";
 };
 
+export type LanguagePreference = "en" | "zh";
+
 export type LlmProvider = {
   baseUrl: string;
   apiKey: string;
@@ -26,6 +28,7 @@ export type AboutMetadata = {
 
 export type AppSettings = {
   theme: ThemePreference;
+  language: LanguagePreference;
   llm: LlmProvider;
   dictionary: DictionarySettings;
   keyboard: KeyboardShortcutSettings;
