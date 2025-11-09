@@ -6,6 +6,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useSettings } from "@/features/settings/hooks/use-settings";
 import { cn } from "@/lib/utils";
@@ -43,77 +50,115 @@ const accentOptions = [
   },
 ] as const;
 
+const languageOptions = [
+  { value: "en", labelKey: "settings.language.options.en" },
+  { value: "zh", labelKey: "settings.language.options.zh" },
+] as const;
+
 export function AppearanceTab() {
   const { t } = useTranslation();
-  const { settings, updateTheme } = useSettings();
+  const { settings, updateTheme, updateLanguage } = useSettings();
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t("settings.appearance.title")}</CardTitle>
-        <CardDescription>
-          {t("settings.appearance.description")}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex gap-4">
-        <div className="space-y-3">
-          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            {t("settings.appearance.mode.label")}
-          </span>
-          <ToggleGroup
-            type="single"
-            variant="outline"
-            spacing={0}
-            size="sm"
-            value={settings.theme.mode}
-            onValueChange={(value) => {
-              if (!value) return;
-              updateTheme({
-                mode: value as "system" | "light" | "dark",
-              });
-            }}
-            className="w-fit rounded-lg  bg-transparent"
-          >
-            <ToggleGroupItem value="light">
-              {t("settings.appearance.mode.light")}
-            </ToggleGroupItem>
-            <ToggleGroupItem value="system">
-              {t("settings.appearance.mode.system")}
-            </ToggleGroupItem>
-            <ToggleGroupItem value="dark">
-              {t("settings.appearance.mode.dark")}
-            </ToggleGroupItem>
-          </ToggleGroup>
-        </div>
-        <div className="space-y-3">
-          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            {t("settings.appearance.accent.label")}
-          </span>
-          <ToggleGroup
-            type="single"
-            variant="outline"
-            size="sm"
-            value={settings.theme.accent}
-            onValueChange={(value) => {
-              if (!value) return;
-              updateTheme({ accent: value as typeof accentOptions[number]["value"] });
-            }}
-            className="w-fit flex-wrap justify-start"
-          >
-            {accentOptions.map((accent) => (
-              <ToggleGroupItem
-                key={accent.value}
-                value={accent.value}
-              >
-                <span
-                  className={cn("size-4 rounded-full", accent.className)}
-                />
-
+    <div className="grid gap-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("settings.appearance.title")}</CardTitle>
+          <CardDescription>
+            {t("settings.appearance.description")}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex gap-4">
+          <div className="space-y-3">
+            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {t("settings.appearance.mode.label")}
+            </span>
+            <ToggleGroup
+              type="single"
+              variant="outline"
+              spacing={0}
+              size="sm"
+              value={settings.theme.mode}
+              onValueChange={(value) => {
+                if (!value) return;
+                updateTheme({
+                  mode: value as "system" | "light" | "dark",
+                });
+              }}
+              className="w-fit rounded-lg  bg-transparent"
+            >
+              <ToggleGroupItem value="light">
+                {t("settings.appearance.mode.light")}
               </ToggleGroupItem>
-            ))}
-          </ToggleGroup>
-        </div>
-      </CardContent>
-    </Card>
+              <ToggleGroupItem value="system">
+                {t("settings.appearance.mode.system")}
+              </ToggleGroupItem>
+              <ToggleGroupItem value="dark">
+                {t("settings.appearance.mode.dark")}
+              </ToggleGroupItem>
+            </ToggleGroup>
+          </div>
+          <div className="space-y-3">
+            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {t("settings.appearance.accent.label")}
+            </span>
+            <ToggleGroup
+              type="single"
+              variant="outline"
+              size="sm"
+              value={settings.theme.accent}
+              onValueChange={(value) => {
+                if (!value) return;
+                updateTheme({ accent: value as typeof accentOptions[number]["value"] });
+              }}
+              className="w-fit flex-wrap justify-start"
+            >
+              {accentOptions.map((accent) => (
+                <ToggleGroupItem
+                  key={accent.value}
+                  value={accent.value}
+                >
+                  <span
+                    className={cn("size-4 rounded-full", accent.className)}
+                  />
+
+                </ToggleGroupItem>
+              ))}
+            </ToggleGroup>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("settings.language.title")}</CardTitle>
+          <CardDescription>
+            {t("settings.language.description")}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+              {t("settings.language.label")}
+            </label>
+            <Select
+              value={settings.language}
+              onValueChange={(value) => updateLanguage(value as "en" | "zh")}
+            >
+              <SelectTrigger className="w-[200px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {languageOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {t(option.labelKey)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

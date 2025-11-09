@@ -1,7 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AppearanceTab } from "@/features/settings/components/appearance-tab";
-import { LanguageTab } from "@/features/settings/components/language-tab";
 import { LlmProvidersTab } from "@/features/settings/components/llm-tab";
 import { DictionaryTab } from "@/features/settings/components/dictionary-tab";
 import { KeyboardTab } from "@/features/settings/components/keyboard-tab";
@@ -9,7 +8,6 @@ import { AboutTab } from "@/features/settings/components/about-tab";
 
 const tabs = [
   { value: "appearance", labelKey: "settings.tabs.appearance" },
-  { value: "language", labelKey: "settings.tabs.language" },
   { value: "llm", labelKey: "settings.tabs.llm" },
   { value: "dictionary", labelKey: "settings.tabs.dictionary" },
   { value: "keyboard", labelKey: "settings.tabs.keyboard" },
@@ -30,9 +28,6 @@ export function SettingsPage() {
       </TabsList>
       <TabsContent value="appearance">
         <AppearanceTab />
-      </TabsContent>
-      <TabsContent value="language">
-        <LanguageTab />
       </TabsContent>
       <TabsContent value="llm">
         <LlmProvidersTab />
