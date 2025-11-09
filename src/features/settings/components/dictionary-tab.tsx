@@ -167,7 +167,7 @@ export function DictionaryTab() {
               <Button onClick={handleRedownload} disabled={isRefreshing}>
                 {isRefreshing ? "Refreshing…" : t("settings.dictionary.cache.button_redownload")}
               </Button>
-              <Button variant="secondary" onClick={handleOpenCache}>
+              <Button variant="outline" onClick={handleOpenCache}>
                 {t("settings.dictionary.cache.button_show")}
               </Button>
               <Button
