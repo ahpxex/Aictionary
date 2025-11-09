@@ -117,7 +117,8 @@ async fn try_download(app: &AppHandle, url: &str, dest_path: &Path) -> Result<u6
             0.0
         };
 
-        if downloaded - last_progress_emit >= 1024 * 100 || downloaded == total_size {
+        // Emit progress every 100KB or when we reach/exceed the total
+        if downloaded - last_progress_emit >= 1024 * 100 || downloaded >= total_size {
             app.emit(
                 "download-progress",
                 DownloadProgress {
@@ -133,6 +134,19 @@ async fn try_download(app: &AppHandle, url: &str, dest_path: &Path) -> Result<u6
 
     file.flush()
         .map_err(|e| format!("Failed to flush file: {}", e))?;
+
+    // Emit final 100% progress
+    if total_size > 0 {
+        app.emit(
+            "download-progress",
+            DownloadProgress {
+                downloaded,
+                total: downloaded.max(total_size), // Use actual downloaded size
+                percentage: 100.0,
+            },
+        )
+        .ok();
+    }
 
     Ok(downloaded)
 }

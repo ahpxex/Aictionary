@@ -132,12 +132,12 @@ export function DownloadDialog({
 
               {isDownloading && showProgress && (
                 <div className="space-y-2">
-                  <Progress value={progress.percentage} className="h-2" />
+                  <Progress value={Math.min(100, progress.percentage)} className="h-2" />
                   <div className="text-sm text-muted-foreground text-center">
                     {t("download.dialog.progress", {
                       downloaded: formatBytes(progress.downloaded),
                       total: formatBytes(progress.total),
-                      percentage: progress.percentage.toFixed(1),
+                      percentage: Math.min(100, progress.percentage).toFixed(1),
                     })}
                   </div>
                 </div>
@@ -152,11 +152,11 @@ export function DownloadDialog({
               {isExtracting && extractProgress && (
                 <div className="space-y-2">
                   <Progress
-                    value={(extractProgress.current / extractProgress.total) * 100}
+                    value={Math.min(100, (extractProgress.current / extractProgress.total) * 100)}
                     className="h-2"
                   />
                   <div className="text-sm text-muted-foreground text-center">
-                    {Math.round((extractProgress.current / extractProgress.total) * 100)}%
+                    {Math.min(100, Math.round((extractProgress.current / extractProgress.total) * 100))}%
                   </div>
                 </div>
               )}
