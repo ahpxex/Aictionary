@@ -107,10 +107,10 @@ export function DownloadDialog({
             {isExtracting
               ? t("download.dialog.extracting")
               : isDownloading
-                ? t("download.dialog.downloading")
-                : error
-                  ? t("download.dialog.error")
-                  : t("download.dialog.complete")}
+              ? t("download.dialog.downloading")
+              : error
+              ? t("download.dialog.error")
+              : t("download.dialog.complete")}
           </DialogDescription>
         </DialogHeader>
 
@@ -132,7 +132,10 @@ export function DownloadDialog({
 
               {isDownloading && showProgress && (
                 <div className="space-y-2">
-                  <Progress value={Math.min(100, progress.percentage)} className="h-2" />
+                  <Progress
+                    value={Math.min(100, progress.percentage)}
+                    className="h-2"
+                  />
                   <div className="text-sm text-muted-foreground text-center">
                     {t("download.dialog.progress", {
                       downloaded: formatBytes(progress.downloaded),
@@ -145,18 +148,27 @@ export function DownloadDialog({
 
               {isDownloading && !showProgress && (
                 <div className="flex justify-center">
-                  <Spinner size="lg" />
+                  <Spinner />
                 </div>
               )}
 
               {isExtracting && extractProgress && (
                 <div className="space-y-2">
                   <Progress
-                    value={Math.min(100, (extractProgress.current / extractProgress.total) * 100)}
+                    value={Math.min(
+                      100,
+                      (extractProgress.current / extractProgress.total) * 100
+                    )}
                     className="h-2"
                   />
                   <div className="text-sm text-muted-foreground text-center">
-                    {Math.min(100, Math.round((extractProgress.current / extractProgress.total) * 100))}%
+                    {Math.min(
+                      100,
+                      Math.round(
+                        (extractProgress.current / extractProgress.total) * 100
+                      )
+                    )}
+                    %
                   </div>
                 </div>
               )}
