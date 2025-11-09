@@ -237,5 +237,19 @@
   },
   "common": {
     "theme_toggle": "切换主题"
+  },
+  "download": {
+    "dialog": {
+      "title": "下载中",
+      "downloading": "正在下载文件...",
+      "extracting": "正在解压文件...",
+      "retry": "重试中 ({{attempt}}/{{maxRetries}})",
+      "progress": "{{downloaded}} / {{total}} ({{percentage}}%)",
+      "extract_progress": "解压中 {{current}}/{{total}}: {{fileName}}",
+      "complete": "下载完成！",
+      "error": "下载失败",
+      "close": "关闭",
+      "cancel": "取消"
+    }
   }
 }

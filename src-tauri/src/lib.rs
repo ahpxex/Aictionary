@@ -3,6 +3,8 @@ use tauri::Manager;
 use std::fs;
 use std::path::PathBuf;
 
+mod download;
+
 #[derive(Serialize, Deserialize, Clone)]
 struct WordForms {
     third_person_singular: String,
@@ -239,7 +241,9 @@ pub fn run() {
             test_llm_provider,
             export_learned_words,
             export_query_metrics,
-            get_default_dictionary_path
+            get_default_dictionary_path,
+            download::download_file,
+            download::extract_zip
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

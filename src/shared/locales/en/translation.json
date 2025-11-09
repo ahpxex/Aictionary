@@ -237,5 +237,19 @@
   },
   "common": {
     "theme_toggle": "Toggle theme"
+  },
+  "download": {
+    "dialog": {
+      "title": "Downloading",
+      "downloading": "Downloading file...",
+      "extracting": "Extracting files...",
+      "retry": "Retrying ({{attempt}}/{{maxRetries}})",
+      "progress": "{{downloaded}} / {{total}} ({{percentage}}%)",
+      "extract_progress": "Extracting {{current}}/{{total}}: {{fileName}}",
+      "complete": "Download complete!",
+      "error": "Download failed",
+      "close": "Close",
+      "cancel": "Cancel"
+    }
   }
 }

@@ -64,6 +64,76 @@ src/
 - Example: LLM provider testing uses `invoke("test_llm_provider", { ... })`
 - Backend code in `src-tauri/src/`
 
+### GitHub Service
+
+`src/shared/services/github-service.ts` provides functions to fetch dictionary releases from GitHub:
+
+- `getLatestDictionaryRelease()`: Fetches the latest release of `open-english-dictionary.zip` from `ahpxex/open-dictionary`
+- `getAllDictionaryReleases()`: Fetches all releases containing the dictionary file
+- Returns: version, download URL, file size, and publication date
+- Uses GitHub's public API (no authentication required)
+
+### Download Service
+
+The app includes a comprehensive download service with progress tracking and retry logic:
+
+**Backend (Rust)**: `src-tauri/src/download.rs`
+
+- `download_file` command: Downloads files with progress tracking and automatic retries
+- `extract_zip` command: Extracts zip archives with progress feedback
+- Event emissions: `download-progress`, `download-complete`, `download-error`, `download-retry`, `extract-progress`, `extract-complete`
+- Exponential backoff for retries (2^attempt seconds between attempts)
+- Configurable max retries (default: 3)
+
+**Frontend (React)**:
+
+- **Types**: `src/shared/types/download.ts` - TypeScript interfaces for download operations
+- **Service**: `src/shared/services/download-service.ts` - Wrapper for Tauri commands with event listeners
+- **Hook**: `src/shared/hooks/use-download.ts` - React hook for managing download state
+- **Component**: `src/shared/components/download-dialog.tsx` - Dialog with progress UI
+
+**Usage Pattern**:
+
+```typescript
+import { useState } from "react";
+import { DownloadDialog } from "@/shared/components/download-dialog";
+import type { DownloadOptions } from "@/shared/types/download";
+
+const [dialogOpen, setDialogOpen] = useState(false);
+const [options, setOptions] = useState<DownloadOptions | null>(null);
+
+// Trigger download
+const handleDownload = () => {
+  setOptions({
+    url: "https://example.com/file.zip",
+    filePath: "/path/to/save/file.zip",
+    maxRetries: 3,
+    extractAfterDownload: true, // Auto-extract after download
+    extractTo: "/path/to/extract",
+    onComplete: (result) => console.log("Downloaded:", result.filePath),
+    onExtractComplete: () => console.log("Extraction complete!"),
+  });
+  setDialogOpen(true);
+};
+
+// Render dialog
+<DownloadDialog
+  open={dialogOpen}
+  onOpenChange={setDialogOpen}
+  downloadOptions={options}
+  onSuccess={() => console.log("All done!")}
+/>;
+```
+
+**Features**:
+
+- Real-time progress tracking (bytes downloaded, percentage)
+- Automatic retry with exponential backoff
+- Zip extraction with file-level progress
+- Localized UI (English/Chinese)
+- Error handling with user-friendly messages
+- Non-dismissible dialog during active download/extraction
+
 ### UI Patterns
 
 - **Components**: shadcn/ui (Radix UI primitives) with Tailwind CSS
