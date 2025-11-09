@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { invoke } from "@tauri-apps/api/core";
 import { openPath } from "@tauri-apps/plugin-opener";
+import { open } from "@tauri-apps/plugin-dialog";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,11 +16,42 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useSettings } from "@/features/settings/hooks/use-settings";
 import { formatDistanceToNow } from "date-fns";
+import { FolderOpen } from "lucide-react";
 
 export function DictionaryTab() {
   const { t } = useTranslation();
   const { settings, updateDictionary } = useSettings();
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  useEffect(() => {
+    const initializeDefaultPath = async () => {
+      if (!settings.dictionary.cachePath) {
+        try {
+          const defaultPath = await invoke<string>("get_default_dictionary_path");
+          updateDictionary({ cachePath: defaultPath });
+        } catch (error) {
+          console.warn("Failed to get default dictionary path:", error);
+        }
+      }
+    };
+    initializeDefaultPath();
+  }, []);
+
+  const handleBrowseFolder = async () => {
+    try {
+      const selected = await open({
+        directory: true,
+        multiple: false,
+        defaultPath: settings.dictionary.cachePath || undefined,
+      });
+      if (selected) {
+        updateDictionary({ cachePath: selected });
+      }
+    } catch (error) {
+      console.warn("Failed to browse folder:", error);
+      toast.error(t("settings.dictionary.toast.browse_error"));
+    }
+  };
 
   const handleRedownload = async () => {
     setIsRefreshing(true);
@@ -63,14 +95,24 @@ export function DictionaryTab() {
         <CardContent className="grid gap-4">
           <div className="grid gap-2">
             <Label htmlFor="cache-path">{t("settings.dictionary.cache.label")}</Label>
-            <Input
-              id="cache-path"
-              placeholder="/path/to/cache"
-              value={settings.dictionary.cachePath}
-              onChange={(event) =>
-                updateDictionary({ cachePath: event.target.value })
-              }
-            />
+            <div className="flex gap-2">
+              <Input
+                id="cache-path"
+                placeholder="/path/to/cache"
+                value={settings.dictionary.cachePath}
+                onChange={(event) =>
+                  updateDictionary({ cachePath: event.target.value })
+                }
+              />
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleBrowseFolder}
+                title={t("settings.dictionary.cache.button_browse")}
+              >
+                <FolderOpen className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <span>{t("settings.dictionary.cache.last_updated")}</span>

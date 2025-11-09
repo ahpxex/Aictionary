@@ -178,6 +178,7 @@
       "cache": {
         "title": "Cache management",
         "label": "Cache directory",
+        "button_browse": "Browse folder",
         "button_redownload": "Re-download cache",
         "button_show": "Show in Finder",
         "button_clear": "Clear path",
@@ -192,6 +193,7 @@
         ]
       },
       "toast": {
+        "browse_error": "Failed to browse folder.",
         "redownload_success": "Cache re-downloaded successfully!",
         "redownload_error": "Failed to re-download cache.",
         "show_error": "Failed to open directory.",

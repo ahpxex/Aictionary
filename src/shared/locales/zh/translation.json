@@ -178,6 +178,7 @@
       "cache": {
         "title": "缓存管理",
         "label": "缓存目录",
+        "button_browse": "浏览文件夹",
         "button_redownload": "重新下载缓存",
         "button_show": "在访达中显示",
         "button_clear": "清除路径",
@@ -192,6 +193,7 @@
         ]
       },
       "toast": {
+        "browse_error": "浏览文件夹失败。",
         "redownload_success": "缓存重新下载成功！",
         "redownload_error": "重新下载缓存失败。",
         "show_error": "打开目录失败。",

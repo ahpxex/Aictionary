@@ -218,16 +218,28 @@ fn export_query_metrics(app: tauri::AppHandle, metrics: Vec<QueryMetricPayload>)
     Ok(file_path.to_string_lossy().into())
 }
 
+#[tauri::command]
+fn get_default_dictionary_path(app: tauri::AppHandle) -> Result<String, String> {
+    let app_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|err| err.to_string())?;
+    let dict_path = app_dir.join("dictionary");
+    Ok(dict_path.to_string_lossy().into())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
             dictionary_query,
             refresh_dictionary_cache,
             test_llm_provider,
             export_learned_words,
-            export_query_metrics
+            export_query_metrics,
+            get_default_dictionary_path
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
