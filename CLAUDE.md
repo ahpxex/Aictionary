@@ -92,24 +92,34 @@ The app includes a comprehensive download service with progress tracking and ret
 - **Hook**: `src/shared/hooks/use-download.ts` - React hook for managing download state
 - **Component**: `src/shared/components/download-dialog.tsx` - Dialog with progress UI
 
-**Usage Pattern**:
+**Usage Pattern** (see `src/features/settings/components/dictionary-tab.tsx`):
 
 ```typescript
 import { useState } from "react";
 import { DownloadDialog } from "@/shared/components/download-dialog";
+import { getLatestDictionaryRelease } from "@/shared/services/github-service";
 import type { DownloadOptions } from "@/shared/types/download";
 
 const [dialogOpen, setDialogOpen] = useState(false);
 const [options, setOptions] = useState<DownloadOptions | null>(null);
 
-// Trigger download
-const handleDownload = () => {
+// Trigger download from GitHub
+const handleDownload = async () => {
+  const release = await getLatestDictionaryRelease();
+
+  // If zip contains 'dictionary' folder and cachePath is '/app/dictionary',
+  // extract to parent '/app/' so zip creates '/app/dictionary'
+  const cachePath = "/app/dictionary".replace(/[\/\\]+$/, "");
+  const parentDir = cachePath.substring(0,
+    Math.max(cachePath.lastIndexOf("/"), cachePath.lastIndexOf("\\"))
+  );
+
   setOptions({
-    url: "https://example.com/file.zip",
-    filePath: "/path/to/save/file.zip",
+    url: release.downloadUrl,
+    filePath: `${parentDir}/file.zip`,
     maxRetries: 3,
-    extractAfterDownload: true, // Auto-extract after download
-    extractTo: "/path/to/extract",
+    extractAfterDownload: true,
+    extractTo: parentDir, // Extract to parent, not cachePath itself
     onComplete: (result) => console.log("Downloaded:", result.filePath),
     onExtractComplete: () => console.log("Extraction complete!"),
   });
@@ -129,10 +139,11 @@ const handleDownload = () => {
 
 - Real-time progress tracking (bytes downloaded, percentage)
 - Automatic retry with exponential backoff
-- Zip extraction with file-level progress
+- Zip extraction with simple progress bar
 - Localized UI (English/Chinese)
 - Error handling with user-friendly messages
 - Non-dismissible dialog during active download/extraction
+- Smart path handling: extracts to parent directory when zip contains target folder
 
 ### UI Patterns
 

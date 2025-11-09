@@ -156,11 +156,7 @@ export function DownloadDialog({
                     className="h-2"
                   />
                   <div className="text-sm text-muted-foreground text-center">
-                    {t("download.dialog.extract_progress", {
-                      current: extractProgress.current,
-                      total: extractProgress.total,
-                      fileName: extractProgress.fileName,
-                    })}
+                    {Math.round((extractProgress.current / extractProgress.total) * 100)}%
                   </div>
                 </div>
               )}

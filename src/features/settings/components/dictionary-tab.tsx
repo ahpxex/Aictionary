@@ -72,14 +72,18 @@ export function DictionaryTab() {
       // Prepare download options
       const zipFileName = "open-english-dictionary.zip";
       const cachePath = settings.dictionary.cachePath.replace(/[\/\\]+$/, ""); // Remove trailing slashes
-      const zipPath = `${cachePath}/${zipFileName}`;
+
+      // Extract to parent directory since zip contains 'dictionary' folder
+      const lastSlashIndex = Math.max(cachePath.lastIndexOf("/"), cachePath.lastIndexOf("\\"));
+      const parentDir = lastSlashIndex > 0 ? cachePath.substring(0, lastSlashIndex) : cachePath;
+      const zipPath = `${parentDir}/${zipFileName}`;
 
       const options: DownloadOptions = {
         url: release.downloadUrl,
         filePath: zipPath,
         maxRetries: 3,
         extractAfterDownload: true,
-        extractTo: settings.dictionary.cachePath,
+        extractTo: parentDir, // Extract to parent dir, zip creates 'dictionary' folder
         onComplete: (result) => {
           console.log("Dictionary downloaded:", result);
         },
