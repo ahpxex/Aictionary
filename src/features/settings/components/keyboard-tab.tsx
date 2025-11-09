@@ -2,7 +2,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { useSettings } from "@/features/settings/hooks/use-settings";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
@@ -20,7 +19,7 @@ export function KeyboardTab() {
   };
 
   return (
-    <div className="grid gap-6 md:grid-cols-[1.1fr_1fr]">
+    <div className="grid gap-6">
       <Card>
         <CardHeader>
           <CardTitle>{t("settings.keyboard.shortcuts.title")}</CardTitle>
@@ -54,21 +53,6 @@ export function KeyboardTab() {
           <Button variant="outline" onClick={handleReset}>
             {t("settings.keyboard.shortcuts.reset")}
           </Button>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("settings.keyboard.usage.title")}</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-3 text-sm text-muted-foreground">
-          <p>• {t("settings.keyboard.usage.items.0")}</p>
-          <p>• {t("settings.keyboard.usage.items.1")}</p>
-          <Separator />
-          <p>
-            Shortcuts follow the format `Mod` = `⌘` on macOS and `Ctrl` on
-            Windows.
-          </p>
         </CardContent>
       </Card>
     </div>

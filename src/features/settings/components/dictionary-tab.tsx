@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { useSettings } from "@/features/settings/hooks/use-settings";
 import { formatDistanceToNow } from "date-fns";
 
@@ -53,7 +52,7 @@ export function DictionaryTab() {
   };
 
   return (
-    <div className="grid gap-6 md:grid-cols-[1.2fr_1fr]">
+    <div className="grid gap-6">
       <Card>
         <CardHeader>
           <CardTitle>{t("settings.dictionary.cache.title")}</CardTitle>
@@ -100,21 +99,6 @@ export function DictionaryTab() {
               {t("settings.dictionary.cache.button_clear")}
             </Button>
           </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("settings.dictionary.why.title")}</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-3 text-sm text-muted-foreground">
-          <p>• {t("settings.dictionary.why.items.0")}</p>
-          <p>• {t("settings.dictionary.why.items.1")}</p>
-          <Separator />
-          <p>
-            The cache will be refreshed automatically after the next successful
-            download. Configure the service provider to enable live updates.
-          </p>
         </CardContent>
       </Card>
     </div>

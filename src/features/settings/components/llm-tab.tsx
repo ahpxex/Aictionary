@@ -45,7 +45,7 @@ export function LlmProvidersTab() {
   };
 
   return (
-    <div className="grid gap-6 md:grid-cols-2">
+    <div className="grid gap-6">
       <Card>
         <CardHeader>
           <CardTitle>{t("settings.llm.title")}</CardTitle>
@@ -96,20 +96,6 @@ export function LlmProvidersTab() {
           <Button onClick={handleTestConnection} disabled={isTesting}>
             {isTesting ? t("settings.llm.testing") : t("settings.llm.test_connection")}
           </Button>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("settings.llm.tips.title")}</CardTitle>
-          <CardDescription>
-            {t("settings.llm.tips.description")}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-3 text-sm text-muted-foreground">
-          <p>• {t("settings.llm.tips.tip1")}</p>
-          <p>• {t("settings.llm.tips.tip2")}</p>
-          <p>• {t("settings.llm.tips.tip3")}</p>
         </CardContent>
       </Card>
     </div>
