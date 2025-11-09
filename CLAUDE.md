@@ -4,9 +4,10 @@
 
 AIctionary is a Tauri-based desktop dictionary application with AI-powered explanations. It combines a React frontend with a Rust backend, providing offline dictionary lookups with optional LLM-based semantic explanations and word comparisons.
 
-## Development Commands
+## Guidelines
 
-You don't have to run any of the development servers.
+- You don't have to run any of the development servers.
+- Copy a clearly described commit message into clipboard every time finished conversation.
 
 ## Architecture
 
