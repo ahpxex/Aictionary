@@ -124,27 +124,6 @@ fn dictionary_query(word: &str) -> Result<WordDefinition, String> {
     }
 }
 
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct RefreshDictionaryArgs {
-    cache_path: Option<String>,
-}
-
-#[tauri::command]
-fn refresh_dictionary_cache(args: RefreshDictionaryArgs) -> Result<(), String> {
-    if let Some(path) = args.cache_path {
-        if path.trim().is_empty() {
-            return Err("Cache path cannot be empty.".into());
-        }
-
-        let dir = PathBuf::from(path);
-        if !dir.exists() {
-            fs::create_dir_all(&dir).map_err(|err| err.to_string())?;
-        }
-    }
-
-    Ok(())
-}
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -237,7 +216,6 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
             dictionary_query,
-            refresh_dictionary_cache,
             test_llm_provider,
             export_learned_words,
             export_query_metrics,
