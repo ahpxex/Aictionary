@@ -21,7 +21,7 @@ export function ComparisonList({ definition }: ComparisonListProps) {
           {t("main.comparison.description")}
         </p>
       </div>
-      <ScrollArea className="max-h-80">
+      <ScrollArea className="max-h-[60vh]">
         <div className="grid gap-4 p-4">
           {definition.comparison.map((item, index) => (
             <div key={`${definition.word}-comparison-${index}`} className="space-y-2">
@@ -37,4 +37,3 @@ export function ComparisonList({ definition }: ComparisonListProps) {
     </div>
   );
 }
-
