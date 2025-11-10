@@ -20,7 +20,8 @@
     "search": {
       "placeholder": "Search a word…",
       "searching": "Searching…",
-      "button": "Search"
+      "button": "Search",
+      "empty_error": "Please enter a word to search."
     },
     "history": {
       "title": "Recent queries"
@@ -43,6 +44,16 @@
     "definitions": {
       "example_label_zh": "例句：",
       "example_label_en": "Example:"
+    },
+    "llm": {
+      "missing_config": "The word isn't cached locally and no AI provider is configured yet.",
+      "missing_cache_path": "Set a dictionary cache path before asking the AI to help.",
+      "generating": "Generating a definition via {{model}}…",
+      "success": "Definition saved locally using {{model}}.",
+      "error": "The AI provider couldn't produce a definition. Please try again later."
+    },
+    "errors": {
+      "dictionary": "Unable to query the dictionary. Please try again later."
     },
     "word_summary": {
       "word_forms": "Word forms",
@@ -147,10 +158,11 @@
       "title": "Provider connection",
       "description": "Configure the base URL and authentication for your LLM endpoint.",
       "models": {
-        "gpt-4o-mini": "OpenAI GPT-4o mini",
-        "gpt-4.1": "OpenAI GPT-4.1",
-        "claude-3.7-sonnet": "Anthropic Claude 3.7 Sonnet",
-        "deepseek-r1": "DeepSeek R1"
+        "load": "Load models",
+        "loading": "Loading models…",
+        "helper": "Load models from the configured endpoint after entering the base URL and API key.",
+        "empty": "No models were returned. Double-check the provider settings.",
+        "missing_credentials": "Enter the API key before loading models."
       },
       "base_url": {
         "label": "Base URL",
@@ -162,7 +174,8 @@
       },
       "model": {
         "label": "Model",
-        "placeholder": "Select model"
+        "placeholder": "Select model",
+        "custom": "Custom: {{model}}"
       },
       "test_connection": "Test connection",
       "testing": "Testing…",
@@ -175,7 +188,9 @@
       },
       "toast": {
         "success": "Provider settings look good!",
-        "error": "Failed to reach the provider. Double-check the base URL and API key."
+        "error": "Failed to reach the provider. Double-check the base URL and API key.",
+        "models_success": "Loaded {{count}} model(s).",
+        "models_error": "Unable to load the models list. Check your credentials."
       }
     },
     "dictionary": {

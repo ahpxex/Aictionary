@@ -104,6 +104,41 @@ fn dictionary_query(word: String, cache_path: String) -> Result<WordDefinition, 
     Ok(definition)
 }
 
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct UpsertDictionaryEntryArgs {
+    cache_path: String,
+    entry: WordDefinition,
+}
+
+#[tauri::command]
+fn upsert_dictionary_entry(args: UpsertDictionaryEntryArgs) -> Result<(), String> {
+    let cache_path = args.cache_path.trim();
+    if cache_path.is_empty() {
+        return Err("Dictionary cache path is not configured".into());
+    }
+
+    let word = args.entry.word.trim();
+    if word.is_empty() {
+        return Err("Word is required".into());
+    }
+
+    let cache_dir = resolve_cache_dir(cache_path)?;
+    fs::create_dir_all(&cache_dir)
+        .map_err(|err| format!("Failed to prepare cache directory: {}", err))?;
+
+    let mut entry = args.entry;
+    entry.word = word.to_string();
+
+    let payload = serde_json::to_string_pretty(&entry)
+        .map_err(|err| format!("Failed to serialize dictionary entry: {}", err))?;
+    let file_path = cache_dir.join(format!("{}.json", word.to_lowercase()));
+    fs::write(&file_path, payload)
+        .map_err(|err| format!("Failed to write dictionary entry: {}", err))?;
+
+    Ok(())
+}
+
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -202,7 +237,8 @@ pub fn run() {
             export_query_metrics,
             get_default_dictionary_path,
             download::download_file,
-            download::extract_zip
+            download::extract_zip,
+            upsert_dictionary_entry
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

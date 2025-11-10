@@ -1,9 +1,14 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { invoke } from "@tauri-apps/api/core";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -14,34 +19,110 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useSettings } from "@/features/settings/hooks/use-settings";
-
-const MODELS = [
-  { value: "gpt-4o-mini", labelKey: "settings.llm.models.gpt-4o-mini" },
-  { value: "gpt-4.1", labelKey: "settings.llm.models.gpt-4.1" },
-  { value: "claude-3.7-sonnet", labelKey: "settings.llm.models.claude-3.7-sonnet" },
-  { value: "deepseek-r1", labelKey: "settings.llm.models.deepseek-r1" },
-] as const;
+import {
+  fetchAvailableModels,
+  LlmModelSummary,
+  LlmServiceError,
+  testLlmConnection,
+} from "@/shared/services/llm-service";
 
 export function LlmProvidersTab() {
   const { t } = useTranslation();
   const { settings, updateLlm } = useSettings();
   const [isTesting, setIsTesting] = useState(false);
+  const [isLoadingModels, setIsLoadingModels] = useState(false);
+  const [models, setModels] = useState<LlmModelSummary[]>([]);
+  const [hasLoadedModels, setHasLoadedModels] = useState(false);
+
+  const credentialFingerprint = useMemo(
+    () => `${settings.llm.baseUrl}::${settings.llm.apiKey}`,
+    [settings.llm.baseUrl, settings.llm.apiKey]
+  );
+
+  useEffect(() => {
+    setModels([]);
+    setHasLoadedModels(false);
+  }, [credentialFingerprint]);
+
+  const canReachProvider = Boolean(settings.llm.apiKey.trim());
+
+  const handleLoadModels = async () => {
+    if (!canReachProvider) {
+      toast.error(t("settings.llm.models.missing_credentials"));
+      return;
+    }
+
+    setIsLoadingModels(true);
+    try {
+      const list = await fetchAvailableModels(settings.llm);
+      setModels(list);
+      setHasLoadedModels(true);
+
+      if (
+        list.length > 0 &&
+        !list.some((model) => model.id === settings.llm.model.trim())
+      ) {
+        updateLlm({ model: list[0].id });
+      }
+
+      toast.success(
+        t("settings.llm.toast.models_success", { count: list.length })
+      );
+    } catch (error) {
+      const message =
+        error instanceof LlmServiceError
+          ? error.message
+          : t("settings.llm.toast.models_error");
+      toast.error(message);
+    } finally {
+      setIsLoadingModels(false);
+    }
+  };
 
   const handleTestConnection = async () => {
+    if (!canReachProvider) {
+      toast.error(t("settings.llm.models.missing_credentials"));
+      return;
+    }
+
     setIsTesting(true);
     try {
-      await invoke("test_llm_provider", {
-        baseUrl: settings.llm.baseUrl,
-        apiKey: settings.llm.apiKey,
-        model: settings.llm.model,
-      });
+      await testLlmConnection(settings.llm);
       toast.success(t("settings.llm.toast.success"));
     } catch (error) {
       console.warn(error);
-      toast.error(t("settings.llm.toast.error"));
+      const message =
+        error instanceof LlmServiceError
+          ? error.message
+          : t("settings.llm.toast.error");
+      toast.error(message);
     } finally {
       setIsTesting(false);
     }
+  };
+
+  const renderModelItems = () => {
+    const items = models.map((model) => (
+      <SelectItem key={model.id} value={model.id}>
+        <div className="flex flex-col gap-0.5">
+          <span className="font-medium">{model.id}</span>
+          <span className="text-xs text-muted-foreground">{model.ownedBy}</span>
+        </div>
+      </SelectItem>
+    ));
+
+    if (
+      settings.llm.model &&
+      !models.some((model) => model.id === settings.llm.model)
+    ) {
+      items.push(
+        <SelectItem key="custom-model" value={settings.llm.model}>
+          {t("settings.llm.model.custom", { model: settings.llm.model })}
+        </SelectItem>
+      );
+    }
+
+    return items;
   };
 
   return (
@@ -49,9 +130,7 @@ export function LlmProvidersTab() {
       <Card>
         <CardHeader>
           <CardTitle>{t("settings.llm.title")}</CardTitle>
-          <CardDescription>
-            {t("settings.llm.description")}
-          </CardDescription>
+          <CardDescription>{t("settings.llm.description")}</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
           <div className="grid gap-2">
@@ -80,25 +159,45 @@ export function LlmProvidersTab() {
             <Select
               value={settings.llm.model}
               onValueChange={(value) => updateLlm({ model: value })}
+              disabled={models.length === 0 && !settings.llm.model}
             >
               <SelectTrigger id="llm-model">
-                <SelectValue placeholder={t("settings.llm.model.placeholder")} />
+                <SelectValue
+                  placeholder={t("settings.llm.model.placeholder")}
+                />
               </SelectTrigger>
-              <SelectContent>
-                {MODELS.map((model) => (
-                  <SelectItem key={model.value} value={model.value}>
-                    {t(model.labelKey)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
+              <SelectContent>{renderModelItems()}</SelectContent>
             </Select>
+            <p className="text-xs text-muted-foreground">
+              {t("settings.llm.models.helper")}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                onClick={handleLoadModels}
+                disabled={!canReachProvider || isLoadingModels}
+              >
+                {isLoadingModels
+                  ? t("settings.llm.models.loading")
+                  : t("settings.llm.models.load")}
+              </Button>
+              <Button
+                onClick={handleTestConnection}
+                disabled={!canReachProvider || isTesting}
+              >
+                {isTesting
+                  ? t("settings.llm.testing")
+                  : t("settings.llm.test_connection")}
+              </Button>
+            </div>
+            {hasLoadedModels && models.length === 0 && (
+              <p className="text-xs text-destructive">
+                {t("settings.llm.models.empty")}
+              </p>
+            )}
           </div>
-          <Button onClick={handleTestConnection} disabled={isTesting}>
-            {isTesting ? t("settings.llm.testing") : t("settings.llm.test_connection")}
-          </Button>
         </CardContent>
       </Card>
     </div>
   );
 }
-
