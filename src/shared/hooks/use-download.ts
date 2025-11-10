@@ -30,7 +30,7 @@ export function useDownload() {
     }));
   }, []);
 
-  const handleComplete = useCallback((result: DownloadComplete) => {
+  const handleComplete = useCallback((_result: DownloadComplete) => {
     setState((prev) => ({
       ...prev,
       isDownloading: false,
@@ -112,8 +112,7 @@ export function useDownload() {
       downloadPromiseRef.current = promise;
 
       try {
-        const result = await promise;
-        return result;
+        return await promise;
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         setState((prev) => ({

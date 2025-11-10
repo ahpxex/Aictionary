@@ -49,7 +49,11 @@
       "third_person": "第三人称",
       "past_tense": "过去式",
       "past_participle": "过去分词",
-      "present_participle": "现在分词"
+      "present_participle": "现在分词",
+      "comparative": "比较级",
+      "superlative": "最高级",
+      "plural": "复数",
+      "singular": "单数"
     }
   },
   "statistics": {

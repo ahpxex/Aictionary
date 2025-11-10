@@ -2,12 +2,7 @@ export type WordDefinition = {
   word: string;
   pronunciation: string;
   concise_definition: string;
-  forms: {
-    third_person_singular: string;
-    past_tense: string;
-    past_participle: string;
-    present_participle: string;
-  };
+  forms: Record<string, string>;
   definitions: Array<{
     pos: string;
     explanation_en: string;
@@ -25,4 +20,3 @@ export type QueryRecord = {
   word: string;
   timestamp: string;
 };
-

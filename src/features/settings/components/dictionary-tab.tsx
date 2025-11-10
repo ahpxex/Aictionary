@@ -1,6 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
-import { invoke } from "@tauri-apps/api/core";
 import { openPath } from "@tauri-apps/plugin-opener";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useTranslation } from "react-i18next";
@@ -27,20 +26,6 @@ export function DictionaryTab() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [downloadDialogOpen, setDownloadDialogOpen] = useState(false);
   const [downloadOptions, setDownloadOptions] = useState<DownloadOptions | null>(null);
-
-  useEffect(() => {
-    const initializeDefaultPath = async () => {
-      if (!settings.dictionary.cachePath) {
-        try {
-          const defaultPath = await invoke<string>("get_default_dictionary_path");
-          updateDictionary({ cachePath: defaultPath });
-        } catch (error) {
-          console.warn("Failed to get default dictionary path:", error);
-        }
-      }
-    };
-    initializeDefaultPath();
-  }, []);
 
   const handleBrowseFolder = async () => {
     try {

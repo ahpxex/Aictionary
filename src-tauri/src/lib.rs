@@ -1,17 +1,11 @@
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Deserializer};
 use tauri::Manager;
 use std::fs;
 use std::path::PathBuf;
+use std::collections::BTreeMap;
+use serde_json::Value;
 
 mod download;
-
-#[derive(Serialize, Deserialize, Clone)]
-struct WordForms {
-    third_person_singular: String,
-    past_tense: String,
-    past_participle: String,
-    present_participle: String,
-}
 
 #[derive(Serialize, Deserialize, Clone)]
 struct DefinitionEntry {
@@ -24,7 +18,9 @@ struct DefinitionEntry {
 
 #[derive(Serialize, Deserialize, Clone)]
 struct ComparisonEntry {
+    #[serde(default)]
     word_to_compare: String,
+    #[serde(default)]
     analysis: String,
 }
 
@@ -33,95 +29,79 @@ struct WordDefinition {
     word: String,
     pronunciation: String,
     concise_definition: String,
-    forms: WordForms,
+    #[serde(default, deserialize_with = "deserialize_forms")]
+    forms: BTreeMap<String, String>,
+    #[serde(default)]
     definitions: Vec<DefinitionEntry>,
+    #[serde(default)]
     comparison: Vec<ComparisonEntry>,
 }
 
-fn sample_definition() -> WordDefinition {
-    WordDefinition {
-        word: "abandon".to_string(),
-        pronunciation: "uh·bahn·duhn".to_string(),
-        concise_definition: "v. 抛弃, 遗弃, 放弃, 中止".to_string(),
-        forms: WordForms {
-            third_person_singular: "abandons".to_string(),
-            past_tense: "abandoned".to_string(),
-            past_participle: "abandoned".to_string(),
-            present_participle: "abandoning".to_string(),
-        },
-        definitions: vec![
-            DefinitionEntry {
-                pos: "verb".to_string(),
-                explanation_en: "To leave something or someone permanently, often in a way that shows a lack of care or responsibility, especially when it is expected to be cared for.".to_string(),
-                explanation_cn: "指永久性地离开某物或某人，通常表现出缺乏关心或责任感，尤其是在本应予以照顾的情况下。".to_string(),
-                example_en: "The crew had to abandon the sinking ship.".to_string(),
-                example_cn: "船员不得不弃船逃生。".to_string(),
-            },
-            DefinitionEntry {
-                pos: "verb".to_string(),
-                explanation_en: "To give up on a plan, activity, or effort completely, often due to difficulty, discouragement, or changing priorities.".to_string(),
-                explanation_cn: "指完全放弃某个计划、活动或努力，通常是因为困难、气馁或优先事项改变。".to_string(),
-                example_en: "She abandoned her dream of becoming a professional dancer after the injury.".to_string(),
-                example_cn: "受伤后，她放弃了成为职业舞者的梦想。".to_string(),
-            },
-            DefinitionEntry {
-                pos: "verb".to_string(),
-                explanation_en: "To surrender control or restraint over oneself, often in the context of emotions or behavior, leading to unrestrained expression.".to_string(),
-                explanation_cn: "指放任自己，不再克制，常用于描述情绪或行为的彻底释放。".to_string(),
-                example_en: "He abandoned himself to laughter at the funny movie.".to_string(),
-                example_cn: "他被这部搞笑电影逗得开怀大笑。".to_string(),
-            },
-        ],
-        comparison: vec![
-            ComparisonEntry {
-                word_to_compare: "desert".to_string(),
-                analysis: "“Desert” (遗弃) 通常指在军事、责任或义务背景下故意离开，带有道德谴责意味，常用于人或职责（如士兵临阵脱逃）。而 “abandon” 更广泛，可指对物、计划或情感的放弃，不一定涉及道德判断。".to_string(),
-            },
-            ComparisonEntry {
-                word_to_compare: "forsake".to_string(),
-                analysis: "“Forsake” (舍弃) 是一个更正式、文学化的词，常用于情感或精神层面的割舍，如“forsake sin”（弃绝罪恶），带有强烈的牺牲或决绝意味。而 “abandon” 更口语化，强调行为上的彻底离开，情感色彩较弱。".to_string(),
-            },
-            ComparisonEntry {
-                word_to_compare: "give up".to_string(),
-                analysis: "“Give up” (放弃) 是 “abandon” 的非正式同义表达，常用于日常语境，语气较轻，多用于习惯、努力或目标的停止（如 give up smoking）。而 “abandon” 更强烈，常暗示彻底、不可逆转的丢弃，带有更重的情感或后果。".to_string(),
-            },
-        ],
+fn deserialize_forms<'de, D>(deserializer: D) -> Result<BTreeMap<String, String>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let raw = Option::<BTreeMap<String, Value>>::deserialize(deserializer)?
+        .unwrap_or_default();
+
+    Ok(raw
+        .into_iter()
+        .map(|(key, value)| (key, value_to_string(value)))
+        .collect())
+}
+
+fn value_to_string(value: Value) -> String {
+    match value {
+        Value::Null => String::new(),
+        Value::Bool(b) => b.to_string(),
+        Value::Number(num) => num.to_string(),
+        Value::String(s) => s,
+        Value::Array(items) => items.into_iter().map(value_to_string).collect::<Vec<_>>().join(", "),
+        Value::Object(_) => "[object]".into(),
     }
 }
 
-fn placeholder_definition(word: &str) -> WordDefinition {
-    WordDefinition {
-        word: word.to_string(),
-        pronunciation: "placeholder".to_string(),
-        concise_definition: format!("Definition for {word} is not available yet."),
-        forms: WordForms {
-            third_person_singular: format!("{word}s"),
-            past_tense: format!("{word}ed"),
-            past_participle: format!("{word}ed"),
-            present_participle: format!("{word}ing"),
-        },
-        definitions: vec![DefinitionEntry {
-            pos: "verb".to_string(),
-            explanation_en: "This is a placeholder definition. Configure the dictionary provider to retrieve real data.".to_string(),
-            explanation_cn: "这是临时释义。在配置词典服务后会返回真实数据。".to_string(),
-            example_en: format!("You queried {word}, but the real explanation will appear once the provider is ready."),
-            example_cn: format!("你查询了 {word}，但在配置词典服务后会显示真实的释义。"),
-        }],
-        comparison: Vec::new(),
+fn resolve_cache_dir(cache_path: &str) -> Result<PathBuf, String> {
+    let path = PathBuf::from(cache_path);
+    if path.is_absolute() {
+        Ok(path)
+    } else {
+        let cwd = std::env::current_dir().map_err(|err| err.to_string())?;
+        Ok(cwd.join(path))
     }
 }
 
 #[tauri::command]
-fn dictionary_query(word: &str) -> Result<WordDefinition, String> {
-    if word.trim().is_empty() {
+fn dictionary_query(word: String, cache_path: String) -> Result<WordDefinition, String> {
+    let word = word.trim();
+    let cache_path = cache_path.trim();
+
+    if word.is_empty() {
         return Err("Word is required".into());
     }
 
-    if word.eq_ignore_ascii_case("abandon") {
-        Ok(sample_definition())
-    } else {
-        Ok(placeholder_definition(word))
+    if cache_path.is_empty() {
+        return Err("Dictionary cache path is not configured".into());
     }
+
+    let cache_dir = resolve_cache_dir(cache_path)?;
+    // Construct the file path: {cache_path}/{word}.json
+    let file_path = cache_dir.join(format!("{}.json", word.to_lowercase()));
+
+    // Check if file exists
+    if !file_path.exists() {
+        return Err(format!("Word '{}' not found in dictionary", word));
+    }
+
+    // Read the file
+    let content = fs::read_to_string(&file_path)
+        .map_err(|err| format!("Failed to read dictionary file: {}", err))?;
+
+    // Parse JSON
+    let definition: WordDefinition = serde_json::from_str(&content)
+        .map_err(|err| format!("Failed to parse dictionary data: {}", err))?;
+
+    Ok(definition)
 }
 
 
@@ -206,6 +186,7 @@ fn get_default_dictionary_path(app: tauri::AppHandle) -> Result<String, String> 
         .app_data_dir()
         .map_err(|err| err.to_string())?;
     let dict_path = app_dir.join("dictionary");
+    fs::create_dir_all(&dict_path).map_err(|err| err.to_string())?;
     Ok(dict_path.to_string_lossy().into())
 }
 

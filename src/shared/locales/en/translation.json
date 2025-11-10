@@ -45,11 +45,15 @@
       "example_label_en": "Example:"
     },
     "word_summary": {
-      "word_forms": "词形",
-      "third_person": "第三人称",
-      "past_tense": "过去式",
-      "past_participle": "过去分词",
-      "present_participle": "现在分词"
+      "word_forms": "Word forms",
+      "third_person": "3rd person singular",
+      "past_tense": "Past tense",
+      "past_participle": "Past participle",
+      "present_participle": "Present participle",
+      "comparative": "Comparative",
+      "superlative": "Superlative",
+      "plural": "Plural",
+      "singular": "Singular"
     }
   },
   "statistics": {

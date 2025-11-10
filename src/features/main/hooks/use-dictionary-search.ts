@@ -7,6 +7,7 @@ import {
   queryHistoryAtom,
   setCurrentResultAtom,
 } from "@/shared/state/dictionary";
+import { settingsAtom } from "@/shared/state/settings";
 import { queryDictionary } from "@/shared/services/dictionary-service";
 
 export function useDictionarySearch() {
@@ -14,6 +15,7 @@ export function useDictionarySearch() {
   const [history] = useAtom(queryHistoryAtom);
   const [result] = useAtom(currentResultAtom);
   const setResult = useSetAtom(setCurrentResultAtom);
+  const [settings] = useAtom(settingsAtom);
 
   const search = useCallback(
     async (word: string) => {
@@ -25,7 +27,10 @@ export function useDictionarySearch() {
 
       setIsSearching(true);
       try {
-        const definition = await queryDictionary(normalized);
+        const definition = await queryDictionary(
+          normalized,
+          settings.dictionary.cachePath
+        );
         setResult({ result: definition, word: normalized });
       } catch (error) {
         console.error(error);
@@ -34,7 +39,7 @@ export function useDictionarySearch() {
         setIsSearching(false);
       }
     },
-    [setResult, setIsSearching]
+    [setResult, setIsSearching, settings.dictionary.cachePath]
   );
 
   const clear = useCallback(() => {
