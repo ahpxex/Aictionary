@@ -67,14 +67,19 @@ export function useDictionarySearch() {
               normalized,
               settings.llm
             );
-            await writeDictionaryEntry(
-              aiDefinition,
-              settings.dictionary.cachePath
-            );
             setResult({ result: aiDefinition, word: normalized });
             toast.success(
               t("main.llm.success", { model: settings.llm.model })
             );
+            try {
+              await writeDictionaryEntry(
+                aiDefinition,
+                settings.dictionary.cachePath
+              );
+            } catch (persistError) {
+              console.error(persistError);
+              toast.warning(t("main.llm.cache_error"));
+            }
             return;
           } catch (llmError) {
             console.error(llmError);

@@ -113,12 +113,13 @@ struct UpsertDictionaryEntryArgs {
 
 #[tauri::command]
 fn upsert_dictionary_entry(args: UpsertDictionaryEntryArgs) -> Result<(), String> {
-    let cache_path = args.cache_path.trim();
+    let UpsertDictionaryEntryArgs { cache_path, mut entry } = args;
+    let cache_path = cache_path.trim();
     if cache_path.is_empty() {
         return Err("Dictionary cache path is not configured".into());
     }
 
-    let word = args.entry.word.trim();
+    let word = entry.word.trim().to_string();
     if word.is_empty() {
         return Err("Word is required".into());
     }
@@ -127,8 +128,7 @@ fn upsert_dictionary_entry(args: UpsertDictionaryEntryArgs) -> Result<(), String
     fs::create_dir_all(&cache_dir)
         .map_err(|err| format!("Failed to prepare cache directory: {}", err))?;
 
-    let mut entry = args.entry;
-    entry.word = word.to_string();
+    entry.word = word.clone();
 
     let payload = serde_json::to_string_pretty(&entry)
         .map_err(|err| format!("Failed to serialize dictionary entry: {}", err))?;

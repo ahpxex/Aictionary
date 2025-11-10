@@ -50,7 +50,8 @@
       "missing_cache_path": "Set a dictionary cache path before asking the AI to help.",
       "generating": "Generating a definition via {{model}}…",
       "success": "Definition saved locally using {{model}}.",
-      "error": "The AI provider couldn't produce a definition. Please try again later."
+      "error": "The AI provider couldn't produce a definition. Please try again later.",
+      "cache_error": "Definition shown, but writing to the cache failed. Check the directory permissions."
     },
     "errors": {
       "dictionary": "Unable to query the dictionary. Please try again later."
