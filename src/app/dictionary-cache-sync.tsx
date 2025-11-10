@@ -10,9 +10,15 @@ import { useSettings } from "@/features/settings/hooks/use-settings";
 export function DictionaryCacheSync() {
   const { settings, updateDictionary } = useSettings();
   const isInitializingRef = useRef(false);
+  const hasInitializedRef = useRef(false);
 
   useEffect(() => {
-    if (settings.dictionary.cachePath || isInitializingRef.current) {
+    if (settings.dictionary.cachePath) {
+      hasInitializedRef.current = true;
+      return;
+    }
+
+    if (hasInitializedRef.current || isInitializingRef.current) {
       return;
     }
 
@@ -39,6 +45,7 @@ export function DictionaryCacheSync() {
         console.warn("Failed to initialize dictionary cache path:", error);
       } finally {
         isInitializingRef.current = false;
+        hasInitializedRef.current = true;
       }
     };
 
