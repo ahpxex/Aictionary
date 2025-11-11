@@ -4,6 +4,8 @@ import { QueryRecord, WordDefinition } from "@/shared/types/dictionary";
 
 export const currentResultAtom = atom<WordDefinition | null>(null);
 export const isSearchingAtom = atom(false);
+export const isGeneratingFromLlmAtom = atom(false);
+export const generatingModelAtom = atom<string | null>(null);
 
 export const queryHistoryAtom = atomWithStorage<QueryRecord[]>(
   "aictionary-query-history",

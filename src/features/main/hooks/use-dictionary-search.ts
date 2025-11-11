@@ -5,6 +5,8 @@ import { toast } from "sonner";
 import {
   currentResultAtom,
   isSearchingAtom,
+  isGeneratingFromLlmAtom,
+  generatingModelAtom,
   queryHistoryAtom,
   setCurrentResultAtom,
 } from "@/shared/state/dictionary";
@@ -23,6 +25,8 @@ import {
 export function useDictionarySearch() {
   const { t } = useTranslation();
   const [isSearching, setIsSearching] = useAtom(isSearchingAtom);
+  const [isGeneratingFromLlm, setIsGeneratingFromLlm] = useAtom(isGeneratingFromLlmAtom);
+  const [generatingModel, setGeneratingModel] = useAtom(generatingModelAtom);
   const [history] = useAtom(queryHistoryAtom);
   const [result] = useAtom(currentResultAtom);
   const setResult = useSetAtom(setCurrentResultAtom);
@@ -58,9 +62,10 @@ export function useDictionarySearch() {
             return;
           }
 
-          const loadingId = toast.loading(
-            t("main.llm.generating", { model: settings.llm.model })
-          );
+          // Clear existing result and show LLM generating state
+          setResult({ result: null });
+          setGeneratingModel(settings.llm.model);
+          setIsGeneratingFromLlm(true);
 
           try {
             const aiDefinition = await generateDefinitionFromLlm(
@@ -89,7 +94,8 @@ export function useDictionarySearch() {
                 : t("main.llm.error");
             toast.error(message);
           } finally {
-            toast.dismiss(loadingId);
+            setIsGeneratingFromLlm(false);
+            setGeneratingModel(null);
           }
           return;
         }
@@ -107,6 +113,8 @@ export function useDictionarySearch() {
     [
       setResult,
       setIsSearching,
+      setIsGeneratingFromLlm,
+      setGeneratingModel,
       settings.dictionary.cachePath,
       settings.llm,
       t,
@@ -119,6 +127,8 @@ export function useDictionarySearch() {
 
   return {
     isSearching,
+    isGeneratingFromLlm,
+    generatingModel,
     history,
     result,
     search,

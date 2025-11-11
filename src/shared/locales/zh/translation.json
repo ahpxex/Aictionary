@@ -49,6 +49,7 @@
       "missing_config": "该单词不在本地缓存中，且尚未配置 AI 提供商。",
       "missing_cache_path": "使用 AI 补齐前请先设置词典缓存路径。",
       "generating": "正在通过 {{model}} 生成释义…",
+      "generating_status": "正在通过 {{model}} 生成释义…",
       "success": "已使用 {{model}} 生成释义并写入本地缓存。",
       "error": "AI 提供商暂时无法生成释义，请稍后重试。",
       "cache_error": "释义已显示，但写入缓存失败。请检查目录权限。"
