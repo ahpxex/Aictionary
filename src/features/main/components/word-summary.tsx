@@ -42,11 +42,13 @@ export function WordSummaryCard({ definition }: { definition: WordDefinition }) 
               {t("main.word_summary.word_forms")}
             </span>
             <div className="flex flex-wrap gap-2">
-              {formEntries.map(([key, value]) => (
-                <Badge key={key} variant="outline" className="text-xs font-medium">
-                  {formatKey(key)}：{value}
-                </Badge>
-              ))}
+              {formEntries
+                .filter(([, value]) => value && value.trim() !== "")
+                .map(([key, value]) => (
+                  <Badge key={key} variant="outline" className="text-xs font-medium">
+                    {formatKey(key)}：{value}
+                  </Badge>
+                ))}
             </div>
           </div>
         )}
