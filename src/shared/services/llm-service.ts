@@ -301,7 +301,7 @@ export async function generateDefinitionFromLlm(
     const completion = await client.chat.completions.parse({
       model,
       temperature: 0.1,
-        response_format: zodResponseFormat(RESPONSE_SCHEMA, "word_definition"),
+      response_format: zodResponseFormat(RESPONSE_SCHEMA, "word_definition"),
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         {
@@ -311,8 +311,8 @@ export async function generateDefinitionFromLlm(
       ],
     });
 
-    const parsed = completion.choices[0]?.message.content;
-    console.log(`========${parsed}`);
+    const parsed = completion.choices[0]?.message.parsed;
+
     if (!parsed) {
       throw new LlmServiceError("LLM response was missing structured content.");
     }
@@ -325,11 +325,3 @@ export async function generateDefinitionFromLlm(
     );
   }
 }
-
-const result = await generateDefinitionFromLlm("word", {
-  baseUrl: "https://yunwu.ai/v1",
-  apiKey: "sk-nTqxGQ2bwYXcxo5wYdFFS6sT6kZKINkWi9izyw5KHLkILqqr",
-  model: "gpt-5-mini",
-});
-
-console.log(result);

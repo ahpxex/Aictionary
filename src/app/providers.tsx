@@ -17,7 +17,7 @@ export function AppProviders({ children }: PropsWithChildren) {
         <AppearanceSync />
         <DictionaryCacheSync />
         {children}
-        <Toaster position="top-center" />
+        <Toaster position="bottom-center" />
       </NextThemeProvider>
     </JotaiProvider>
   );
