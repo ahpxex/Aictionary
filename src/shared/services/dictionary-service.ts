@@ -81,8 +81,9 @@ export async function writeDictionaryEntry(
   }
 
   await invoke("upsert_dictionary_entry", {
-    entry: definition,
-    cache_path: trimmedCachePath,
-    cachePath: trimmedCachePath,
+    args: {
+      cachePath: trimmedCachePath,
+      entry: definition,
+    },
   });
 }
