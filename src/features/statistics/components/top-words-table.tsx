@@ -35,12 +35,12 @@ export function TopWordsTable({ metrics, onRemoveWord }: TopWordsTableProps) {
         </CardDescription>
       </CardHeader>
       <CardContent className="overflow-x-auto">
-        <Table>
+        <Table className="table-fixed">
           <TableHeader>
             <TableRow>
               <TableHead>{t("statistics.top_words.table.word")}</TableHead>
-              <TableHead className="text-right">{t("statistics.top_words.table.times_queried")}</TableHead>
-              <TableHead className="text-right">{t("statistics.top_words.table.last_queried")}</TableHead>
+              <TableHead className="w-[120px] text-right">{t("statistics.top_words.table.times_queried")}</TableHead>
+              <TableHead className="w-[160px] text-right">{t("statistics.top_words.table.last_queried")}</TableHead>
               {onRemoveWord && <TableHead className="w-[60px]"></TableHead>}
             </TableRow>
           </TableHeader>
@@ -54,17 +54,24 @@ export function TopWordsTable({ metrics, onRemoveWord }: TopWordsTableProps) {
             ) : (
               metrics.slice(0, 10).map((metric) => (
                 <TableRow key={metric.word}>
-                  <TableCell className="font-medium">{metric.word}</TableCell>
-                  <TableCell className="text-right font-semibold">
+                  <TableCell className="font-medium">
+                    <span
+                      className="block max-w-[16rem] truncate"
+                      title={metric.word}
+                    >
+                      {metric.word}
+                    </span>
+                  </TableCell>
+                  <TableCell className="w-[120px] text-right font-semibold">
                     {metric.count}
                   </TableCell>
-                  <TableCell className="text-right text-sm text-muted-foreground">
+                  <TableCell className="w-[160px] text-right text-sm text-muted-foreground">
                     {formatDistanceToNow(parseISO(metric.lastQueriedAt), {
                       addSuffix: true,
                     })}
                   </TableCell>
                   {onRemoveWord && (
-                    <TableCell>
+                    <TableCell className="w-[60px]">
                       <Button
                         variant="ghost"
                         size="icon"
@@ -84,4 +91,3 @@ export function TopWordsTable({ metrics, onRemoveWord }: TopWordsTableProps) {
     </Card>
   );
 }
-

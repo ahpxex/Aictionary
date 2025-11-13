@@ -75,11 +75,11 @@ export function AggregatedMetrics({ aggregates, onRemoveWord }: AggregatedMetric
                         </span>
                       </CardHeader>
                       <CardContent className="overflow-x-auto">
-                        <Table>
+                        <Table className="table-fixed">
                           <TableHeader>
                             <TableRow>
                               <TableHead>{t("statistics.metrics.table.word")}</TableHead>
-                              <TableHead className="text-right">
+                              <TableHead className="w-[120px] text-right">
                                 {t("statistics.metrics.table.count")}
                               </TableHead>
                               {onRemoveWord && <TableHead className="w-[60px]"></TableHead>}
@@ -89,13 +89,18 @@ export function AggregatedMetrics({ aggregates, onRemoveWord }: AggregatedMetric
                             {bucket.words.slice(0, 5).map((word) => (
                               <TableRow key={word.word}>
                                 <TableCell className="font-medium">
-                                  {word.word}
+                                  <span
+                                    className="block max-w-[12rem] truncate"
+                                    title={word.word}
+                                  >
+                                    {word.word}
+                                  </span>
                                 </TableCell>
-                                <TableCell className="text-right">
+                                <TableCell className="w-[120px] text-right">
                                   {word.count}
                                 </TableCell>
                                 {onRemoveWord && (
-                                  <TableCell>
+                                  <TableCell className="w-[60px]">
                                     <Button
                                       variant="ghost"
                                       size="icon"
@@ -122,4 +127,3 @@ export function AggregatedMetrics({ aggregates, onRemoveWord }: AggregatedMetric
     </Card>
   );
 }
-
