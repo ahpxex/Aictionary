@@ -33,10 +33,10 @@ function KbdInput({ className, value = "", onChange, onKeyDown, ...props }: KbdI
     if (!["Control", "Meta", "Shift", "Alt"].includes(key)) {
       // Format the key name
       let formattedKey = key
-      if (key.length === 1) {
-        formattedKey = key.toUpperCase()
-      } else if (key === " ") {
+      if (key === " ") {
         formattedKey = "Space"
+      } else if (key.length === 1) {
+        formattedKey = key.toUpperCase()
       } else {
         // Capitalize first letter for keys like "Enter", "Escape", etc.
         formattedKey = key.charAt(0).toUpperCase() + key.slice(1)

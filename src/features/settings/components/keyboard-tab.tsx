@@ -2,7 +2,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { KbdInput } from "@/components/ui/kbd-input";
 import { Label } from "@/components/ui/label";
-import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { useSettings } from "@/features/settings/hooks/use-settings";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
@@ -19,18 +18,6 @@ export function KeyboardTab() {
     toast.success(t("settings.keyboard.toast.reset"));
   };
 
-  // Parse shortcut string and render as kbd elements
-  const renderShortcut = (shortcut: string) => {
-    const keys = shortcut.split("+");
-    return (
-      <KbdGroup>
-        {keys.map((key, index) => (
-          <Kbd key={index}>{key === " " || key === "" ? "Space" : key}</Kbd>
-        ))}
-      </KbdGroup>
-    );
-  };
-
   return (
     <div className="grid gap-6">
       <Card>
@@ -42,10 +29,7 @@ export function KeyboardTab() {
         </CardHeader>
         <CardContent className="grid gap-4">
           <div className="grid gap-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="shortcut-quick">{t("settings.keyboard.shortcuts.quick_query")}</Label>
-              {renderShortcut(settings.keyboard.quickQuery)}
-            </div>
+            <Label htmlFor="shortcut-quick">{t("settings.keyboard.shortcuts.quick_query")}</Label>
             <KbdInput
               id="shortcut-quick"
               value={settings.keyboard.quickQuery}
@@ -54,10 +38,7 @@ export function KeyboardTab() {
             />
           </div>
           <div className="grid gap-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="shortcut-new">{t("settings.keyboard.shortcuts.new_query")}</Label>
-              {renderShortcut(settings.keyboard.newQuery)}
-            </div>
+            <Label htmlFor="shortcut-new">{t("settings.keyboard.shortcuts.new_query")}</Label>
             <KbdInput
               id="shortcut-new"
               value={settings.keyboard.newQuery}
