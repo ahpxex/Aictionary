@@ -252,7 +252,8 @@
       "resources": {
         "title": "资源",
         "tauri": "Tauri 文档",
-        "shadcn": "shadcn/ui"
+        "shadcn": "shadcn/ui",
+        "open_dictionary": "开放词典"
       }
     }
   },

@@ -252,7 +252,8 @@
       "resources": {
         "title": "Resources",
         "tauri": "Tauri documentation",
-        "shadcn": "shadcn/ui"
+        "shadcn": "shadcn/ui",
+        "open_dictionary": "Open Dictionary"
       }
     }
   },

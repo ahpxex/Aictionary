@@ -88,6 +88,15 @@ export function AboutTab() {
                 {t("settings.about.resources.shadcn")}
               </a>
             </Button>
+            <Button asChild variant="outline">
+              <a
+                href="https://github.com/ahpxex/open-dictionary"
+                target="_blank"
+                rel="noreferrer"
+              >
+                {t("settings.about.resources.open_dictionary")}
+              </a>
+            </Button>
           </div>
         </CardContent>
       </Card>
