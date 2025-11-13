@@ -25,7 +25,7 @@ export function KeyboardTab() {
     return (
       <KbdGroup>
         {keys.map((key, index) => (
-          <Kbd key={index}>{key}</Kbd>
+          <Kbd key={index}>{key === " " || key === "" ? "Space" : key}</Kbd>
         ))}
       </KbdGroup>
     );
