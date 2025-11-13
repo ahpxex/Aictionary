@@ -1,3 +1,4 @@
+import { Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {
   Card,
@@ -15,13 +16,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
 import { AggregatedMetric } from "@/shared/types/statistics";
 
 type AggregatedMetricsProps = {
   aggregates: AggregatedMetric[];
+  onRemoveWord?: (word: string) => void;
 };
 
-export function AggregatedMetrics({ aggregates }: AggregatedMetricsProps) {
+export function AggregatedMetrics({ aggregates, onRemoveWord }: AggregatedMetricsProps) {
   const { t } = useTranslation();
 
   const PERIOD_LABEL: Record<AggregatedMetric["period"], string> = {
@@ -79,6 +82,7 @@ export function AggregatedMetrics({ aggregates }: AggregatedMetricsProps) {
                               <TableHead className="text-right">
                                 {t("statistics.metrics.table.count")}
                               </TableHead>
+                              {onRemoveWord && <TableHead className="w-[60px]"></TableHead>}
                             </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -90,6 +94,18 @@ export function AggregatedMetrics({ aggregates }: AggregatedMetricsProps) {
                                 <TableCell className="text-right">
                                   {word.count}
                                 </TableCell>
+                                {onRemoveWord && (
+                                  <TableCell>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => onRemoveWord(word.word)}
+                                      className="size-8"
+                                    >
+                                      <Trash2 className="size-4" />
+                                    </Button>
+                                  </TableCell>
+                                )}
                               </TableRow>
                             ))}
                           </TableBody>

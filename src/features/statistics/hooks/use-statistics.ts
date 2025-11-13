@@ -54,11 +54,34 @@ export function useStatistics() {
       toast.error("No query data to export yet.");
       return;
     }
+
     try {
+      // Show save dialog
+      const filePath = await save({
+        defaultPath: "aictionary_query_metrics.csv",
+        filters: [
+          {
+            name: "CSV Files",
+            extensions: ["csv"],
+          },
+        ],
+      });
+
+      // User cancelled the dialog
+      if (!filePath) {
+        return;
+      }
+
+      // Export to the chosen path
       const exportedPath = await invoke<string>("export_query_metrics", {
         metrics: snapshot.queryMetrics,
+        filePath,
       });
-      toast.success(`Query statistics exported to ${exportedPath}`);
+
+      toast.success(`Query statistics exported successfully`);
+
+      // Reveal the file in file explorer
+      await revealItemInDir(exportedPath);
     } catch (error) {
       console.warn(error);
       toast.error("Failed to export query statistics.");

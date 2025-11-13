@@ -31,26 +31,33 @@ pub fn export_learned_words(
     Ok(output_path.to_string_lossy().into())
 }
 
-/// Export query metrics to a text file in the Downloads directory.
-/// Each metric includes the word, query count, and last queried timestamp.
+/// Export query metrics to a CSV file at the specified path.
+/// CSV format: Count,Word with headers.
 #[tauri::command]
 pub fn export_query_metrics(
     app: AppHandle,
     metrics: Vec<QueryMetricPayload>,
+    file_path: Option<String>,
 ) -> Result<String, String> {
     if metrics.is_empty() {
         return Err("No metrics to export.".into());
     }
 
-    let mut content = String::new();
+    // Build CSV content with headers
+    let mut content = String::from("Count,Word\n");
     for metric in metrics {
-        let line = format!(
-            "{} - {} times (last queried {})\n",
-            metric.word, metric.count, metric.last_queried_at
-        );
+        let line = format!("{},{}\n", metric.count, metric.word);
         content.push_str(&line);
     }
 
-    let file_path = write_to_downloads(&app, "aictionary_query_metrics.txt", content)?;
-    Ok(file_path.to_string_lossy().into())
+    // If file_path is provided, write to that location; otherwise use downloads directory
+    let output_path = if let Some(path) = file_path {
+        let path_buf = PathBuf::from(&path);
+        fs::write(&path_buf, content).map_err(|e| format!("Failed to write file: {}", e))?;
+        path_buf
+    } else {
+        write_to_downloads(&app, "aictionary_query_metrics.csv", content)?
+    };
+
+    Ok(output_path.to_string_lossy().into())
 }

@@ -84,7 +84,7 @@ export function StatisticsPage() {
           </div>
 
           {/* Export Buttons */}
-          <div className="flex flex-wrap gap-3 border-t pt-6">
+          <div className="flex flex-wrap justify-end gap-3 border-t pt-6">
             <Button onClick={exportLearnedWords}>
               <Download className="mr-2 size-4" />
               {t("statistics.export.learned_words")}
@@ -98,7 +98,7 @@ export function StatisticsPage() {
       </Card>
 
       <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
-        <AggregatedMetrics aggregates={snapshot.aggregates} />
+        <AggregatedMetrics aggregates={snapshot.aggregates} onRemoveWord={removeWord} />
         <TopWordsTable metrics={snapshot.queryMetrics} onRemoveWord={removeWord} />
       </div>
     </div>
