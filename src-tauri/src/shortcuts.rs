@@ -5,10 +5,10 @@ use tauri_plugin_clipboard_manager::ClipboardExt;
 fn normalize_shortcut(shortcut: &str) -> String {
     // First replace "Mod" with platform-specific key
     #[cfg(target_os = "macos")]
-    let mut normalized = shortcut.replace("Mod", "Command");
+    let normalized = shortcut.replace("Mod", "Command");
 
     #[cfg(not(target_os = "macos"))]
-    let mut normalized = shortcut.replace("Mod", "Control");
+    let normalized = shortcut.replace("Mod", "Control");
 
     // Handle space key - replace " " at the end or standalone with "Space"
     // Split by + to handle each part
