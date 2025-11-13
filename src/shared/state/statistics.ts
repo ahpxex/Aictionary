@@ -178,3 +178,12 @@ export const statisticsSnapshotAtom = atom<StatisticsSnapshot>((get) => ({
   queryMetrics: get(queryMetricsAtom),
   aggregates: get(aggregatesAtom),
 }));
+
+export const removeWordAtom = atom(
+  null,
+  (get, set, word: string) => {
+    const history = get(queryHistoryAtom);
+    const updated = history.filter((entry) => entry.word !== word);
+    set(queryHistoryAtom, updated);
+  }
+);

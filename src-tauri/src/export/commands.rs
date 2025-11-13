@@ -1,19 +1,34 @@
+use std::fs;
+use std::path::PathBuf;
 use tauri::AppHandle;
 
 use super::types::QueryMetricPayload;
 use super::utils::write_to_downloads;
 
-/// Export a list of learned words to a text file in the Downloads directory.
+/// Export a list of learned words to a text file at the specified path.
 /// Each word is written on a separate line.
 #[tauri::command]
-pub fn export_learned_words(app: AppHandle, words: Vec<String>) -> Result<String, String> {
+pub fn export_learned_words(
+    app: AppHandle,
+    words: Vec<String>,
+    file_path: Option<String>,
+) -> Result<String, String> {
     if words.is_empty() {
         return Err("No words to export.".into());
     }
 
     let content = words.join("\n");
-    let file_path = write_to_downloads(&app, "aictionary_learned_words.txt", content)?;
-    Ok(file_path.to_string_lossy().into())
+
+    // If file_path is provided, write to that location; otherwise use downloads directory
+    let output_path = if let Some(path) = file_path {
+        let path_buf = PathBuf::from(&path);
+        fs::write(&path_buf, content).map_err(|e| format!("Failed to write file: {}", e))?;
+        path_buf
+    } else {
+        write_to_downloads(&app, "aictionary_learned_words.txt", content)?
+    };
+
+    Ok(output_path.to_string_lossy().into())
 }
 
 /// Export query metrics to a text file in the Downloads directory.

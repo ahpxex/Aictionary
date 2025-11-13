@@ -1,3 +1,4 @@
+import { Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {
   Card,
@@ -14,14 +15,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
 import { QueryMetric } from "@/shared/types/statistics";
 import { formatDistanceToNow, parseISO } from "date-fns";
 
 type TopWordsTableProps = {
   metrics: QueryMetric[];
+  onRemoveWord?: (word: string) => void;
 };
 
-export function TopWordsTable({ metrics }: TopWordsTableProps) {
+export function TopWordsTable({ metrics, onRemoveWord }: TopWordsTableProps) {
   const { t } = useTranslation();
   return (
     <Card>
@@ -38,12 +41,13 @@ export function TopWordsTable({ metrics }: TopWordsTableProps) {
               <TableHead>{t("statistics.top_words.table.word")}</TableHead>
               <TableHead className="text-right">{t("statistics.top_words.table.times_queried")}</TableHead>
               <TableHead className="text-right">{t("statistics.top_words.table.last_queried")}</TableHead>
+              {onRemoveWord && <TableHead className="w-[60px]"></TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {metrics.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={3} className="text-center text-muted-foreground">
+                <TableCell colSpan={onRemoveWord ? 4 : 3} className="text-center text-muted-foreground">
                   {t("statistics.top_words.empty_state")}
                 </TableCell>
               </TableRow>
@@ -59,6 +63,18 @@ export function TopWordsTable({ metrics }: TopWordsTableProps) {
                       addSuffix: true,
                     })}
                   </TableCell>
+                  {onRemoveWord && (
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => onRemoveWord(metric.word)}
+                        className="size-8"
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </TableCell>
+                  )}
                 </TableRow>
               ))
             )}

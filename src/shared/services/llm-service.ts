@@ -1,5 +1,5 @@
 import OpenAI, { APIError } from "openai";
-import { trim, z } from "zod";
+import { z } from "zod";
 import { zodResponseFormat } from "openai/helpers/zod";
 import { WordDefinition } from "@/shared/types/dictionary";
 import { LlmProvider } from "@/shared/types/settings";
