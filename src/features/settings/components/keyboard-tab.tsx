@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { KbdInput } from "@/components/ui/kbd-input";
 import { Label } from "@/components/ui/label";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { useSettings } from "@/features/settings/hooks/use-settings";
@@ -31,49 +31,6 @@ export function KeyboardTab() {
     );
   };
 
-  // Handle keyboard events and convert to shortcut notation
-  const handleKeyDown = (
-    event: React.KeyboardEvent<HTMLInputElement>,
-    field: "quickQuery" | "newQuery"
-  ) => {
-    event.preventDefault();
-    
-    const keys: string[] = [];
-    
-    // Add modifiers
-    if (event.ctrlKey || event.metaKey) {
-      keys.push("Mod");
-    }
-    if (event.shiftKey && event.key !== "Shift") {
-      keys.push("Shift");
-    }
-    if (event.altKey && event.key !== "Alt") {
-      keys.push("Alt");
-    }
-    
-    // Add the main key (if it's not a modifier)
-    const key = event.key;
-    if (!["Control", "Meta", "Shift", "Alt"].includes(key)) {
-      // Format the key name
-      let formattedKey = key;
-      if (key.length === 1) {
-        formattedKey = key.toUpperCase();
-      } else if (key === " ") {
-        formattedKey = "Space";
-      } else {
-        // Capitalize first letter for keys like "Enter", "Escape", etc.
-        formattedKey = key.charAt(0).toUpperCase() + key.slice(1);
-      }
-      keys.push(formattedKey);
-    }
-    
-    // Only update if we have a complete shortcut
-    if (keys.length > 0 && !["Shift", "Alt", "Mod"].includes(keys[keys.length - 1])) {
-      const shortcut = keys.join("+");
-      updateKeyboard({ [field]: shortcut });
-    }
-  };
-
   return (
     <div className="grid gap-6">
       <Card>
@@ -89,13 +46,10 @@ export function KeyboardTab() {
               <Label htmlFor="shortcut-quick">{t("settings.keyboard.shortcuts.quick_query")}</Label>
               {renderShortcut(settings.keyboard.quickQuery)}
             </div>
-            <Input
+            <KbdInput
               id="shortcut-quick"
               value={settings.keyboard.quickQuery}
-              onKeyDown={(event) => handleKeyDown(event, "quickQuery")}
-              onChange={(event) =>
-                updateKeyboard({ quickQuery: event.target.value })
-              }
+              onChange={(value) => updateKeyboard({ quickQuery: value })}
               placeholder="Mod+Enter"
             />
           </div>
@@ -104,13 +58,10 @@ export function KeyboardTab() {
               <Label htmlFor="shortcut-new">{t("settings.keyboard.shortcuts.new_query")}</Label>
               {renderShortcut(settings.keyboard.newQuery)}
             </div>
-            <Input
+            <KbdInput
               id="shortcut-new"
               value={settings.keyboard.newQuery}
-              onKeyDown={(event) => handleKeyDown(event, "newQuery")}
-              onChange={(event) =>
-                updateKeyboard({ newQuery: event.target.value })
-              }
+              onChange={(value) => updateKeyboard({ newQuery: value })}
               placeholder="Mod+Shift+K"
             />
           </div>
