@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,17 +10,25 @@ type SearchFormProps = {
   initialValue?: string;
 };
 
-export function SearchForm({
-  onSearch,
-  isSearching,
-  initialValue = "",
-}: SearchFormProps) {
-  const { t } = useTranslation();
-  const [value, setValue] = useState(initialValue);
+export interface SearchFormRef {
+  focusInput: () => void;
+}
 
-  useEffect(() => {
-    setValue(initialValue);
-  }, [initialValue]);
+export const SearchForm = forwardRef<SearchFormRef, SearchFormProps>(
+  ({ onSearch, isSearching, initialValue = "" }, ref) => {
+    const { t } = useTranslation();
+    const [value, setValue] = useState(initialValue);
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+      setValue(initialValue);
+    }, [initialValue]);
+
+    useImperativeHandle(ref, () => ({
+      focusInput: () => {
+        inputRef.current?.focus();
+      },
+    }));
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -34,6 +42,7 @@ export function SearchForm({
     >
       <Search className="text-muted-foreground size-4" />
       <Input
+        ref={inputRef}
         value={value}
         onChange={(event) => setValue(event.target.value)}
         placeholder={t("main.search.placeholder")}
@@ -44,5 +53,6 @@ export function SearchForm({
         {isSearching ? t("main.search.searching") : t("main.search.button")}
       </Button>
     </form>
-  );
-}
+    );
+  }
+);
