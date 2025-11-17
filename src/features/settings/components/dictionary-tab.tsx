@@ -28,7 +28,8 @@ export function DictionaryTab() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
   const [downloadDialogOpen, setDownloadDialogOpen] = useState(false);
-  const [downloadOptions, setDownloadOptions] = useState<DownloadOptions | null>(null);
+  const [downloadOptions, setDownloadOptions] =
+    useState<DownloadOptions | null>(null);
 
   const handleBrowseFolder = async () => {
     try {
@@ -97,8 +98,12 @@ export function DictionaryTab() {
       const cachePath = settings.dictionary.cachePath.replace(/[\/\\]+$/, ""); // Remove trailing slashes
 
       // Extract to parent directory since zip contains 'dictionary' folder
-      const lastSlashIndex = Math.max(cachePath.lastIndexOf("/"), cachePath.lastIndexOf("\\"));
-      const parentDir = lastSlashIndex > 0 ? cachePath.substring(0, lastSlashIndex) : cachePath;
+      const lastSlashIndex = Math.max(
+        cachePath.lastIndexOf("/"),
+        cachePath.lastIndexOf("\\")
+      );
+      const parentDir =
+        lastSlashIndex > 0 ? cachePath.substring(0, lastSlashIndex) : cachePath;
       const zipPath = `${parentDir}/${zipFileName}`;
 
       const options: DownloadOptions = {
@@ -156,7 +161,9 @@ export function DictionaryTab() {
           </CardHeader>
           <CardContent className="grid gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="cache-path">{t("settings.dictionary.cache.label")}</Label>
+              <Label htmlFor="cache-path">
+                {t("settings.dictionary.cache.label")}
+              </Label>
               <div className="flex gap-2">
                 <Input
                   id="cache-path"
@@ -180,13 +187,21 @@ export function DictionaryTab() {
               <span>{t("settings.dictionary.cache.last_updated")}</span>
               <span className="font-medium text-foreground">
                 {settings.dictionary.lastUpdated
-                  ? formatDistanceToNow(new Date(settings.dictionary.lastUpdated), {
-                      addSuffix: true,
-                    })
+                  ? formatDistanceToNow(
+                      new Date(settings.dictionary.lastUpdated),
+                      {
+                        addSuffix: true,
+                      }
+                    )
                   : t("settings.dictionary.cache.never")}
               </span>
             </div>
             <div className="flex flex-wrap gap-2">
+              <Button onClick={handleRedownload} disabled={isRefreshing}>
+                {isRefreshing
+                  ? "Refreshing…"
+                  : t("settings.dictionary.cache.button_redownload")}
+              </Button>
               <Button
                 variant="outline"
                 onClick={handleCheckCompleteness}
@@ -195,9 +210,6 @@ export function DictionaryTab() {
                 {isChecking
                   ? t("settings.dictionary.cache.button_checking")
                   : t("settings.dictionary.cache.button_check")}
-              </Button>
-              <Button onClick={handleRedownload} disabled={isRefreshing}>
-                {isRefreshing ? "Refreshing…" : t("settings.dictionary.cache.button_redownload")}
               </Button>
               <Button variant="outline" onClick={handleOpenCache}>
                 {t("settings.dictionary.cache.button_show")}
