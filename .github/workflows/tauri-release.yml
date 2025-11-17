@@ -1,0 +1,150 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    name: Build ${{ matrix.os_name }} ${{ matrix.arch }}
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+    defaults:
+      run:
+        shell: bash
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            os_name: macos
+            arch: arm64
+            build_args: "--target aarch64-apple-darwin"
+            rust_target: "aarch64-apple-darwin"
+          - os: macos-latest
+            os_name: macos
+            arch: x86_64
+            build_args: "--target x86_64-apple-darwin"
+            rust_target: "x86_64-apple-darwin"
+          - os: ubuntu-22.04
+            os_name: linux
+            arch: x86_64
+            build_args: ""
+            rust_target: ""
+          - os: windows-latest
+            os_name: windows
+            arch: x86_64
+            build_args: ""
+            rust_target: ""
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "latest"
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust_target }}
+
+      - name: Install Linux dependencies
+        if: matrix.os == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.0-dev \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf
+
+      - name: Install Windows dependencies (WiX + NSIS)
+        if: matrix.os == 'windows-latest'
+        run: |
+          choco install wixtoolset nsis --no-progress -y
+
+      - name: Install frontend dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Derive version from tag
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+
+      - name: Build Tauri app
+        run: |
+          bun tauri build ${{ matrix.build_args }}
+
+      - name: Collect and rename artifact
+        run: |
+          set -euo pipefail
+
+          ART_DIR="src-tauri/target/release/bundle"
+
+          case "${{ matrix.os_name }}" in
+            macos)
+              EXT="dmg"
+              ART=$(find "$ART_DIR/dmg" -maxdepth 1 -name '*.dmg' | head -n 1 || true)
+              ;;
+            windows)
+              ART=$(find "$ART_DIR/msi" -maxdepth 1 -name '*.msi' | head -n 1 || true)
+              if [ -n "${ART:-}" ]; then
+                EXT="msi"
+              else
+                ART=$(find "$ART_DIR/nsis" -maxdepth 1 -name '*.exe' | head -n 1 || true)
+                EXT="exe"
+              fi
+              ;;
+            linux)
+              EXT="AppImage"
+              ART=$(find "$ART_DIR/appimage" -maxdepth 1 -name '*.AppImage' | head -n 1 || true)
+              ;;
+          esac
+
+          if [ -z "${ART:-}" ]; then
+            echo "Failed to find artifact in $ART_DIR" >&2
+            ls -R "$ART_DIR" || true
+            exit 1
+          fi
+
+          mkdir -p release
+          DEST="release/Aictionary-${VERSION}_${{ matrix.os_name }}_${{ matrix.arch }}.${EXT}"
+          cp "$ART" "$DEST"
+
+          echo "RENAMED_ARTIFACT=$DEST" >> "$GITHUB_ENV"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Aictionary-${{ env.VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}
+          path: ${{ env.RENAMED_ARTIFACT }}
+
+  release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Derive version from tag
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "Aictionary v${{ env.VERSION }}"
+          body: "Automated release for Aictionary v${{ env.VERSION }}."
+          files: dist/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
