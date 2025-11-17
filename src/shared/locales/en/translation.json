@@ -148,9 +148,10 @@
       },
       "desktop": {
         "title": "Desktop integration",
-        "description": "Control the tray icon and whether AIctionary starts automatically.",
+        "description": "Control the tray icon, dock icon, and whether AIctionary starts automatically.",
         "tray_label": "Show tray icon",
-        "startup_label": "Start AIctionary at login"
+        "startup_label": "Start AIictionary at login",
+        "dock_label": "Show dock/taskbar icon"
       }
     },
     "language": {

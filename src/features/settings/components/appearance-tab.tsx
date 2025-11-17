@@ -195,6 +195,19 @@ export function AppearanceTab() {
               }
             />
           </div>
+          <div className="flex items-center justify-between gap-4">
+            <div className="space-y-0.5">
+              <p className="text-sm font-medium">
+                {t("settings.appearance.desktop.dock_label")}
+              </p>
+            </div>
+            <Switch
+              checked={settings.system.dockOrTaskbarVisible}
+              onCheckedChange={(checked) =>
+                updateSystem({ dockOrTaskbarVisible: checked })
+              }
+            />
+          </div>
         </CardContent>
       </Card>
     </div>

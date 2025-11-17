@@ -28,6 +28,7 @@ export const defaultSettings: AppSettings = {
   system: {
     trayIconEnabled: true,
     launchOnSystemStart: false,
+    dockOrTaskbarVisible: true,
   },
 };
 

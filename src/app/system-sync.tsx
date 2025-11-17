@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { setDockVisibility, hide as hideApp } from "@tauri-apps/api/app";
+import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { disable as disableAutostart, enable as enableAutostart, isEnabled as isAutostartEnabled } from "@tauri-apps/plugin-autostart";
 import { useSettings } from "@/features/settings/hooks/use-settings";
 
@@ -7,6 +9,7 @@ import { useSettings } from "@/features/settings/hooks/use-settings";
  * Bridges persisted settings to platform-specific behaviour:
  * - Toggles the native tray icon visibility.
  * - Keeps the OS-level autostart registration in sync with user preference.
+ * - Controls dock / taskbar visibility when the tray is enabled.
  */
 export function SystemSync() {
   const { settings, updateSystem } = useSettings();
@@ -27,6 +30,37 @@ export function SystemSync() {
 
     void applyTrayVisibility();
   }, [settings.system.trayIconEnabled]);
+
+  // Keep dock / taskbar visibility in sync with settings.
+  useEffect(() => {
+    const applyDockOrTaskbarVisibility = async () => {
+      const visible = settings.system.dockOrTaskbarVisible;
+
+      try {
+        // macOS: control dock visibility via Tauri app API.
+        await setDockVisibility(visible);
+        if (!visible) {
+          // Hiding the dock icon usually goes along with hiding the app
+          // so it appears only in the tray.
+          await hideApp();
+        }
+      } catch (error) {
+        // Non-mac platforms may throw or no-op here; log and continue.
+        console.warn("[SystemSync] Failed to update dock visibility:", error);
+      }
+
+      try {
+        // Windows / Linux (where supported): hide from taskbar when we have a tray.
+        const window = getCurrentWebviewWindow();
+        await window.setSkipTaskbar(!visible && settings.system.trayIconEnabled);
+      } catch (error) {
+        // Some platforms or window managers may not support this.
+        console.warn("[SystemSync] Failed to update taskbar visibility:", error);
+      }
+    };
+
+    void applyDockOrTaskbarVisibility();
+  }, [settings.system.dockOrTaskbarVisible, settings.system.trayIconEnabled]);
 
   // On first load, hydrate the autostart flag from the OS so that settings
   // reflect the real registration state.
@@ -83,4 +117,3 @@ export function SystemSync() {
 
   return null;
 }
-

@@ -1,14 +1,16 @@
+use tauri::Manager;
+
 // Module declarations
 mod dictionary;
 mod download;
 mod export;
 mod llm;
 mod shortcuts;
-#[cfg(all(desktop, feature = "tray-icon"))]
+#[cfg(desktop)]
 mod tray;
 
 #[tauri::command]
-#[cfg(all(desktop, feature = "tray-icon"))]
+#[cfg(desktop)]
 fn set_tray_visibility(app: tauri::AppHandle, visible: bool) -> Result<(), String> {
     if let Some(tray_icon) = app.tray_by_id(tray::TRAY_ID) {
         tray_icon
@@ -22,7 +24,7 @@ fn set_tray_visibility(app: tauri::AppHandle, visible: bool) -> Result<(), Strin
 // No-op fallback on platforms without tray support so the frontend
 // can still call the command without compile-time cfg gymnastics.
 #[tauri::command]
-#[cfg(not(all(desktop, feature = "tray-icon")))]
+#[cfg(not(desktop))]
 fn set_tray_visibility(_app: tauri::AppHandle, _visible: bool) -> Result<(), String> {
     Ok(())
 }
@@ -36,11 +38,27 @@ pub fn run() {
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_autostart::Builder::new().build())
         .setup(|app| {
-            #[cfg(all(desktop, feature = "tray-icon"))]
+            #[cfg(desktop)]
             {
+                use tauri::WindowEvent;
+
                 let handle = app.handle();
+
+                // Initialize tray icon and menu.
                 tray::init_tray(&handle)?;
                 tray::register_menu_handler(&handle);
+
+                // Prevent exiting the app when the main window is closed:
+                // instead, hide the window so the app keeps running in the tray.
+                if let Some(main_window) = handle.get_webview_window("main") {
+                    let window_for_event = main_window.clone();
+                    main_window.on_window_event(move |event| {
+                        if let WindowEvent::CloseRequested { api, .. } = event {
+                            api.prevent_close();
+                            let _ = window_for_event.hide();
+                        }
+                    });
+                }
             }
 
             Ok(())

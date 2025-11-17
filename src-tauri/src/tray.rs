@@ -8,7 +8,7 @@
 //!   via a dedicated event.
 //! - Exit: cleanly exits the application.
 
-#![cfg(all(desktop, feature = "tray-icon"))]
+#![cfg(desktop)]
 
 use tauri::{
     menu::MenuBuilder,
@@ -103,4 +103,3 @@ fn handle_about(app: &AppHandle) {
     // Ask the frontend to navigate to Settings → About.
     let _ = app.emit("open-settings-about", ());
 }
-

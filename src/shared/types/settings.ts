@@ -31,6 +31,8 @@ export type SystemSettings = {
   trayIconEnabled: boolean;
   /** Whether the app should start automatically when the user logs in. */
   launchOnSystemStart: boolean;
+  /** Whether the app's dock / taskbar icon should be shown when the tray is enabled. */
+  dockOrTaskbarVisible: boolean;
 };
 
 export type AppSettings = {

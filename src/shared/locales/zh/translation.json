@@ -148,9 +148,10 @@
       },
       "desktop": {
         "title": "桌面集成",
-        "description": "控制托盘图标以及应用是否随系统启动。",
+        "description": "控制托盘图标、Dock 图标以及应用是否随系统启动。",
         "tray_label": "显示托盘图标",
-        "startup_label": "开机后自动启动 AIctionary"
+        "startup_label": "开机后自动启动 AIctionary",
+        "dock_label": "显示 Dock / 任务栏图标"
       }
     },
     "language": {
