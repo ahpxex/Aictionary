@@ -1,8 +1,12 @@
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { setDockVisibility, hide as hideApp } from "@tauri-apps/api/app";
+import { setDockVisibility } from "@tauri-apps/api/app";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
-import { disable as disableAutostart, enable as enableAutostart, isEnabled as isAutostartEnabled } from "@tauri-apps/plugin-autostart";
+import {
+  disable as disableAutostart,
+  enable as enableAutostart,
+  isEnabled as isAutostartEnabled,
+} from "@tauri-apps/plugin-autostart";
 import { useSettings } from "@/features/settings/hooks/use-settings";
 
 /**
@@ -39,11 +43,6 @@ export function SystemSync() {
       try {
         // macOS: control dock visibility via Tauri app API.
         await setDockVisibility(visible);
-        if (!visible) {
-          // Hiding the dock icon usually goes along with hiding the app
-          // so it appears only in the tray.
-          await hideApp();
-        }
       } catch (error) {
         // Non-mac platforms may throw or no-op here; log and continue.
         console.warn("[SystemSync] Failed to update dock visibility:", error);
