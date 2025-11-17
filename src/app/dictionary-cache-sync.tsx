@@ -27,8 +27,6 @@ import { MIN_FULL_DICTIONARY_ENTRIES } from "@/shared/constants/dictionary";
 export function DictionaryCacheSync() {
   const { t } = useTranslation();
   const { settings, updateDictionary } = useSettings();
-  const isInitializingRef = useRef(false);
-  const hasInitializedRef = useRef(false);
   const [downloadDialogOpen, setDownloadDialogOpen] = useState(false);
   const [downloadOptions, setDownloadOptions] = useState<DownloadOptions | null>(null);
   const [resolvedCachePath, setResolvedCachePath] = useState<string | null>(null);
@@ -41,11 +39,6 @@ export function DictionaryCacheSync() {
   }, [settings]);
 
   useEffect(() => {
-    if (hasInitializedRef.current || isInitializingRef.current) {
-      return;
-    }
-
-    isInitializingRef.current = true;
     let cancelled = false;
 
     const initializePath = async () => {
@@ -129,9 +122,6 @@ export function DictionaryCacheSync() {
         }
       } catch (error) {
         console.warn("Failed to initialize dictionary cache path:", error);
-      } finally {
-        isInitializingRef.current = false;
-        hasInitializedRef.current = true;
       }
     };
 
