@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useSettings } from "@/features/settings/hooks/use-settings";
 import { cn } from "@/lib/utils";
@@ -57,7 +58,7 @@ const languageOptions = [
 
 export function AppearanceTab() {
   const { t } = useTranslation();
-  const { settings, updateTheme, updateLanguage } = useSettings();
+  const { settings, updateTheme, updateLanguage, updateSystem } = useSettings();
 
   return (
     <div className="grid gap-6">
@@ -156,6 +157,43 @@ export function AppearanceTab() {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("settings.appearance.desktop.title")}</CardTitle>
+          <CardDescription>
+            {t("settings.appearance.desktop.description")}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <div className="flex items-center justify-between gap-4">
+            <div className="space-y-0.5">
+              <p className="text-sm font-medium">
+                {t("settings.appearance.desktop.tray_label")}
+              </p>
+            </div>
+            <Switch
+              checked={settings.system.trayIconEnabled}
+              onCheckedChange={(checked) =>
+                updateSystem({ trayIconEnabled: checked })
+              }
+            />
+          </div>
+          <div className="flex items-center justify-between gap-4">
+            <div className="space-y-0.5">
+              <p className="text-sm font-medium">
+                {t("settings.appearance.desktop.startup_label")}
+              </p>
+            </div>
+            <Switch
+              checked={settings.system.launchOnSystemStart}
+              onCheckedChange={(checked) =>
+                updateSystem({ launchOnSystemStart: checked })
+              }
+            />
           </div>
         </CardContent>
       </Card>

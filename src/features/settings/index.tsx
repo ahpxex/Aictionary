@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { useLocation, useNavigate } from "react-router";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AppearanceTab } from "@/features/settings/components/appearance-tab";
 import { LlmProvidersTab } from "@/features/settings/components/llm-tab";
@@ -14,11 +15,32 @@ const tabs = [
   { value: "about", labelKey: "settings.tabs.about" },
 ] as const;
 
+type SettingsTabValue = (typeof tabs)[number]["value"];
+
 export function SettingsPage() {
   const { t } = useTranslation();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const pathSegment = location.pathname.split("/")[2] || "appearance";
+  const currentTab: SettingsTabValue = tabs.some(
+    (tab) => tab.value === pathSegment
+  )
+    ? (pathSegment as SettingsTabValue)
+    : "appearance";
+
+  const handleTabChange = (value: string) => {
+    const tab = value as SettingsTabValue;
+    const path = tab === "appearance" ? "/settings" : `/settings/${tab}`;
+    navigate(path);
+  };
 
   return (
-    <Tabs defaultValue="appearance" className="flex flex-1 flex-col gap-6">
+    <Tabs
+      value={currentTab}
+      onValueChange={handleTabChange}
+      className="flex flex-1 flex-col gap-6"
+    >
       <TabsList>
         {tabs.map((tab) => (
           <TabsTrigger key={tab.value} value={tab.value}>

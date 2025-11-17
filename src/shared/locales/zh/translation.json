@@ -145,6 +145,12 @@
         "green": "绿色",
         "orange": "橙色",
         "rose": "玫瑰红"
+      },
+      "desktop": {
+        "title": "桌面集成",
+        "description": "控制托盘图标以及应用是否随系统启动。",
+        "tray_label": "显示托盘图标",
+        "startup_label": "开机后自动启动 AIctionary"
       }
     },
     "language": {

@@ -1,6 +1,7 @@
 import { Outlet, NavLink, useNavigate } from "react-router";
 import { BookOpenText, LineChart, Settings } from "lucide-react";
-import { ReactNode } from "react";
+import { ReactNode, useEffect } from "react";
+import { listen } from "@tauri-apps/api/event";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { useSettings } from "@/features/settings/hooks/use-settings";
@@ -42,6 +43,17 @@ export function AppLayout() {
       window.dispatchEvent(new CustomEvent("focus-search-input"));
     },
   });
+
+  // React to tray menu "About" clicks by navigating to Settings → About.
+  useEffect(() => {
+    const unlistenPromise = listen("open-settings-about", () => {
+      navigate("/settings/about");
+    });
+
+    return () => {
+      unlistenPromise.then((unlisten) => unlisten());
+    };
+  }, [navigate]);
 
   return (
     <div className="bg-background text-foreground flex min-h-screen flex-col">

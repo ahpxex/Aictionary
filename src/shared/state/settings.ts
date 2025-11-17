@@ -25,6 +25,10 @@ export const defaultSettings: AppSettings = {
     version: "0.1.0",
     build: "dev",
   },
+  system: {
+    trayIconEnabled: true,
+    launchOnSystemStart: false,
+  },
 };
 
 export const settingsAtom = atomWithStorage<AppSettings>(
@@ -38,4 +42,3 @@ export const updateSettingsAtom = atom(
     set(settingsAtom, { ...get(settingsAtom), ...update });
   }
 );
-

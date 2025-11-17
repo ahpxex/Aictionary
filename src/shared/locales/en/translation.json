@@ -145,6 +145,12 @@
         "green": "Green",
         "orange": "Orange",
         "rose": "Rose"
+      },
+      "desktop": {
+        "title": "Desktop integration",
+        "description": "Control the tray icon and whether AIctionary starts automatically.",
+        "tray_label": "Show tray icon",
+        "startup_label": "Start AIctionary at login"
       }
     },
     "language": {

@@ -26,6 +26,13 @@ export type AboutMetadata = {
   build: string;
 };
 
+export type SystemSettings = {
+  /** Whether the tray icon should be visible on supported desktop platforms. */
+  trayIconEnabled: boolean;
+  /** Whether the app should start automatically when the user logs in. */
+  launchOnSystemStart: boolean;
+};
+
 export type AppSettings = {
   theme: ThemePreference;
   language: LanguagePreference;
@@ -33,5 +40,5 @@ export type AppSettings = {
   dictionary: DictionarySettings;
   keyboard: KeyboardShortcutSettings;
   about: AboutMetadata;
+  system: SystemSettings;
 };
-

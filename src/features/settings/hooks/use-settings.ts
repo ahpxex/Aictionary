@@ -1,16 +1,35 @@
 import { useAtom } from "jotai";
-import { useCallback } from "react";
-import { settingsAtom } from "@/shared/state/settings";
+import { useCallback, useMemo } from "react";
+import { defaultSettings, settingsAtom } from "@/shared/state/settings";
 import { AppSettings, ThemePreference } from "@/shared/types/settings";
 
 export function useSettings() {
-  const [settings, setSettings] = useAtom(settingsAtom);
+  const [storedSettings, setSettings] = useAtom(settingsAtom);
+
+  const mergeWithDefaults = useCallback(
+    (current: AppSettings): AppSettings => ({
+      ...defaultSettings,
+      ...current,
+      theme: { ...defaultSettings.theme, ...current.theme },
+      llm: { ...defaultSettings.llm, ...current.llm },
+      dictionary: { ...defaultSettings.dictionary, ...current.dictionary },
+      keyboard: { ...defaultSettings.keyboard, ...current.keyboard },
+      about: { ...defaultSettings.about, ...current.about },
+      system: { ...defaultSettings.system, ...current.system },
+    }),
+    []
+  );
+
+  const settings = useMemo<AppSettings>(
+    () => mergeWithDefaults(storedSettings),
+    [mergeWithDefaults, storedSettings]
+  );
 
   const updateSettings = useCallback(
     (updater: (current: AppSettings) => AppSettings) => {
-      setSettings((current) => updater(current));
+      setSettings((current) => updater(mergeWithDefaults(current)));
     },
-    [setSettings]
+    [mergeWithDefaults, setSettings]
   );
 
   const updateTheme = useCallback(
@@ -82,6 +101,23 @@ export function useSettings() {
     [updateSettings]
   );
 
+  const updateSystem = useCallback(
+    (
+      changes:
+        | Partial<AppSettings["system"]>
+        | ((prev: AppSettings["system"]) => AppSettings["system"])
+    ) => {
+      updateSettings((current) => ({
+        ...current,
+        system:
+          typeof changes === "function"
+            ? changes(current.system)
+            : { ...current.system, ...changes },
+      }));
+    },
+    [updateSettings]
+  );
+
   return {
     settings,
     updateSettings,
@@ -90,6 +126,6 @@ export function useSettings() {
     updateDictionary,
     updateKeyboard,
     updateLanguage,
+    updateSystem,
   };
 }
-
