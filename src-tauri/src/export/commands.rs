@@ -32,7 +32,7 @@ pub fn export_learned_words(
 }
 
 /// Export query metrics to a CSV file at the specified path.
-/// CSV format: Count,Word with headers.
+/// CSV format: Count,Word,Last Queried At with headers.
 #[tauri::command]
 pub fn export_query_metrics(
     app: AppHandle,
@@ -44,9 +44,9 @@ pub fn export_query_metrics(
     }
 
     // Build CSV content with headers
-    let mut content = String::from("Count,Word\n");
+    let mut content = String::from("Count,Word,Last Queried At\n");
     for metric in metrics {
-        let line = format!("{},{}\n", metric.count, metric.word);
+        let line = format!("{},{},{}\n", metric.count, metric.word, metric.last_queried_at);
         content.push_str(&line);
     }
 
