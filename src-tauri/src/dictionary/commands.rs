@@ -107,3 +107,40 @@ pub fn check_dictionary_cache_exists(cache_path: String) -> Result<bool, String>
 
     Ok(has_json_files)
 }
+
+/// Count the number of dictionary entry files in the cache directory.
+/// Returns the number of `.json` files found directly under the cache path.
+#[tauri::command]
+pub fn count_dictionary_entries(cache_path: String) -> Result<u64, String> {
+    let cache_path = cache_path.trim();
+    if cache_path.is_empty() {
+        return Ok(0);
+    }
+
+    let cache_dir = resolve_cache_dir(cache_path).map_err(|err| err.to_string())?;
+
+    if !cache_dir.exists() || !cache_dir.is_dir() {
+        return Ok(0);
+    }
+
+    let mut count: u64 = 0;
+
+    let entries = fs::read_dir(&cache_dir).map_err(|err| err.to_string())?;
+    for entry in entries {
+        let entry = match entry {
+            Ok(e) => e,
+            Err(_) => continue,
+        };
+
+        let path = entry.path();
+        if path.is_file() {
+            if let Some(ext) = path.extension().and_then(|ext| ext.to_str()) {
+                if ext.eq_ignore_ascii_case("json") {
+                    count += 1;
+                }
+            }
+        }
+    }
+
+    Ok(count)
+}

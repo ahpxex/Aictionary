@@ -200,6 +200,8 @@
         "title": "Cache management",
         "label": "Cache directory",
         "button_browse": "Browse folder",
+        "button_check": "Check cache completeness",
+        "button_checking": "Checking…",
         "button_redownload": "Re-download cache",
         "button_show": "Show in Finder",
         "button_clear": "Clear path",
@@ -213,8 +215,17 @@
           "Re-download only if the cache becomes corrupted or outdated."
         ]
       },
+      "incomplete": {
+        "title": "Dictionary cache may be incomplete",
+        "description": "The local dictionary cache contains only {{count}} entries. A full cache should have at least {{required}} entries. Do you want to re-download the cache now?",
+        "confirm": "Re-download cache",
+        "cancel": "Not now"
+      },
       "toast": {
         "browse_error": "Failed to browse folder.",
+        "check_complete": "Dictionary cache looks complete ({{count}} entries).",
+        "check_incomplete": "Dictionary cache may be incomplete ({{count}} entries, expected more than {{required}}).",
+        "check_error": "Failed to check cache completeness.",
         "redownload_success": "Cache re-downloaded successfully!",
         "redownload_error": "Failed to re-download cache.",
         "show_error": "Failed to open directory.",

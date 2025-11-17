@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import { toast } from "sonner";
 import { openPath } from "@tauri-apps/plugin-opener";
 import { open } from "@tauri-apps/plugin-dialog";
@@ -19,11 +20,13 @@ import { FolderOpen } from "lucide-react";
 import { DownloadDialog } from "@/shared/components/download-dialog";
 import { getLatestDictionaryRelease } from "@/shared/services/github-service";
 import type { DownloadOptions } from "@/shared/types/download";
+import { MIN_FULL_DICTIONARY_ENTRIES } from "@/shared/constants/dictionary";
 
 export function DictionaryTab() {
   const { t } = useTranslation();
   const { settings, updateDictionary } = useSettings();
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isChecking, setIsChecking] = useState(false);
   const [downloadDialogOpen, setDownloadDialogOpen] = useState(false);
   const [downloadOptions, setDownloadOptions] = useState<DownloadOptions | null>(null);
 
@@ -40,6 +43,41 @@ export function DictionaryTab() {
     } catch (error) {
       console.warn("Failed to browse folder:", error);
       toast.error(t("settings.dictionary.toast.browse_error"));
+    }
+  };
+
+  const handleCheckCompleteness = async () => {
+    const cachePath = settings.dictionary.cachePath.trim();
+    if (!cachePath) {
+      toast.error(t("settings.dictionary.toast.browse_error"));
+      return;
+    }
+
+    setIsChecking(true);
+    try {
+      const count = await invoke<number>("count_dictionary_entries", {
+        cachePath,
+      });
+
+      if (count > MIN_FULL_DICTIONARY_ENTRIES) {
+        toast.success(
+          t("settings.dictionary.toast.check_complete", {
+            count,
+          })
+        );
+      } else {
+        toast.warning(
+          t("settings.dictionary.toast.check_incomplete", {
+            count,
+            required: MIN_FULL_DICTIONARY_ENTRIES,
+          })
+        );
+      }
+    } catch (error) {
+      console.warn("Failed to check dictionary cache completeness:", error);
+      toast.error(t("settings.dictionary.toast.check_error"));
+    } finally {
+      setIsChecking(false);
     }
   };
 
@@ -149,6 +187,15 @@ export function DictionaryTab() {
               </span>
             </div>
             <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                onClick={handleCheckCompleteness}
+                disabled={isChecking}
+              >
+                {isChecking
+                  ? t("settings.dictionary.cache.button_checking")
+                  : t("settings.dictionary.cache.button_check")}
+              </Button>
               <Button onClick={handleRedownload} disabled={isRefreshing}>
                 {isRefreshing ? "Refreshing…" : t("settings.dictionary.cache.button_redownload")}
               </Button>

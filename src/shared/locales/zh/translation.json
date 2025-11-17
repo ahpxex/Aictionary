@@ -200,6 +200,8 @@
         "title": "缓存管理",
         "label": "缓存目录",
         "button_browse": "浏览文件夹",
+        "button_check": "检查缓存完整性",
+        "button_checking": "检查中…",
         "button_redownload": "重新下载缓存",
         "button_show": "在访达中显示",
         "button_clear": "清除路径",
@@ -213,8 +215,17 @@
           "仅在缓存损坏或过时时重新下载。"
         ]
       },
+      "incomplete": {
+        "title": "词典缓存可能不完整",
+        "description": "本地词典缓存仅包含 {{count}} 条记录，完整缓存应至少包含 {{required}} 条。是否现在重新下载缓存？",
+        "confirm": "重新下载缓存",
+        "cancel": "暂不"
+      },
       "toast": {
         "browse_error": "浏览文件夹失败。",
+        "check_complete": "词典缓存看起来是完整的（{{count}} 条记录）。",
+        "check_incomplete": "词典缓存可能不完整（{{count}} 条记录，预期应多于 {{required}} 条）。",
+        "check_error": "检查缓存完整性失败。",
         "redownload_success": "缓存重新下载成功！",
         "redownload_error": "重新下载缓存失败。",
         "show_error": "打开目录失败。",

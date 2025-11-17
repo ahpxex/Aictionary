@@ -18,6 +18,7 @@ pub fn run() {
             dictionary::upsert_dictionary_entry,
             dictionary::get_default_dictionary_path,
             dictionary::check_dictionary_cache_exists,
+            dictionary::count_dictionary_entries,
             // LLM commands
             llm::test_llm_provider,
             // Export commands
