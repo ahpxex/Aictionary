@@ -1,8 +1,11 @@
-import { Outlet, NavLink } from "react-router";
+import { Outlet, NavLink, useNavigate } from "react-router";
 import { BookOpenText, LineChart, Settings } from "lucide-react";
 import { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
+import { useSettings } from "@/features/settings/hooks/use-settings";
+import { useDictionarySearch } from "@/features/main/hooks/use-dictionary-search";
+import { useGlobalShortcuts } from "@/shared/hooks/use-global-shortcuts";
 
 type NavItem = {
   to: string;
@@ -18,6 +21,27 @@ const NAV_ITEMS: NavItem[] = [
 
 export function AppLayout() {
   const { t } = useTranslation();
+  const { settings } = useSettings();
+  const navigate = useNavigate();
+  const { search } = useDictionarySearch();
+
+  // Global keyboard shortcuts are wired here so they work regardless of
+  // which main tab (dictionary/statistics/settings) is currently active.
+  useGlobalShortcuts({
+    quickQuery: settings.keyboard.quickQuery,
+    newQuery: settings.keyboard.newQuery,
+    onQuickQuery: (text) => {
+      // Ensure we're on the dictionary tab, then run the search.
+      navigate("/");
+      search(text);
+    },
+    onNewQuery: () => {
+      // Switch to the dictionary tab first, then ask the main page
+      // to focus the search input via a window-level custom event.
+      navigate("/");
+      window.dispatchEvent(new CustomEvent("focus-search-input"));
+    },
+  });
 
   return (
     <div className="bg-background text-foreground flex min-h-screen flex-col">

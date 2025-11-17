@@ -28,6 +28,45 @@ fn normalize_shortcut(shortcut: &str) -> String {
     normalized_parts.join("+")
 }
 
+/// Best-effort simulation of a copy shortcut (`Cmd+C` / `Ctrl+C`) in the
+/// currently active application so that the user's selection is placed
+/// on the clipboard before we read it.
+fn simulate_copy_shortcut() {
+    // macOS: use AppleScript to send Command+C to the frontmost app.
+    #[cfg(target_os = "macos")]
+    {
+        use std::process::Command;
+
+        let _ = Command::new("osascript")
+            .arg("-e")
+            .arg(r#"tell application "System Events" to keystroke "c" using {command down}"#)
+            .status();
+    }
+
+    // Windows: use PowerShell + WScript.Shell to send Ctrl+C.
+    #[cfg(target_os = "windows")]
+    {
+        use std::process::Command;
+
+        let _ = Command::new("powershell")
+            .args([
+                "-Command",
+                r#"$wsh = New-Object -ComObject WScript.Shell; $wsh.SendKeys('^c')"#,
+            ])
+            .status();
+    }
+
+    // Linux / other Unix: rely on xdotool if available.
+    #[cfg(all(unix, not(target_os = "macos")))]
+    {
+        use std::process::Command;
+
+        let _ = Command::new("xdotool")
+            .args(["key", "ctrl+c"])
+            .status();
+    }
+}
+
 #[tauri::command]
 pub async fn setup_shortcuts<R: Runtime>(
     app: AppHandle<R>,
@@ -63,8 +102,12 @@ pub async fn setup_shortcuts<R: Runtime>(
             if event.state == ShortcutState::Pressed {
                 let app_handle = app_handle.clone();
                 tauri::async_runtime::spawn(async move {
+                    // First, simulate the standard copy shortcut in the active application
+                    // so that the current selection is pushed to the clipboard.
+                    simulate_copy_shortcut();
+
                     // Read from clipboard
-                    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+                    tokio::time::sleep(tokio::time::Duration::from_millis(150)).await;
 
                     if let Ok(clipboard_text) = app_handle.clipboard().read_text() {
                         if !clipboard_text.trim().is_empty() {

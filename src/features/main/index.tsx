@@ -1,8 +1,6 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useDictionarySearch } from "@/features/main/hooks/use-dictionary-search";
-import { useGlobalShortcuts } from "@/shared/hooks/use-global-shortcuts";
-import { useSettings } from "@/features/settings/hooks/use-settings";
 import { ComparisonList } from "@/features/main/components/comparison-list";
 import { DefinitionsList } from "@/features/main/components/definitions-list";
 import { SearchForm } from "@/features/main/components/search-form";
@@ -10,23 +8,21 @@ import { WordSummaryCard } from "@/features/main/components/word-summary";
 
 export function MainPage() {
   const { t } = useTranslation();
-  const { settings } = useSettings();
   const { isSearching, isGeneratingFromLlm, generatingModel, result, search } = useDictionarySearch();
   const searchFormRef = useRef<{ focusInput: () => void }>(null);
 
-  // Setup global shortcuts
-  useGlobalShortcuts({
-    quickQuery: settings.keyboard.quickQuery,
-    newQuery: settings.keyboard.newQuery,
-    onQuickQuery: (text) => {
-      // Perform search with clipboard text
-      search(text);
-    },
-    onNewQuery: () => {
-      // Focus the search input
+  // When a global "new-query" shortcut is triggered, the layout dispatches
+  // a window-level event that we listen for here to focus the search box.
+  useEffect(() => {
+    const handleFocusSearch = () => {
       searchFormRef.current?.focusInput();
-    },
-  });
+    };
+
+    window.addEventListener("focus-search-input", handleFocusSearch);
+    return () => {
+      window.removeEventListener("focus-search-input", handleFocusSearch);
+    };
+  }, []);
 
   return (
     <div className="flex flex-1 flex-col gap-8">
