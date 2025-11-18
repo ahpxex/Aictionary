@@ -3,7 +3,7 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 import { Kbd, KbdGroup } from "@/components/ui/kbd"
 
-interface KbdInputProps extends Omit<React.ComponentProps<"input">, "onKeyDown"> {
+interface KbdInputProps extends Omit<React.ComponentProps<"input">, "onKeyDown" | "onChange"> {
   value?: string
   onChange?: (value: string) => void
   onKeyDown?: (event: React.KeyboardEvent<HTMLInputElement>) => void
