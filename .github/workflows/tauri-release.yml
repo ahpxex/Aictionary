@@ -91,7 +91,14 @@ jobs:
         run: |
           set -euo pipefail
 
-          ART_DIR="src-tauri/target/release/bundle"
+          # For cross-compiled targets (like macOS arm64/x86_64) Cargo places
+          # artifacts under target/<triple>/release. For native targets (Linux/Windows),
+          # the path is target/release. Use matrix.rust_target when present.
+          if [ -n "${{ matrix.rust_target }}" ]; then
+            ART_DIR="src-tauri/target/${{ matrix.rust_target }}/release/bundle"
+          else
+            ART_DIR="src-tauri/target/release/bundle"
+          fi
 
           case "${{ matrix.os_name }}" in
             macos)
