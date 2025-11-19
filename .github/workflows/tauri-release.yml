@@ -131,7 +131,17 @@ jobs:
           DEST="release/Aictionary-${VERSION}_${{ matrix.os_name }}_${{ matrix.arch }}.${EXT}"
           cp "$ART" "$DEST"
 
-          echo "RENAMED_ARTIFACT=$DEST" >> "$GITHUB_ENV"
+          if [ "${{ matrix.os_name }}" == "windows" ]; then
+            BIN_PATH="src-tauri/target/release/aictionary-re.exe"
+            if [ -f "$BIN_PATH" ]; then
+              ZIP_DEST="release/Aictionary-${VERSION}_windows_${{ matrix.arch }}_portable.zip"
+              cp "$BIN_PATH" "Aictionary.exe"
+              powershell -Command "Compress-Archive -Path 'Aictionary.exe' -DestinationPath '$ZIP_DEST'"
+              rm "Aictionary.exe"
+            fi
+          fi
+
+          echo "RENAMED_ARTIFACT=release/*" >> "$GITHUB_ENV"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
