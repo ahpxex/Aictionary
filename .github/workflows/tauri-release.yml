@@ -81,9 +81,6 @@ jobs:
       - name: Install frontend dependencies
         run: bun install --frozen-lockfile
 
-      - name: Derive version from tag
-        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
-
       - name: Build Tauri app
         run: |
           bun tauri build ${{ matrix.build_args }}
@@ -128,13 +125,13 @@ jobs:
           fi
 
           mkdir -p release
-          DEST="release/Aictionary-${VERSION}_${{ matrix.os_name }}_${{ matrix.arch }}.${EXT}"
+          DEST="release/Aictionary-${GITHUB_REF_NAME}_${{ matrix.os_name }}_${{ matrix.arch }}.${EXT}"
           cp "$ART" "$DEST"
 
           if [ "${{ matrix.os_name }}" == "windows" ]; then
             BIN_PATH="src-tauri/target/release/aictionary-re.exe"
             if [ -f "$BIN_PATH" ]; then
-              ZIP_DEST="release/Aictionary-${VERSION}_windows_${{ matrix.arch }}_portable.zip"
+              ZIP_DEST="release/Aictionary-${GITHUB_REF_NAME}_windows_${{ matrix.arch }}_portable.zip"
               cp "$BIN_PATH" "Aictionary.exe"
               powershell -Command "Compress-Archive -Path 'Aictionary.exe' -DestinationPath '$ZIP_DEST'"
               rm "Aictionary.exe"
@@ -146,7 +143,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Aictionary-${{ env.VERSION }}_${{ matrix.os_name }}_${{ matrix.arch }}
+          name: Aictionary-${{ github.ref_name }}_${{ matrix.os_name }}_${{ matrix.arch }}
           path: ${{ env.RENAMED_ARTIFACT }}
 
   release:
@@ -162,15 +159,23 @@ jobs:
           path: dist
           merge-multiple: true
 
-      - name: Derive version from tag
-        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+      - name: Generate Release Body
+        run: |
+          echo "### Downloads" > release_body.md
+          echo "" >> release_body.md
+          echo "| File |" >> release_body.md
+          echo "| :--- |" >> release_body.md
+          for file in dist/*; do
+            filename=$(basename "$file")
+            echo "| [$filename](https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/$filename) |" >> release_body.md
+          done
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
-          name: "Aictionary v${{ env.VERSION }}"
-          body: "Automated release for Aictionary v${{ env.VERSION }}."
+          name: "Aictionary ${{ github.ref_name }}"
+          body_path: release_body.md
           files: dist/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
