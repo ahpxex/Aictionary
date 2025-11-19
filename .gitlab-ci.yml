@@ -1,0 +1,130 @@
+stages:
+  - build
+  - release
+
+variables:
+  RUST_BACKTRACE: 1
+  # Using the Generic Package Registry for release assets
+  PACKAGE_REGISTRY_URL: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/aictionary-re/${CI_COMMIT_TAG}"
+
+.build-common:
+  stage: build
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v/
+  interruptible: true
+
+# --- Linux Build (Ubuntu) ---
+build:linux:
+  extends: .build-common
+  image: rust:latest
+  before_script:
+    - apt-get update && apt-get install -y libwebkit2gtk-4.0-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf curl unzip
+    - curl -fsSL https://bun.sh/install | bash
+    - export BUN_INSTALL="$HOME/.bun"
+    - export PATH="$BUN_INSTALL/bin:$PATH"
+  script:
+    - export VERSION=${CI_COMMIT_TAG#v}
+    - bun install --frozen-lockfile
+    - bun tauri build
+    - mkdir -p release
+    # Locate and rename AppImage
+    - APPIMAGE=$(find src-tauri/target/release/bundle/appimage -maxdepth 1 -name '*.AppImage' | head -n 1)
+    - |
+      if [ -n "$APPIMAGE" ]; then
+        cp "$APPIMAGE" "release/Aictionary-${VERSION}_linux_x86_64.AppImage"
+      else
+        echo "AppImage not found!"
+        exit 1
+      fi
+  artifacts:
+    paths:
+      - release/
+    expire_in: 1 week
+
+# --- Windows Build ---
+build:windows:
+  extends: .build-common
+  tags:
+    - saas-windows-medium-amd64
+  script:
+    - $VERSION = $env:CI_COMMIT_TAG.TrimStart('v')
+    # Install Bun
+    - powershell -c "irm bun.sh/install.ps1 | iex"
+    - $env:PATH = "$env:USERPROFILE\.bun\bin;$env:PATH"
+    # Install dependencies (WiX, NSIS are often pre-installed on SaaS, but we ensure)
+    - choco install wixtoolset nsis --no-progress -y
+    - bun install --frozen-lockfile
+    - bun tauri build
+    - New-Item -ItemType Directory -Force -Path release
+    # Locate and rename MSI/EXE
+    - $MSI = Get-ChildItem src-tauri/target/release/bundle/msi/*.msi | Select-Object -First 1
+    - if ($MSI) { Copy-Item $MSI.FullName -Destination "release/Aictionary-${VERSION}_windows_x86_64.msi" }
+    - $EXE = Get-ChildItem src-tauri/target/release/bundle/nsis/*.exe | Select-Object -First 1
+    - if ($EXE) { Copy-Item $EXE.FullName -Destination "release/Aictionary-${VERSION}_windows_x86_64.exe" }
+    # Portable Zip Logic
+    - $BIN_PATH = "src-tauri/target/release/aictionary-re.exe"
+    - if (Test-Path $BIN_PATH) {
+        $ZIP_DEST = "release/Aictionary-${VERSION}_windows_x86_64_portable.zip"
+        Copy-Item $BIN_PATH -Destination "Aictionary.exe"
+        Compress-Archive -Path "Aictionary.exe" -DestinationPath $ZIP_DEST
+        Remove-Item "Aictionary.exe"
+      }
+  artifacts:
+    paths:
+      - release/
+    expire_in: 1 week
+
+# --- macOS Build (Apple Silicon) ---
+build:macos-arm64:
+  extends: .build-common
+  tags:
+    - saas-macos-medium-m1
+  before_script:
+    - curl -fsSL https://bun.sh/install | bash
+    - export BUN_INSTALL="$HOME/.bun"
+    - export PATH="$BUN_INSTALL/bin:$PATH"
+    # Ensure rust target is installed if using rustup
+    - rustup target add aarch64-apple-darwin
+  script:
+    - export VERSION=${CI_COMMIT_TAG#v}
+    - bun install --frozen-lockfile
+    - bun tauri build --target aarch64-apple-darwin
+    - mkdir -p release
+    # Locate and rename DMG
+    - DMG=$(find src-tauri/target/aarch64-apple-darwin/release/bundle/dmg -maxdepth 1 -name '*.dmg' | head -n 1)
+    - |
+      if [ -n "$DMG" ]; then
+        cp "$DMG" "release/Aictionary-${VERSION}_macos_aarch64.dmg"
+      else
+        echo "DMG not found!"
+        exit 1
+      fi
+  artifacts:
+    paths:
+      - release/
+    expire_in: 1 week
+
+# --- Release Creation ---
+release:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v/
+  script:
+    - echo "Uploading artifacts and creating release for $CI_COMMIT_TAG"
+    - |
+      ASSETS_LINK=""
+      for file in release/*; do
+        if [ -f "$file" ]; then
+          FILENAME=$(basename "$file")
+          echo "Uploading $FILENAME..."
+          curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file "$file" "${PACKAGE_REGISTRY_URL}/${FILENAME}"
+          # Accumulate assets links for release-cli
+          ASSETS_LINK="${ASSETS_LINK} --assets-link {\"name\":\"${FILENAME}\",\"url\":\"${PACKAGE_REGISTRY_URL}/${FILENAME}\"}"
+        fi
+      done
+    - |
+      echo "Creating GitLab Release..."
+      # Use eval to correctly handle the dynamic ASSETS_LINK string arguments
+      COMMAND="release-cli create --name \"Aictionary v${CI_COMMIT_TAG#v}\" --tag-name \"$CI_COMMIT_TAG\" --description \"Automated release for Aictionary v${CI_COMMIT_TAG#v}.\" $ASSETS_LINK"
+      eval "$COMMAND"
