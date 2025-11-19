@@ -30,6 +30,7 @@ reqwest = { version = "0.12", features = ["stream"] }
 tokio = { version = "1", features = ["full"] }
 futures-util = "0.3"
 zip = "2.2"
+tauri-plugin-single-instance = { version = "2.3.6", features = ["deep-link"] }
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-autostart = "2"
