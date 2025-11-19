@@ -1,10 +1,9 @@
 # Aictionary
 
-快速且异常好用的词典 App，而且，它甚至跨平台！
+快速且异常好用的词典 App，基于 **Tauri 2 + React**，提供本地离线词库和可选大模型释义，专注于「查词体验」这件小事。
 
-基于 **Tauri 2 + React + Rust**，提供本地离线词库和可选大模型释义，专注于「查词体验」这件小事。
+<img width="800" height="600" alt="image" src="https://github.com/user-attachments/assets/47b0208f-7f4b-45c6-9215-446b53755500" />
 
-<img width="900" height="728" alt="image" src="https://github.com/user-attachments/assets/f340fb79-87de-482e-87b7-cf363d6ac646" />
 
 ---
 
@@ -99,7 +98,7 @@
 - **前端**
   - React 19
   - Vite
-  - TypeScript（严格模式）
+  - TypeScript
   - Tailwind CSS v4 + shadcn/ui
   - Jotai（集中设置状态管理）
   - react-hook-form + zod 表单校验
@@ -107,17 +106,6 @@
 
 - **桌面端 / 后端**
   - Tauri 2（Rust + WebView）
-  - Rust（下载服务、词库处理等）
-  - Tauri 插件：
-    - `@tauri-apps/plugin-autostart`
-    - `@tauri-apps/plugin-clipboard-manager`
-    - `@tauri-apps/plugin-dialog`
-    - `@tauri-apps/plugin-global-shortcut`
-    - `@tauri-apps/plugin-opener`
-
-- **其他**
-  - 多语言：`react-i18next` + 本地 JSON 词条
-  - 下载与解压：Rust 端实现断点重试、进度事件，上层 React Hook + Dialog 展示进度
 
 ---
 
