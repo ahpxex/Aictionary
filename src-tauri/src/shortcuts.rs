@@ -47,9 +47,15 @@ fn simulate_copy_shortcut() {
     #[cfg(target_os = "windows")]
     {
         use std::process::Command;
+        use std::os::windows::process::CommandExt;
+
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
 
         let _ = Command::new("powershell")
+            .creation_flags(CREATE_NO_WINDOW)
             .args([
+                "-NoProfile",
+                "-NonInteractive",
                 "-Command",
                 r#"$wsh = New-Object -ComObject WScript.Shell; $wsh.SendKeys('^c')"#,
             ])
