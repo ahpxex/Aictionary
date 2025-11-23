@@ -5,8 +5,6 @@
 <img width="800" height="600" alt="image" src="https://github.com/user-attachments/assets/47b0208f-7f4b-45c6-9215-446b53755500" />
 
 
----
-
 ## 功能特性
 
 - **详细易懂的中文释义**  
@@ -39,21 +37,14 @@
 
 `Aictionary-[version]_[os]_[arch].[extension]`
 
-常见示例：
-
-| 平台    | 架构      | 文件名示例                                      | 说明                               |
-| ------- | --------- | ----------------------------------------------- | ---------------------------------- |
-| macOS   | arm64     | `Aictionary-0.1.0_macos_arm64.dmg`             | Apple 芯片（M1/M2/M3…）            |
-| macOS   | x86_64    | `Aictionary-0.1.0_macos_x86_64.dmg`            | Intel 芯片 Mac                     |
-| Windows | x86_64    | `Aictionary-0.1.0_windows_x86_64.msi`          | 优先提供 MSI 安装包               |
-| Windows | x86_64    | `Aictionary-0.1.0_windows_x86_64.exe`          | 若无法生成 MSI，则提供 NSIS 安装器 |
-| Linux   | x86_64    | `Aictionary-0.1.0_linux_x86_64.AppImage`       | 通用 AppImage 可执行包            |
-
 #### macOS
 
 1. 下载对应架构的 `.dmg` 文件；
 2. 打开 dmg，将 `Aictionary` 拖入 `Applications` 即可；
 3. 首次运行如遇到 Gatekeeper 提示，可在「系统设置 → 隐私与安全性」中允许打开。
+
+> [!IMPORTANT]
+> 如果提示「应用损坏」之类的，请运行 `xattr -cr /Applications/Aictionary-[版本]_[架构].app` （注意根据版本号修改命令的文件名）
 
 #### Windows
 
@@ -89,6 +80,21 @@ AIctionary 支持通过 [Fish Audio](https://fish.audio/) 生成更自然的 TTS
    - 若无缓存，则调用 Fish Audio 生成语音并写入 `~/Library/Application Support/com.ahpx.aictionary-re/audio/`（macOS，Windows/Linux 路径类似），下次播放直接走缓存。
 
 > **注意**：Fish Audio API Key 会被写入设备本地的设置存储，不会上传到网络，请自行妥善保管与刷新密钥。
+
+
+### 与 Anki 同步卡片（AnkiConnect）
+
+AIctionary 可以把任意单词卡片一键推送到桌面版 Anki，生成排版统一、含中英释义/例句/对比分析的双语卡片。依赖的是社区常用的 [AnkiConnect](https://foosoft.net/projects/anki-connect/) 插件，因此在使用前请确保：
+
+1. **已在 Anki 中安装并启用 AnkiConnect**，并保持 Anki 客户端开启；
+2. 在 AIctionary 内打开「设置 → Anki」，填入：
+   - **API 地址**（默认 `http://127.0.0.1:8765`，除非你修改过插件端口）；
+   - **牌组名称**：可以填现有牌组或新名称（若不存在会自动创建）；
+   - **卡片主题**：选择导出的卡片是浅色或深色背景；
+3. 配置完成后，回到单词详情卡片，点击发音按钮旁的 **“保存到 Anki”**（书签图标）即可写入卡片；
+4. 每张卡片会生成 Front/Back 两个面，包含：单词、音标、简洁释义、词形、详解及例句、词义比较等内容，同时自动附加 `aictionary` 标签。
+
+如果牌组尚未存在，应用会先调用 AnkiConnect 创建；写入失败时会在应用内弹出 toast，方便重新尝试。
 
 ---
 
