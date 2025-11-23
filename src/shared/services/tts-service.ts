@@ -233,17 +233,21 @@ export async function playFishTts(
     });
   }
 
+  const onEnded = () => {
+    player.element.removeEventListener("ended", onEnded);
+    player.dispose();
+  };
+  player.element.addEventListener("ended", onEnded);
+
   const playbackCompletion = Promise.all([handle.completion, consumption]).then(
     ([event]) => event
   );
-  playbackCompletion.finally(() => {
-    player.dispose();
-  });
 
   return {
     audio: player.element,
     completion: playbackCompletion,
     stop: async () => {
+      player.element.removeEventListener("ended", onEnded);
       player.dispose();
       await handle.stop();
     },
