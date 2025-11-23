@@ -226,19 +226,9 @@
         }
       },
       "voice": {
-        "label": "Voice clone",
-        "placeholder": "Select voice",
-        "helper": "Load your published voices or clones from Fish Audio, then choose one for pronunciation.",
-        "load": "Load voices",
-        "loading": "Loading voices…",
-        "empty": "No voices were returned for this account.",
-        "none": "Use default voice",
-        "missing_api_key": "Enter the API key before loading voices.",
-        "custom": "Custom voice ({{voice}})",
-        "toast": {
-          "success": "Loaded {{count}} voice(s).",
-          "error": "Unable to load voices. Check your API key."
-        }
+        "label": "Reference ID",
+        "placeholder": "Enter a Fish Audio reference ID (optional)",
+        "helper": "Leave empty to use the default system voice."
       }
     },
     "dictionary": {

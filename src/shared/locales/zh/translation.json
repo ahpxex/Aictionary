@@ -226,19 +226,9 @@
         }
       },
       "voice": {
-        "label": "语音克隆",
-        "placeholder": "选择语音",
-        "helper": "先加载 Fish Audio 中的语音克隆，再选择用于发音。",
-        "load": "加载语音",
-        "loading": "正在加载…",
-        "empty": "该账号暂无可用语音。",
-        "none": "使用默认语音",
-        "missing_api_key": "请输入 API Key 后再加载语音。",
-        "custom": "自定义语音（{{voice}}）",
-        "toast": {
-          "success": "已加载 {{count}} 个语音。",
-          "error": "无法加载语音，请检查 API Key。"
-        }
+        "label": "Reference ID",
+        "placeholder": "输入 Fish Audio Reference ID（可选）",
+        "helper": "留空则使用默认语音。"
       }
     },
     "dictionary": {
