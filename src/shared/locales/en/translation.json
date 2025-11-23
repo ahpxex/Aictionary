@@ -248,6 +248,16 @@
         "label": "Deck name",
         "placeholder": "AIctionary",
         "helper": "Cards are saved into this deck. You can pick any existing or new deck."
+      },
+      "card_theme": {
+        "label": "Card theme",
+        "placeholder": "Select card theme",
+        "helper": "Pick how saved cards should appear inside Anki.",
+        "options": {
+          "system": "Match Anki",
+          "light": "Always light",
+          "dark": "Always dark"
+        }
       }
     },
     "dictionary": {

@@ -8,7 +8,15 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useSettings } from "@/features/settings/hooks/use-settings";
+import type { AnkiSettings } from "@/shared/types/settings";
 
 export function AnkiTab() {
   const { t } = useTranslation();
@@ -49,6 +57,38 @@ export function AnkiTab() {
             />
             <p className="text-xs text-muted-foreground">
               {t("settings.anki.deck.helper")}
+            </p>
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="anki-card-theme">
+              {t("settings.anki.card_theme.label")}
+            </Label>
+            <Select
+              value={settings.anki.cardTheme}
+              onValueChange={(value) =>
+                updateAnki({ cardTheme: value as AnkiSettings["cardTheme"] })
+              }
+            >
+              <SelectTrigger id="anki-card-theme">
+                <SelectValue
+                  placeholder={t("settings.anki.card_theme.placeholder")}
+                />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="system">
+                  {t("settings.anki.card_theme.options.system")}
+                </SelectItem>
+                <SelectItem value="light">
+                  {t("settings.anki.card_theme.options.light")}
+                </SelectItem>
+                <SelectItem value="dark">
+                  {t("settings.anki.card_theme.options.dark")}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              {t("settings.anki.card_theme.helper")}
             </p>
           </div>
         </CardContent>

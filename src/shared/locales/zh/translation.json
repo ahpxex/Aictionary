@@ -248,6 +248,16 @@
         "label": "牌组名称",
         "placeholder": "AIctionary",
         "helper": "卡片会保存到该牌组，可填写已有或新建的牌组名称。"
+      },
+      "card_theme": {
+        "label": "卡片主题",
+        "placeholder": "选择卡片主题",
+        "helper": "决定导入 Anki 后卡片显示为浅色、深色或跟随系统。",
+        "options": {
+          "system": "跟随 Anki",
+          "light": "始终浅色",
+          "dark": "始终深色"
+        }
       }
     },
     "dictionary": {

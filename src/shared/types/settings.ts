@@ -20,6 +20,7 @@ export type AudioSettings = {
 export type AnkiSettings = {
   apiUrl: string;
   deckName: string;
+  cardTheme: "system" | "light" | "dark";
 };
 
 export type DictionarySettings = {
