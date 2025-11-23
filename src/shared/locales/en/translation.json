@@ -70,7 +70,11 @@
       "play_pronunciation": "Play pronunciation",
       "stop_pronunciation": "Stop pronunciation",
       "audio_error": "Couldn't play the pronunciation. Please try again.",
-      "audio_not_configured": "Configure an API key in Settings → Audio to play this pronunciation."
+      "audio_not_configured": "Configure an API key in Settings → Audio to play this pronunciation.",
+      "add_to_anki": "Save to Anki",
+      "anki_success": "Card saved to Anki.",
+      "anki_error": "Couldn't add this word to Anki. Please try again.",
+      "anki_not_configured": "Set your AnkiConnect address and deck in Settings → Anki first."
     }
   },
   "statistics": {
@@ -130,6 +134,7 @@
       "language": "Language",
       "llm": "LLM Providers",
       "audio": "Audio",
+      "anki": "Anki",
       "dictionary": "Dictionary",
       "keyboard": "Keyboard",
       "about": "About"
@@ -229,6 +234,20 @@
         "label": "Reference ID",
         "placeholder": "Enter a Fish Audio reference ID (optional)",
         "helper": "Leave empty to use the default system voice."
+      }
+    },
+    "anki": {
+      "title": "AnkiConnect",
+      "description": "Send curated cards directly to your deck via the AnkiConnect plugin.",
+      "api_url": {
+        "label": "API address",
+        "placeholder": "http://127.0.0.1:8765",
+        "helper": "Default AnkiConnect endpoint. Change it only if you use a custom address."
+      },
+      "deck": {
+        "label": "Deck name",
+        "placeholder": "AIctionary",
+        "helper": "Cards are saved into this deck. You can pick any existing or new deck."
       }
     },
     "dictionary": {

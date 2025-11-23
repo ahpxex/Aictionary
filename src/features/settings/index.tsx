@@ -7,11 +7,13 @@ import { LlmProvidersTab } from "@/features/settings/components/llm-tab";
 import { DictionaryTab } from "@/features/settings/components/dictionary-tab";
 import { KeyboardTab } from "@/features/settings/components/keyboard-tab";
 import { AboutTab } from "@/features/settings/components/about-tab";
+import { AnkiTab } from "@/features/settings/components/anki-tab";
 
 const tabs = [
   { value: "appearance", labelKey: "settings.tabs.appearance" },
   { value: "llm", labelKey: "settings.tabs.llm" },
   { value: "audio", labelKey: "settings.tabs.audio" },
+  { value: "anki", labelKey: "settings.tabs.anki" },
   { value: "dictionary", labelKey: "settings.tabs.dictionary" },
   { value: "keyboard", labelKey: "settings.tabs.keyboard" },
   { value: "about", labelKey: "settings.tabs.about" },
@@ -58,6 +60,9 @@ export function SettingsPage() {
       </TabsContent>
       <TabsContent value="audio">
         <AudioTab />
+      </TabsContent>
+      <TabsContent value="anki">
+        <AnkiTab />
       </TabsContent>
       <TabsContent value="dictionary">
         <DictionaryTab />

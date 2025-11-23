@@ -17,6 +17,11 @@ export type AudioSettings = {
   voiceId: string;
 };
 
+export type AnkiSettings = {
+  apiUrl: string;
+  deckName: string;
+};
+
 export type DictionarySettings = {
   cachePath: string;
   lastUpdated: string | null;
@@ -46,6 +51,7 @@ export type AppSettings = {
   language: LanguagePreference;
   llm: LlmProvider;
   audio: AudioSettings;
+  anki: AnkiSettings;
   dictionary: DictionarySettings;
   keyboard: KeyboardShortcutSettings;
   about: AboutMetadata;

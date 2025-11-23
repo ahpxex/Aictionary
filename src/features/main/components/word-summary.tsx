@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Volume2, Loader2 } from "lucide-react";
+import { Volume2, Loader2, BookmarkPlus } from "lucide-react";
 import { WordDefinition } from "@/shared/types/dictionary";
 import {
   playCachedAudio,
@@ -19,6 +19,7 @@ import {
 import { toast } from "sonner";
 import { useSettings } from "@/features/settings/hooks/use-settings";
 import { resolveAudioCache } from "@/shared/services/audio-cache";
+import { addDefinitionToAnki } from "@/shared/services/anki-service";
 
 const MANUAL_STOP_MESSAGE = "Stream manually stopped";
 const AUDIO_FORMAT = "mp3";
@@ -35,7 +36,7 @@ function isAbortError(error: unknown) {
   return false;
 }
 
-function resolvePlaybackErrorMessage(error: unknown, fallback: string) {
+function resolveErrorMessage(error: unknown, fallback: string) {
   if (error instanceof Error && error.message.trim()) {
     return error.message;
   }
@@ -46,8 +47,12 @@ export function WordSummaryCard({ definition }: { definition: WordDefinition }) 
   const { t } = useTranslation();
   const { settings } = useSettings();
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isSavingToAnki, setIsSavingToAnki] = useState(false);
   const playerRef = useRef<PlayTtsResult | null>(null);
   const isAudioConfigured = Boolean(settings.audio.apiKey.trim());
+  const isAnkiConfigured = Boolean(
+    settings.anki.apiUrl.trim() && settings.anki.deckName.trim()
+  );
   const hasWord = Boolean(definition.word?.trim());
 
   const WORD_FORMS_LABELS: Record<string, string> = {
@@ -147,7 +152,7 @@ export function WordSummaryCard({ definition }: { definition: WordDefinition }) 
 
           console.error("Pronunciation playback failed", error);
           toast.error(
-            resolvePlaybackErrorMessage(
+            resolveErrorMessage(
               error,
               t("main.word_summary.audio_error")
             )
@@ -163,8 +168,33 @@ export function WordSummaryCard({ definition }: { definition: WordDefinition }) 
       console.error("Unable to start pronunciation playback", error);
       setIsPlaying(false);
       toast.error(
-        resolvePlaybackErrorMessage(error, t("main.word_summary.audio_error"))
+        resolveErrorMessage(error, t("main.word_summary.audio_error"))
       );
+    }
+  };
+
+  const handleAddToAnki = async () => {
+    if (!hasWord) {
+      toast.error(t("main.word_summary.anki_error"));
+      return;
+    }
+
+    if (!isAnkiConfigured) {
+      toast.error(t("main.word_summary.anki_not_configured"));
+      return;
+    }
+
+    setIsSavingToAnki(true);
+    try {
+      await addDefinitionToAnki(definition);
+      toast.success(t("main.word_summary.anki_success"));
+    } catch (error) {
+      console.error("Failed to add word to Anki", error);
+      toast.error(
+        resolveErrorMessage(error, t("main.word_summary.anki_error"))
+      );
+    } finally {
+      setIsSavingToAnki(false);
     }
   };
 
@@ -174,27 +204,47 @@ export function WordSummaryCard({ definition }: { definition: WordDefinition }) 
       ? t("main.word_summary.stop_pronunciation")
       : t("main.word_summary.play_pronunciation");
 
+  const ankiAriaLabel = t("main.word_summary.add_to_anki");
+
   return (
     <Card>
       <CardHeader>
         <div className="flex items-start justify-between gap-3">
           <CardTitle className="text-3xl font-bold">{definition.word}</CardTitle>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            aria-label={ariaLabel}
-            title={ariaLabel}
-            onClick={handlePronunciationClick}
-            disabled={!hasWord || !isAudioConfigured}
-          >
-            {isPlaying ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              <Volume2 className="size-4" />
-            )}
-            <span className="sr-only">{ariaLabel}</span>
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              aria-label={ariaLabel}
+              title={ariaLabel}
+              onClick={handlePronunciationClick}
+              disabled={!hasWord || !isAudioConfigured}
+            >
+              {isPlaying ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Volume2 className="size-4" />
+              )}
+              <span className="sr-only">{ariaLabel}</span>
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              aria-label={ankiAriaLabel}
+              title={ankiAriaLabel}
+              onClick={handleAddToAnki}
+              disabled={!hasWord || !isAnkiConfigured || isSavingToAnki}
+            >
+              {isSavingToAnki ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <BookmarkPlus className="size-4" />
+              )}
+              <span className="sr-only">{ankiAriaLabel}</span>
+            </Button>
+          </div>
         </div>
         <CardDescription className="flex flex-wrap items-center gap-3 text-base text-muted-foreground">
           <span className="font-medium">/{definition.pronunciation}/</span>

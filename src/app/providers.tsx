@@ -6,6 +6,7 @@ import { AppearanceSync } from "@/app/appearance-sync";
 import { AudioSync } from "@/app/audio-sync";
 import { DictionaryCacheSync } from "@/app/dictionary-cache-sync";
 import { SystemSync } from "@/app/system-sync";
+import { AnkiSync } from "@/app/anki-sync";
 
 export function AppProviders({ children }: PropsWithChildren) {
   return (
@@ -18,6 +19,7 @@ export function AppProviders({ children }: PropsWithChildren) {
       >
         <AppearanceSync />
         <AudioSync />
+        <AnkiSync />
         <DictionaryCacheSync />
         <SystemSync />
         {children}

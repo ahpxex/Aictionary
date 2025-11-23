@@ -11,16 +11,17 @@ export function useSettings() {
   const [storedSettings, setSettings] = useAtom(settingsAtom);
 
   const mergeWithDefaults = useCallback(
-    (current: AppSettings): AppSettings => ({
+    (current: Partial<AppSettings>): AppSettings => ({
       ...defaultSettings,
       ...current,
-      theme: { ...defaultSettings.theme, ...current.theme },
-      llm: { ...defaultSettings.llm, ...current.llm },
-      audio: { ...defaultSettings.audio, ...current.audio },
-      dictionary: { ...defaultSettings.dictionary, ...current.dictionary },
-      keyboard: { ...defaultSettings.keyboard, ...current.keyboard },
-      about: { ...defaultSettings.about, ...current.about },
-      system: { ...defaultSettings.system, ...current.system },
+      theme: { ...defaultSettings.theme, ...(current.theme ?? {}) },
+      llm: { ...defaultSettings.llm, ...(current.llm ?? {}) },
+      audio: { ...defaultSettings.audio, ...(current.audio ?? {}) },
+      anki: { ...defaultSettings.anki, ...(current.anki ?? {}) },
+      dictionary: { ...defaultSettings.dictionary, ...(current.dictionary ?? {}) },
+      keyboard: { ...defaultSettings.keyboard, ...(current.keyboard ?? {}) },
+      about: { ...defaultSettings.about, ...(current.about ?? {}) },
+      system: { ...defaultSettings.system, ...(current.system ?? {}) },
     }),
     []
   );
@@ -140,12 +141,30 @@ export function useSettings() {
     [updateSettings]
   );
 
+  const updateAnki = useCallback(
+    (
+      changes:
+        | Partial<AppSettings["anki"]>
+        | ((prev: AppSettings["anki"]) => AppSettings["anki"])
+    ) => {
+      updateSettings((current) => ({
+        ...current,
+        anki:
+          typeof changes === "function"
+            ? changes(current.anki)
+            : { ...current.anki, ...changes },
+      }));
+    },
+    [updateSettings]
+  );
+
   return {
     settings,
     updateSettings,
     updateTheme,
     updateLlm,
     updateAudio,
+    updateAnki,
     updateDictionary,
     updateKeyboard,
     updateLanguage,

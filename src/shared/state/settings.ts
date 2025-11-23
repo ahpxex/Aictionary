@@ -18,6 +18,10 @@ export const defaultSettings: AppSettings = {
     model: "s1",
     voiceId: "",
   },
+  anki: {
+    apiUrl: "http://127.0.0.1:8765",
+    deckName: "AIctionary",
+  },
   dictionary: {
     cachePath: "",
     lastUpdated: null,
