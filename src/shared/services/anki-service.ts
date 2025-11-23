@@ -15,6 +15,12 @@ type AnkiConnectResponse<T> = {
   error: string | null;
 };
 
+type AnkiRequestPayload<Params> = {
+  action: string;
+  version: number;
+  params?: Params;
+};
+
 function escapeHtml(value: string) {
   return value
     .replace(/&/g, "&amp;")
@@ -209,6 +215,65 @@ function buildBackContent(definition: WordDefinition) {
   `.trim();
 }
 
+async function requestAnki<T, Params = Record<string, unknown>>(
+  apiUrl: string,
+  payload: AnkiRequestPayload<Params>,
+  signal?: AbortSignal
+): Promise<T> {
+  const response = await fetch(apiUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+    signal,
+  });
+
+  if (!response.ok) {
+    throw new Error(`AnkiConnect request failed: ${response.status}`);
+  }
+
+  const result: AnkiConnectResponse<T> = await response.json();
+
+  if (result.error) {
+    throw new Error(result.error);
+  }
+
+  return result.result;
+}
+
+function isDeckMissingError(message: string) {
+  const normalized = message.toLowerCase();
+  return (
+    normalized.includes("deck was not found") ||
+    normalized.includes("no such deck") ||
+    normalized.includes("deck does not exist")
+  );
+}
+
+async function ensureDeckExists(
+  apiUrl: string,
+  deckName: string,
+  signal?: AbortSignal
+) {
+  try {
+    await requestAnki(apiUrl, {
+      action: "createDeck",
+      version: ANKICONNECT_VERSION,
+      params: { deck: deckName },
+    }, signal);
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message.toLowerCase().includes("deck already exists")
+    ) {
+      return;
+    }
+
+    throw error;
+  }
+}
+
 export async function addDefinitionToAnki(
   definition: WordDefinition,
   options?: AddDefinitionOptions
@@ -233,7 +298,7 @@ export async function addDefinitionToAnki(
   const front = buildFrontContent(definition);
   const back = buildBackContent(definition);
 
-  const payload = {
+  const payload: AnkiRequestPayload<{ note: Record<string, unknown> }> = {
     action: "addNote",
     version: ANKICONNECT_VERSION,
     params: {
@@ -252,24 +317,16 @@ export async function addDefinitionToAnki(
     },
   };
 
-  const response = await fetch(apiUrl, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-    signal: options?.signal,
-  });
+  const request = () => requestAnki<number | null>(apiUrl, payload, options?.signal);
 
-  if (!response.ok) {
-    throw new Error(`AnkiConnect request failed: ${response.status}`);
+  try {
+    return await request();
+  } catch (error) {
+    if (error instanceof Error && isDeckMissingError(error.message)) {
+      await ensureDeckExists(apiUrl, deckName, options?.signal);
+      return await request();
+    }
+
+    throw error;
   }
-
-  const result: AnkiConnectResponse<number | null> = await response.json();
-
-  if (result.error) {
-    throw new Error(result.error);
-  }
-
-  return result.result;
 }

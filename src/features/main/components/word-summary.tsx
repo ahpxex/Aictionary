@@ -186,7 +186,9 @@ export function WordSummaryCard({ definition }: { definition: WordDefinition }) 
 
     setIsSavingToAnki(true);
     try {
-      await addDefinitionToAnki(definition);
+      await addDefinitionToAnki(definition, {
+        settingsOverride: settings.anki,
+      });
       toast.success(t("main.word_summary.anki_success"));
     } catch (error) {
       console.error("Failed to add word to Anki", error);
