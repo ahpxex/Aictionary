@@ -76,6 +76,7 @@ pub async fn setup_shortcuts<R: Runtime>(
     app: AppHandle<R>,
     quick_query: String,
     new_query: String,
+    enabled: bool,
 ) -> Result<(), String> {
     use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 
@@ -85,6 +86,10 @@ pub async fn setup_shortcuts<R: Runtime>(
     shortcuts
         .unregister_all()
         .map_err(|e| format!("Failed to unregister shortcuts: {}", e))?;
+
+    if !enabled {
+      return Ok(());
+    }
 
     // Normalize shortcuts to replace "Mod" with platform-specific key
     let quick_query_normalized = normalize_shortcut(&quick_query);

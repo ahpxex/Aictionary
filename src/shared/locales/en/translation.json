@@ -299,6 +299,9 @@
     "keyboard": {
       "shortcuts": {
         "title": "Shortcuts",
+        "description": "Configure global hotkeys for copying selections or opening a fresh query.",
+        "enable_label": "Enable global shortcuts",
+        "enable_helper": "When disabled, keyboard shortcuts are ignored until you turn them back on.",
         "quick_query": "Quick query",
         "new_query": "New query",
         "reset": "Reset to defaults"

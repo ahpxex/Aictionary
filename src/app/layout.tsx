@@ -31,6 +31,7 @@ export function AppLayout() {
   useGlobalShortcuts({
     quickQuery: settings.keyboard.quickQuery,
     newQuery: settings.keyboard.newQuery,
+    enabled: settings.keyboard.enabled,
     onQuickQuery: (text) => {
       // Ensure we're on the dictionary tab, then run the search.
       navigate("/");

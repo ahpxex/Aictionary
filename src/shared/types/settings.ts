@@ -31,6 +31,7 @@ export type DictionarySettings = {
 export type KeyboardShortcutSettings = {
   quickQuery: string;
   newQuery: string;
+  enabled: boolean;
 };
 
 export type AboutMetadata = {

@@ -30,6 +30,7 @@ export const defaultSettings: AppSettings = {
   keyboard: {
     quickQuery: "Mod+Enter",
     newQuery: "Mod+Shift+K",
+    enabled: true,
   },
   about: {
     version: "0.1.0",

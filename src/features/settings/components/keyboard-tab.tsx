@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { KbdInput } from "@/components/ui/kbd-input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { useSettings } from "@/features/settings/hooks/use-settings";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
@@ -24,10 +25,26 @@ export function KeyboardTab() {
         <CardHeader>
           <CardTitle>{t("settings.keyboard.shortcuts.title")}</CardTitle>
           <CardDescription>
-            Configure the key combinations for quick interactions.
+            {t("settings.keyboard.shortcuts.description")}
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
+          <div className="flex items-center justify-between gap-4 rounded-lg border bg-muted/40 px-4 py-3">
+            <div className="space-y-1">
+              <p className="text-sm font-medium">
+                {t("settings.keyboard.shortcuts.enable_label")}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {t("settings.keyboard.shortcuts.enable_helper")}
+              </p>
+            </div>
+            <Switch
+              checked={settings.keyboard.enabled}
+              onCheckedChange={(checked) =>
+                updateKeyboard({ enabled: checked })
+              }
+            />
+          </div>
           <div className="grid gap-2">
             <Label htmlFor="shortcut-quick">{t("settings.keyboard.shortcuts.quick_query")}</Label>
             <KbdInput

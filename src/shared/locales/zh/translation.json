@@ -299,6 +299,9 @@
     "keyboard": {
       "shortcuts": {
         "title": "快捷键",
+        "description": "配置全局快捷键，便于快速复制选中文本或打开新查询。",
+        "enable_label": "启用全局快捷键",
+        "enable_helper": "关闭后，按下快捷键不会触发操作，重新开启即可恢复。",
         "quick_query": "快速查询",
         "new_query": "新查询",
         "reset": "重置为默认"
