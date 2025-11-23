@@ -43,8 +43,8 @@ function formatFormLabel(key: string) {
     .join(" ");
 }
 
-function resolveCardTheme(theme?: AnkiSettings["cardTheme"]): AnkiSettings["cardTheme"] {
-  return theme ?? "system";
+function resolveCardTheme(theme?: AnkiCardTheme): AnkiCardTheme {
+  return theme === "dark" ? "dark" : "light";
 }
 
 function buildCardStyles() {
@@ -52,6 +52,10 @@ function buildCardStyles() {
   <style>
     .aic-theme {
       font-family: 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    .aic-theme,
+    .aic-theme[data-theme="light"] {
       --aic-surface: #ffffff;
       --aic-panel: #f8fafc;
       --aic-panel-strong: #eef2ff;
@@ -61,21 +65,6 @@ function buildCardStyles() {
       --aic-badge-bg: #e3e9ff;
       --aic-badge-text: #1d4ed8;
       --aic-example: #1d4ed8;
-    }
-
-    @media (prefers-color-scheme: dark) {
-      .aic-theme:not([data-theme]),
-      .aic-theme[data-theme="system"] {
-        --aic-surface: #0f172a;
-        --aic-panel: #111b2a;
-        --aic-panel-strong: rgba(59, 130, 246, 0.12);
-        --aic-border: rgba(148, 163, 184, 0.35);
-        --aic-text: #eef1f7;
-        --aic-muted: #94a3b8;
-        --aic-badge-bg: rgba(59, 130, 246, 0.2);
-        --aic-badge-text: #93c5fd;
-        --aic-example: #60a5fa;
-      }
     }
 
     .aic-theme[data-theme="dark"] {
@@ -441,8 +430,9 @@ export async function addDefinitionToAnki(
     throw new Error("Missing word definition");
   }
 
-  const front = buildFrontContent(definition, settings.cardTheme);
-  const back = buildBackContent(definition, settings.cardTheme);
+  const cardTheme = resolveCardTheme(settings.cardTheme);
+  const front = buildFrontContent(definition, cardTheme);
+  const back = buildBackContent(definition, cardTheme);
 
   const payload: AnkiRequestPayload<{ note: Record<string, unknown> }> = {
     action: "addNote",

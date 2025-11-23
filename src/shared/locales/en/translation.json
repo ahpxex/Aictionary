@@ -252,11 +252,10 @@
       "card_theme": {
         "label": "Card theme",
         "placeholder": "Select card theme",
-        "helper": "Pick how saved cards should appear inside Anki.",
+        "helper": "Choose whether cards render with a light or dark canvas.",
         "options": {
-          "system": "Match Anki",
-          "light": "Always light",
-          "dark": "Always dark"
+          "light": "Light",
+          "dark": "Dark"
         }
       }
     },

@@ -21,7 +21,7 @@ export const defaultSettings: AppSettings = {
   anki: {
     apiUrl: "http://127.0.0.1:8765",
     deckName: "AIctionary",
-    cardTheme: "system",
+    cardTheme: "light",
   },
   dictionary: {
     cachePath: "",

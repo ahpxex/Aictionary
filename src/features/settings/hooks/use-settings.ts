@@ -7,6 +7,10 @@ import {
   ThemePreference,
 } from "@/shared/types/settings";
 
+function normalizeCardTheme(value?: AppSettings["anki"]["cardTheme"]) {
+  return value === "dark" ? "dark" : "light";
+}
+
 export function useSettings() {
   const [storedSettings, setSettings] = useAtom(settingsAtom);
 
@@ -17,7 +21,11 @@ export function useSettings() {
       theme: { ...defaultSettings.theme, ...(current.theme ?? {}) },
       llm: { ...defaultSettings.llm, ...(current.llm ?? {}) },
       audio: { ...defaultSettings.audio, ...(current.audio ?? {}) },
-      anki: { ...defaultSettings.anki, ...(current.anki ?? {}) },
+      anki: {
+        ...defaultSettings.anki,
+        ...(current.anki ?? {}),
+        cardTheme: normalizeCardTheme(current.anki?.cardTheme),
+      },
       dictionary: { ...defaultSettings.dictionary, ...(current.dictionary ?? {}) },
       keyboard: { ...defaultSettings.keyboard, ...(current.keyboard ?? {}) },
       about: { ...defaultSettings.about, ...(current.about ?? {}) },

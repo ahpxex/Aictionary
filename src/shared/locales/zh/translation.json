@@ -252,11 +252,10 @@
       "card_theme": {
         "label": "卡片主题",
         "placeholder": "选择卡片主题",
-        "helper": "决定导入 Anki 后卡片显示为浅色、深色或跟随系统。",
+        "helper": "决定导入 Anki 后卡片显示为浅色还是深色。",
         "options": {
-          "system": "跟随 Anki",
-          "light": "始终浅色",
-          "dark": "始终深色"
+          "light": "浅色",
+          "dark": "深色"
         }
       }
     },

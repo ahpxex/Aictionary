@@ -76,9 +76,6 @@ export function AnkiTab() {
                 />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="system">
-                  {t("settings.anki.card_theme.options.system")}
-                </SelectItem>
                 <SelectItem value="light">
                   {t("settings.anki.card_theme.options.light")}
                 </SelectItem>
