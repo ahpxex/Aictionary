@@ -46,7 +46,10 @@ pub fn export_query_metrics(
     // Build CSV content with headers
     let mut content = String::from("Count,Word,Last Queried At\n");
     for metric in metrics {
-        let line = format!("{},{},{}\n", metric.count, metric.word, metric.last_queried_at);
+        let line = format!(
+            "{},{},{}\n",
+            metric.count, metric.word, metric.last_queried_at
+        );
         content.push_str(&line);
     }
 

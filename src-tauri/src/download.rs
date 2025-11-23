@@ -1,9 +1,9 @@
+use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
 use std::fs::{self, File};
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use tauri::{AppHandle, Emitter};
-use futures_util::StreamExt;
 
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -97,8 +97,7 @@ async fn try_download(app: &AppHandle, url: &str, dest_path: &Path) -> Result<u6
         fs::create_dir_all(parent).map_err(|e| format!("Failed to create directory: {}", e))?;
     }
 
-    let mut file = File::create(dest_path)
-        .map_err(|e| format!("Failed to create file: {}", e))?;
+    let mut file = File::create(dest_path).map_err(|e| format!("Failed to create file: {}", e))?;
 
     let mut stream = response.bytes_stream();
     let mut downloaded: u64 = 0;

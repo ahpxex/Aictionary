@@ -46,8 +46,8 @@ fn simulate_copy_shortcut() {
     // Windows: use PowerShell + WScript.Shell to send Ctrl+C.
     #[cfg(target_os = "windows")]
     {
-        use std::process::Command;
         use std::os::windows::process::CommandExt;
+        use std::process::Command;
 
         const CREATE_NO_WINDOW: u32 = 0x08000000;
 
@@ -67,9 +67,7 @@ fn simulate_copy_shortcut() {
     {
         use std::process::Command;
 
-        let _ = Command::new("xdotool")
-            .args(["key", "ctrl+c"])
-            .status();
+        let _ = Command::new("xdotool").args(["key", "ctrl+c"]).status();
     }
 }
 
@@ -79,7 +77,7 @@ pub async fn setup_shortcuts<R: Runtime>(
     quick_query: String,
     new_query: String,
 ) -> Result<(), String> {
-    use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState, Shortcut};
+    use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 
     let shortcuts = app.global_shortcut();
 
@@ -93,13 +91,19 @@ pub async fn setup_shortcuts<R: Runtime>(
     let new_query_normalized = normalize_shortcut(&new_query);
 
     // Parse shortcuts
-    let quick_query_shortcut: Shortcut = quick_query_normalized
-        .parse()
-        .map_err(|e| format!("Failed to parse quick query shortcut '{}': {}", quick_query_normalized, e))?;
+    let quick_query_shortcut: Shortcut = quick_query_normalized.parse().map_err(|e| {
+        format!(
+            "Failed to parse quick query shortcut '{}': {}",
+            quick_query_normalized, e
+        )
+    })?;
 
-    let new_query_shortcut: Shortcut = new_query_normalized
-        .parse()
-        .map_err(|e| format!("Failed to parse new query shortcut '{}': {}", new_query_normalized, e))?;
+    let new_query_shortcut: Shortcut = new_query_normalized.parse().map_err(|e| {
+        format!(
+            "Failed to parse new query shortcut '{}': {}",
+            new_query_normalized, e
+        )
+    })?;
 
     // Register quick query shortcut (copy selected text + show window + search)
     let app_handle = app.clone();

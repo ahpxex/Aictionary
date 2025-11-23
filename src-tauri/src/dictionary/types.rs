@@ -43,8 +43,7 @@ fn deserialize_forms<'de, D>(deserializer: D) -> Result<BTreeMap<String, String>
 where
     D: Deserializer<'de>,
 {
-    let raw = Option::<BTreeMap<String, Value>>::deserialize(deserializer)?
-        .unwrap_or_default();
+    let raw = Option::<BTreeMap<String, Value>>::deserialize(deserializer)?.unwrap_or_default();
 
     Ok(raw
         .into_iter()

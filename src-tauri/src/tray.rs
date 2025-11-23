@@ -10,11 +10,7 @@
 
 #![cfg(desktop)]
 
-use tauri::{
-    menu::MenuBuilder,
-    tray::TrayIconBuilder,
-    AppHandle, Emitter, Manager,
-};
+use tauri::{menu::MenuBuilder, tray::TrayIconBuilder, AppHandle, Emitter, Manager};
 
 // Stable identifiers so both Rust and JS can rely on them.
 pub const TRAY_ID: &str = "main-tray";

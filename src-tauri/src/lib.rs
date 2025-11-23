@@ -1,6 +1,7 @@
 use tauri::Manager;
 
 // Module declarations
+mod audio_cache;
 mod dictionary;
 mod download;
 mod export;
@@ -8,6 +9,7 @@ mod llm;
 mod shortcuts;
 #[cfg(desktop)]
 mod tray;
+mod tts;
 
 #[tauri::command]
 #[cfg(desktop)]
@@ -84,6 +86,8 @@ pub fn run() {
             // Download commands
             download::download_file,
             download::extract_zip,
+            // TTS commands
+            tts::start_tts_stream,
             // Shortcuts commands
             shortcuts::setup_shortcuts,
             // Tray commands

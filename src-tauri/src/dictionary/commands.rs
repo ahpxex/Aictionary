@@ -39,7 +39,10 @@ pub fn dictionary_query(word: String, cache_path: String) -> Result<WordDefiniti
 /// Writes to {cache_path}/{word}.json
 #[tauri::command]
 pub fn upsert_dictionary_entry(args: UpsertDictionaryEntryArgs) -> Result<(), String> {
-    let UpsertDictionaryEntryArgs { cache_path, mut entry } = args;
+    let UpsertDictionaryEntryArgs {
+        cache_path,
+        mut entry,
+    } = args;
     let cache_path = cache_path.trim();
     if cache_path.is_empty() {
         return Err("Dictionary cache path is not configured".into());
@@ -69,10 +72,7 @@ pub fn upsert_dictionary_entry(args: UpsertDictionaryEntryArgs) -> Result<(), St
 /// Creates the directory if it doesn't exist.
 #[tauri::command]
 pub fn get_default_dictionary_path(app: AppHandle) -> Result<String, String> {
-    let app_dir = app
-        .path()
-        .app_data_dir()
-        .map_err(|err| err.to_string())?;
+    let app_dir = app.path().app_data_dir().map_err(|err| err.to_string())?;
     let dict_path = app_dir.join("dictionary");
     fs::create_dir_all(&dict_path).map_err(|err| err.to_string())?;
     Ok(dict_path.to_string_lossy().into())
