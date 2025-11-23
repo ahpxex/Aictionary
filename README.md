@@ -75,6 +75,21 @@
 > - 先下载/更新本地词库（会通过内置下载器从 GitHub 拉取 zip 并自动解压）；  
 > - 再配置 LLM 提供商与 API Key，当本地词库缺少词条时会自动调用大模型补充中文释义。
 
+### Fish Audio 语音播放配置
+
+AIctionary 支持通过 [Fish Audio](https://fish.audio/) 生成更自然的 TTS 发音用于单词朗读。开启方式：
+
+1. 在 Fish Audio 控制台创建或获取 API Key；
+2. 打开应用内「设置 → 音频」，填写：
+   - **API Key**：Fish Audio 提供的密钥，存储在本地；
+   - **TTS 模型**：默认 S1（最新高质量），也可选 legacy 模型；
+   - **Reference ID（可选）**：若有自定义语音克隆，可填对应的 reference_id；留空则使用官方默认女声；
+3. 保存设置后，重新在单词卡片中点击喇叭按钮，会自动：
+   - 先检查是否已有缓存音频；
+   - 若无缓存，则调用 Fish Audio 生成语音并写入 `~/Library/Application Support/com.ahpx.aictionary-re/audio/`（macOS，Windows/Linux 路径类似），下次播放直接走缓存。
+
+> **注意**：Fish Audio API Key 会被写入设备本地的设置存储，不会上传到网络，请自行妥善保管与刷新密钥。
+
 ---
 
 ## 使用提示
