@@ -66,7 +66,10 @@
       "comparative": "比较级",
       "superlative": "最高级",
       "plural": "复数",
-      "singular": "单数"
+      "singular": "单数",
+      "play_pronunciation": "播放发音",
+      "stop_pronunciation": "停止发音",
+      "audio_error": "无法播放发音，请稍后再试。"
     }
   },
   "statistics": {

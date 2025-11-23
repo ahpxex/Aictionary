@@ -1,3 +1,4 @@
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Card,
@@ -7,10 +8,16 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Volume2, Loader2 } from "lucide-react";
 import { WordDefinition } from "@/shared/types/dictionary";
+import { playFishTts, type PlayTtsResult } from "@/shared/services/tts-service";
+import { toast } from "sonner";
 
 export function WordSummaryCard({ definition }: { definition: WordDefinition }) {
   const { t } = useTranslation();
+  const [isPlaying, setIsPlaying] = useState(false);
+  const playerRef = useRef<PlayTtsResult | null>(null);
 
   const WORD_FORMS_LABELS: Record<string, string> = {
     third_person_singular: t("main.word_summary.third_person"),
@@ -26,10 +33,87 @@ export function WordSummaryCard({ definition }: { definition: WordDefinition }) 
   const formatKey = (key: string) =>
     WORD_FORMS_LABELS[key] ?? key.replace(/_/g, " ");
 
+  const stopPlayback = useCallback(async () => {
+    if (!playerRef.current) {
+      setIsPlaying(false);
+      return;
+    }
+
+    try {
+      await playerRef.current.stop();
+    } catch (error) {
+      console.error("Failed to stop pronunciation playback", error);
+    } finally {
+      playerRef.current = null;
+      setIsPlaying(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      void stopPlayback();
+    };
+  }, [definition.word, stopPlayback]);
+
+  const handlePronunciationClick = async () => {
+    if (isPlaying) {
+      await stopPlayback();
+      return;
+    }
+
+    setIsPlaying(true);
+    try {
+      const player = await playFishTts({
+        text: definition.word,
+        autoplay: true,
+      });
+
+      playerRef.current = player;
+
+      player.completion
+        .catch((error) => {
+          console.error("Pronunciation playback failed", error);
+          toast.error(t("main.word_summary.audio_error"));
+        })
+        .finally(() => {
+          if (playerRef.current === player) {
+            playerRef.current = null;
+          }
+          setIsPlaying(false);
+        });
+    } catch (error) {
+      console.error("Unable to start pronunciation playback", error);
+      setIsPlaying(false);
+      toast.error(t("main.word_summary.audio_error"));
+    }
+  };
+
+  const ariaLabel = isPlaying
+    ? t("main.word_summary.stop_pronunciation")
+    : t("main.word_summary.play_pronunciation");
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-3xl font-bold">{definition.word}</CardTitle>
+        <div className="flex items-start justify-between gap-3">
+          <CardTitle className="text-3xl font-bold">{definition.word}</CardTitle>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label={ariaLabel}
+            title={ariaLabel}
+            onClick={handlePronunciationClick}
+            disabled={!definition.word}
+          >
+            {isPlaying ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Volume2 className="size-4" />
+            )}
+            <span className="sr-only">{ariaLabel}</span>
+          </Button>
+        </div>
         <CardDescription className="flex flex-wrap items-center gap-3 text-base text-muted-foreground">
           <span className="font-medium">/{definition.pronunciation}/</span>
           <span>{definition.concise_definition}</span>
