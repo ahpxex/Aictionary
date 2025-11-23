@@ -11,11 +11,17 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Volume2, Loader2 } from "lucide-react";
 import { WordDefinition } from "@/shared/types/dictionary";
-import { playFishTts, type PlayTtsResult } from "@/shared/services/tts-service";
+import {
+  playCachedAudio,
+  playFishTts,
+  type PlayTtsResult,
+} from "@/shared/services/tts-service";
 import { toast } from "sonner";
 import { useSettings } from "@/features/settings/hooks/use-settings";
+import { resolveAudioCache } from "@/shared/services/audio-cache";
 
 const MANUAL_STOP_MESSAGE = "Stream manually stopped";
+const AUDIO_FORMAT = "mp3";
 
 function isAbortError(error: unknown) {
   if (error instanceof DOMException) {
@@ -98,12 +104,38 @@ export function WordSummaryCard({ definition }: { definition: WordDefinition }) 
       return;
     }
 
+    let cacheEntry: { path: string; exists: boolean } | null = null;
+    try {
+      cacheEntry = await resolveAudioCache(definition.word, {
+        model: settings.audio.model,
+        voiceId: settings.audio.voiceId,
+        format: AUDIO_FORMAT,
+      });
+    } catch (error) {
+      console.warn("Failed to prepare audio cache path", error);
+    }
+
     setIsPlaying(true);
     try {
-      const player = await playFishTts({
-        text: definition.word,
-        autoplay: true,
-      });
+      let player: PlayTtsResult | null = null;
+
+      if (cacheEntry?.exists) {
+        try {
+          player = await playCachedAudio(cacheEntry.path);
+        } catch (error) {
+          console.warn("Failed to play cached audio; regenerating", error);
+          player = null;
+        }
+      }
+
+      if (!player) {
+        player = await playFishTts({
+          text: definition.word,
+          autoplay: true,
+          format: AUDIO_FORMAT,
+          cacheFilePath: cacheEntry?.path,
+        });
+      }
 
       playerRef.current = player;
 

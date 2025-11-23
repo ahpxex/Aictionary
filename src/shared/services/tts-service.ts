@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { getRuntimeAudioSettings } from "@/shared/state/audio-runtime";
+import { readAudioCacheFile } from "@/shared/services/audio-cache";
 
 type TtsChunkEvent = {
   requestId: string;
@@ -254,6 +255,86 @@ export async function playFishTts(
   };
 }
 
+export async function playCachedAudio(
+  filePath: string
+): Promise<PlayTtsResult> {
+  const bytes = await readAudioCacheFile(filePath);
+  const blob = new Blob([bytes], {
+    type: `audio/${inferFormatFromPath(filePath)}`,
+  });
+  const objectUrl = URL.createObjectURL(blob);
+  const audio = new Audio(objectUrl);
+  audio.preload = "auto";
+
+  let settled = false;
+  let resolveCompletion!: (value: TtsCompleteEvent) => void;
+  let rejectCompletion!: (reason?: unknown) => void;
+
+  const completion = new Promise<TtsCompleteEvent>((resolve, reject) => {
+    resolveCompletion = resolve;
+    rejectCompletion = reject;
+  });
+
+  const cleanup = () => {
+    audio.removeEventListener("ended", handleEnded);
+    audio.removeEventListener("error", handleError);
+    URL.revokeObjectURL(objectUrl);
+  };
+
+  const handleEnded = () => {
+    if (settled) return;
+    settled = true;
+    cleanup();
+    resolveCompletion({
+      requestId: `cache:${filePath}`,
+      totalBytes: 0,
+      cacheFilePath: filePath,
+      format: inferFormatFromPath(filePath),
+    });
+  };
+
+  const handleError = () => {
+    if (settled) return;
+    settled = true;
+    cleanup();
+    rejectCompletion(new Error("Failed to play cached audio."));
+  };
+
+  audio.addEventListener("ended", handleEnded);
+  audio.addEventListener("error", handleError);
+
+  try {
+    await audio.play();
+  } catch (error) {
+    cleanup();
+    settled = true;
+    rejectCompletion(
+      error instanceof Error ? error : new Error("Failed to play cached audio.")
+    );
+    throw error;
+  }
+
+  return {
+    audio,
+    completion,
+    stop: async () => {
+      if (settled) {
+        audio.pause();
+        audio.currentTime = 0;
+        return;
+      }
+
+      settled = true;
+      cleanup();
+      audio.pause();
+      audio.currentTime = 0;
+      rejectCompletion(
+        new DOMException("Stream manually stopped", "AbortError")
+      );
+    },
+  };
+}
+
 class MediaSourceStreamPlayer {
   private mediaSource: MediaSource;
   private sourceBuffer: SourceBuffer | null = null;
@@ -447,4 +528,12 @@ function toError(reason: unknown): Error {
     return reason;
   }
   return new Error(typeof reason === "string" ? reason : "Unknown error");
+}
+
+function inferFormatFromPath(path: string): string {
+  const dotIndex = path.lastIndexOf(".");
+  if (dotIndex === -1 || dotIndex === path.length - 1) {
+    return "file";
+  }
+  return path.substring(dotIndex + 1);
 }
