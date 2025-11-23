@@ -30,7 +30,7 @@ type ListModelsResponse = {
 };
 
 const API_BASE_URL = "https://api.fish.audio";
-const LIST_MODELS_PATH = "/model/list-models";
+const LIST_MODELS_PATH = "/model";
 
 function sanitizeVoice(item?: FishAudioModelItem): FishAudioVoiceSummary | null {
   if (!item) {
@@ -60,11 +60,10 @@ export async function fetchFishAudioVoices(
   }
 
   const params = new URLSearchParams({
-    page: "1",
-    limit: "200",
-    size: "200",
+    page_number: "1",
+    page_size: "200",
     type: "svc",
-    visibility: "public",
+    self: "true",
   });
 
   const response = await fetch(`${API_BASE_URL}${LIST_MODELS_PATH}?${params}`, {
@@ -76,16 +75,24 @@ export async function fetchFishAudioVoices(
   });
 
   if (!response.ok) {
-    let details: unknown;
+    let details = "";
     try {
-      details = await response.json();
-    } catch {
       details = await response.text();
+    } catch {
+      // ignore
+    }
+
+    let friendlyMessage: string | null = null;
+    try {
+      const parsed = JSON.parse(details) as { message?: string };
+      friendlyMessage = parsed.message ?? null;
+    } catch {
+      // ignore
     }
 
     throw new FishAudioServiceError(
-      `Failed to load voices (${response.status}).`,
-      { cause: details }
+      friendlyMessage ?? `Failed to load voices (${response.status}).`,
+      { cause: details || response.statusText }
     );
   }
 

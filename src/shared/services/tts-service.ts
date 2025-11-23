@@ -64,6 +64,8 @@ export async function startFishTtsStream(
   let unlistenComplete: UnlistenFn | null = null;
   let unlistenError: UnlistenFn | null = null;
   let cleanedUp = false;
+  let stopRequested = false;
+  let controllerRef: ReadableStreamDefaultController<Uint8Array> | null = null;
   let completionResolve!: (value: TtsCompleteEvent) => void;
   let completionReject!: (reason?: unknown) => void;
   let completionSettled = false;
@@ -81,6 +83,7 @@ export async function startFishTtsStream(
     unlistenChunk?.();
     unlistenComplete?.();
     unlistenError?.();
+    controllerRef = null;
   };
 
   const settleSuccess = (payload: TtsCompleteEvent) => {
@@ -101,6 +104,7 @@ export async function startFishTtsStream(
 
   const stream = new ReadableStream<Uint8Array>({
     start(controller) {
+      controllerRef = controller;
       void (async () => {
         try {
           unlistenChunk = await listen<TtsChunkEvent>("tts-chunk", (event) => {
@@ -166,7 +170,9 @@ export async function startFishTtsStream(
     },
     cancel() {
       cleanup();
-      settleError(new Error("Stream cancelled."));
+      if (!completionSettled) {
+        settleError(new DOMException("Stream cancelled.", "AbortError"));
+      }
     },
   });
 
@@ -175,7 +181,25 @@ export async function startFishTtsStream(
     stream,
     completion,
     stop: async () => {
-      await stream.cancel("manual-stop");
+      if (stopRequested) {
+        return;
+      }
+      stopRequested = true;
+
+      const error = new DOMException("Stream manually stopped", "AbortError");
+
+      if (controllerRef) {
+        try {
+          controllerRef.error(error);
+        } catch {
+          // Stream might already be closed.
+        }
+      }
+
+      cleanup();
+      if (!completionSettled) {
+        settleError(error);
+      }
     },
   };
 }
@@ -380,11 +404,13 @@ function resolveAudioConfig(options: StartTtsOptions): ResolvedAudioConfig {
     throw new Error("Audio API key is missing. Configure it in Settings > Audio.");
   }
 
+  const providedVoice = (options.voiceId ?? "").trim();
+  const providedReference = (options.referenceId ?? "").trim();
   const model = (options.model ?? runtime.model ?? "s1").trim() || "s1";
   const runtimeVoice = (runtime.voiceId || "").trim();
   const voiceId =
-    options.voiceId ??
-    options.referenceId ??
+    providedVoice ||
+    providedReference ||
     (runtimeVoice.length > 0 ? runtimeVoice : undefined);
 
   return {

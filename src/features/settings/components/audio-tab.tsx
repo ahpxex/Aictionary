@@ -26,6 +26,8 @@ import {
   type FishAudioVoiceSummary,
 } from "@/shared/services/fish-audio-service";
 
+const DEFAULT_VOICE_VALUE = "__default_voice__";
+
 export function AudioTab() {
   const { t } = useTranslation();
   const { settings, updateAudio } = useSettings();
@@ -34,7 +36,6 @@ export function AudioTab() {
   const [hasLoadedVoices, setHasLoadedVoices] = useState(false);
 
   const canLoadVoices = Boolean(settings.audio.apiKey.trim());
-  const DEFAULT_VOICE_VALUE = "__default_voice__";
 
   useEffect(() => {
     setVoices([]);

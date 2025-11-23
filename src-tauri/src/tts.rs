@@ -1,6 +1,7 @@
 use base64::{engine::general_purpose, Engine as _};
 use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use std::path::PathBuf;
 use tauri::{AppHandle, Emitter, Manager};
 
@@ -152,7 +153,15 @@ pub async fn start_tts_stream(app: AppHandle, args: TtsStreamArgs) -> Result<(),
             .text()
             .await
             .unwrap_or_else(|_| "Unable to read error message".to_string());
-        let message = format!("Fish Audio request failed ({status}): {details}");
+
+        let friendly = serde_json::from_str::<Value>(&details)
+            .ok()
+            .and_then(|value| value.get("message").and_then(|m| m.as_str()).map(|s| s.to_string()));
+
+        let message = friendly.unwrap_or_else(|| {
+            format!("Fish Audio request failed ({status}): {details}")
+        });
+
         emit_tts_error(&app, &request_id, &message);
         return Err(message);
     }

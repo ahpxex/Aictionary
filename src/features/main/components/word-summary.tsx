@@ -15,6 +15,27 @@ import { playFishTts, type PlayTtsResult } from "@/shared/services/tts-service";
 import { toast } from "sonner";
 import { useSettings } from "@/features/settings/hooks/use-settings";
 
+const MANUAL_STOP_MESSAGE = "Stream manually stopped";
+
+function isAbortError(error: unknown) {
+  if (error instanceof DOMException) {
+    return error.name === "AbortError";
+  }
+
+  if (error instanceof Error) {
+    return error.message === MANUAL_STOP_MESSAGE || error.message === "Stream cancelled.";
+  }
+
+  return false;
+}
+
+function resolvePlaybackErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof Error && error.message.trim()) {
+    return error.message;
+  }
+  return fallback;
+}
+
 export function WordSummaryCard({ definition }: { definition: WordDefinition }) {
   const { t } = useTranslation();
   const { settings } = useSettings();
@@ -46,7 +67,9 @@ export function WordSummaryCard({ definition }: { definition: WordDefinition }) 
     try {
       await playerRef.current.stop();
     } catch (error) {
-      console.error("Failed to stop pronunciation playback", error);
+      if (!isAbortError(error)) {
+        console.error("Failed to stop pronunciation playback", error);
+      }
     } finally {
       playerRef.current = null;
       setIsPlaying(false);
@@ -86,8 +109,17 @@ export function WordSummaryCard({ definition }: { definition: WordDefinition }) 
 
       player.completion
         .catch((error) => {
+          if (isAbortError(error)) {
+            return;
+          }
+
           console.error("Pronunciation playback failed", error);
-          toast.error(t("main.word_summary.audio_error"));
+          toast.error(
+            resolvePlaybackErrorMessage(
+              error,
+              t("main.word_summary.audio_error")
+            )
+          );
         })
         .finally(() => {
           if (playerRef.current === player) {
@@ -98,7 +130,9 @@ export function WordSummaryCard({ definition }: { definition: WordDefinition }) 
     } catch (error) {
       console.error("Unable to start pronunciation playback", error);
       setIsPlaying(false);
-      toast.error(t("main.word_summary.audio_error"));
+      toast.error(
+        resolvePlaybackErrorMessage(error, t("main.word_summary.audio_error"))
+      );
     }
   };
 
