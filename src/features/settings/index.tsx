@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AppearanceTab } from "@/features/settings/components/appearance-tab";
+import { AudioTab } from "@/features/settings/components/audio-tab";
 import { LlmProvidersTab } from "@/features/settings/components/llm-tab";
 import { DictionaryTab } from "@/features/settings/components/dictionary-tab";
 import { KeyboardTab } from "@/features/settings/components/keyboard-tab";
@@ -10,6 +11,7 @@ import { AboutTab } from "@/features/settings/components/about-tab";
 const tabs = [
   { value: "appearance", labelKey: "settings.tabs.appearance" },
   { value: "llm", labelKey: "settings.tabs.llm" },
+  { value: "audio", labelKey: "settings.tabs.audio" },
   { value: "dictionary", labelKey: "settings.tabs.dictionary" },
   { value: "keyboard", labelKey: "settings.tabs.keyboard" },
   { value: "about", labelKey: "settings.tabs.about" },
@@ -53,6 +55,9 @@ export function SettingsPage() {
       </TabsContent>
       <TabsContent value="llm">
         <LlmProvidersTab />
+      </TabsContent>
+      <TabsContent value="audio">
+        <AudioTab />
       </TabsContent>
       <TabsContent value="dictionary">
         <DictionaryTab />

@@ -19,6 +19,7 @@ pub struct TtsStreamArgs {
     pub cache_file_path: Option<String>,
     pub latency: Option<String>,
     pub normalize: Option<bool>,
+    pub api_key: String,
 }
 
 #[derive(Clone, Serialize)]
@@ -67,16 +68,15 @@ pub async fn start_tts_stream(app: AppHandle, args: TtsStreamArgs) -> Result<(),
         cache_file_path,
         latency,
         normalize,
+        api_key,
     } = args;
 
-    let api_key = match std::env::var("FISH_API_KEY") {
-        Ok(value) => value,
-        Err(_) => {
-            let message = "FISH_API_KEY environment variable is not set".to_string();
-            emit_tts_error(&app, &request_id, &message);
-            return Err(message);
-        }
-    };
+    let resolved_api_key = api_key.trim().to_string();
+    if resolved_api_key.is_empty() {
+        let message = "Audio API key is missing.".to_string();
+        emit_tts_error(&app, &request_id, &message);
+        return Err(message);
+    }
 
     let resolved_format = format
         .unwrap_or_else(|| "mp3".to_string())
@@ -127,11 +127,13 @@ pub async fn start_tts_stream(app: AppHandle, args: TtsStreamArgs) -> Result<(),
         latency: latency_value.to_string(),
     };
 
+    let resolved_model = model.unwrap_or_else(|| "s1".to_string());
+
     let response = match client
         .post(FISH_TTS_URL)
-        .header("authorization", format!("Bearer {api_key}"))
+        .header("authorization", format!("Bearer {resolved_api_key}"))
         .header("content-type", "application/json")
-        .header("model", model.unwrap_or_else(|| "s1".to_string()))
+        .header("model", resolved_model)
         .json(&body)
         .send()
         .await

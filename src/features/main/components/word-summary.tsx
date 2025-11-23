@@ -13,11 +13,15 @@ import { Volume2, Loader2 } from "lucide-react";
 import { WordDefinition } from "@/shared/types/dictionary";
 import { playFishTts, type PlayTtsResult } from "@/shared/services/tts-service";
 import { toast } from "sonner";
+import { useSettings } from "@/features/settings/hooks/use-settings";
 
 export function WordSummaryCard({ definition }: { definition: WordDefinition }) {
   const { t } = useTranslation();
+  const { settings } = useSettings();
   const [isPlaying, setIsPlaying] = useState(false);
   const playerRef = useRef<PlayTtsResult | null>(null);
+  const isAudioConfigured = Boolean(settings.audio.apiKey.trim());
+  const hasWord = Boolean(definition.word?.trim());
 
   const WORD_FORMS_LABELS: Record<string, string> = {
     third_person_singular: t("main.word_summary.third_person"),
@@ -56,6 +60,16 @@ export function WordSummaryCard({ definition }: { definition: WordDefinition }) 
   }, [definition.word, stopPlayback]);
 
   const handlePronunciationClick = async () => {
+    if (!isAudioConfigured) {
+      toast.error(t("main.word_summary.audio_not_configured"));
+      return;
+    }
+
+    if (!hasWord) {
+      toast.error(t("main.word_summary.audio_error"));
+      return;
+    }
+
     if (isPlaying) {
       await stopPlayback();
       return;
@@ -88,9 +102,11 @@ export function WordSummaryCard({ definition }: { definition: WordDefinition }) 
     }
   };
 
-  const ariaLabel = isPlaying
-    ? t("main.word_summary.stop_pronunciation")
-    : t("main.word_summary.play_pronunciation");
+  const ariaLabel = !isAudioConfigured
+    ? t("main.word_summary.audio_not_configured")
+    : isPlaying
+      ? t("main.word_summary.stop_pronunciation")
+      : t("main.word_summary.play_pronunciation");
 
   return (
     <Card>
@@ -104,7 +120,7 @@ export function WordSummaryCard({ definition }: { definition: WordDefinition }) 
             aria-label={ariaLabel}
             title={ariaLabel}
             onClick={handlePronunciationClick}
-            disabled={!definition.word}
+            disabled={!hasWord || !isAudioConfigured}
           >
             {isPlaying ? (
               <Loader2 className="size-4 animate-spin" />

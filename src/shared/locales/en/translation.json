@@ -69,7 +69,8 @@
       "singular": "Singular",
       "play_pronunciation": "Play pronunciation",
       "stop_pronunciation": "Stop pronunciation",
-      "audio_error": "Couldn't play the pronunciation. Please try again."
+      "audio_error": "Couldn't play the pronunciation. Please try again.",
+      "audio_not_configured": "Configure an API key in Settings → Audio to play this pronunciation."
     }
   },
   "statistics": {
@@ -128,6 +129,7 @@
       "appearance": "Appearance",
       "language": "Language",
       "llm": "LLM Providers",
+      "audio": "Audio",
       "dictionary": "Dictionary",
       "keyboard": "Keyboard",
       "about": "About"
@@ -203,6 +205,40 @@
         "error": "Failed to reach the provider. Double-check the base URL and API key.",
         "models_success": "Loaded {{count}} model(s).",
         "models_error": "Unable to load the models list. Check your credentials."
+      }
+    },
+    "audio": {
+      "title": "Audio streaming",
+      "description": "Configure Fish Audio credentials for pronunciation playback.",
+      "api_key": {
+        "label": "API key",
+        "placeholder": "fish_...",
+        "helper": "Stored securely on this device only. Generate keys in your Fish Audio dashboard."
+      },
+      "model": {
+        "label": "TTS model",
+        "placeholder": "Select model",
+        "helper": "S1 offers the most natural speech. Legacy models remain available for compatibility.",
+        "options": {
+          "s1": "S1 (latest, high quality)",
+          "speech16": "Speech 1.6 (legacy, stable)",
+          "speech15": "Speech 1.5 (lightweight)"
+        }
+      },
+      "voice": {
+        "label": "Voice clone",
+        "placeholder": "Select voice",
+        "helper": "Load your published voices or clones from Fish Audio, then choose one for pronunciation.",
+        "load": "Load voices",
+        "loading": "Loading voices…",
+        "empty": "No voices were returned for this account.",
+        "none": "Use default voice",
+        "missing_api_key": "Enter the API key before loading voices.",
+        "custom": "Custom voice ({{voice}})",
+        "toast": {
+          "success": "Loaded {{count}} voice(s).",
+          "error": "Unable to load voices. Check your API key."
+        }
       }
     },
     "dictionary": {

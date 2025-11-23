@@ -3,6 +3,7 @@ import { type PropsWithChildren } from "react";
 import { Provider as JotaiProvider } from "jotai";
 import { Toaster } from "@/components/ui/sonner";
 import { AppearanceSync } from "@/app/appearance-sync";
+import { AudioSync } from "@/app/audio-sync";
 import { DictionaryCacheSync } from "@/app/dictionary-cache-sync";
 import { SystemSync } from "@/app/system-sync";
 
@@ -16,6 +17,7 @@ export function AppProviders({ children }: PropsWithChildren) {
         storageKey="aictionary-theme"
       >
         <AppearanceSync />
+        <AudioSync />
         <DictionaryCacheSync />
         <SystemSync />
         {children}

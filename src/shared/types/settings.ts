@@ -11,6 +11,12 @@ export type LlmProvider = {
   model: string;
 };
 
+export type AudioSettings = {
+  apiKey: string;
+  model: string;
+  voiceId: string;
+};
+
 export type DictionarySettings = {
   cachePath: string;
   lastUpdated: string | null;
@@ -39,6 +45,7 @@ export type AppSettings = {
   theme: ThemePreference;
   language: LanguagePreference;
   llm: LlmProvider;
+  audio: AudioSettings;
   dictionary: DictionarySettings;
   keyboard: KeyboardShortcutSettings;
   about: AboutMetadata;

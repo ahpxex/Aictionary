@@ -1,7 +1,11 @@
 import { useAtom } from "jotai";
 import { useCallback, useMemo } from "react";
 import { defaultSettings, settingsAtom } from "@/shared/state/settings";
-import { AppSettings, ThemePreference } from "@/shared/types/settings";
+import {
+  AppSettings,
+  AudioSettings,
+  ThemePreference,
+} from "@/shared/types/settings";
 
 export function useSettings() {
   const [storedSettings, setSettings] = useAtom(settingsAtom);
@@ -12,6 +16,7 @@ export function useSettings() {
       ...current,
       theme: { ...defaultSettings.theme, ...current.theme },
       llm: { ...defaultSettings.llm, ...current.llm },
+      audio: { ...defaultSettings.audio, ...current.audio },
       dictionary: { ...defaultSettings.dictionary, ...current.dictionary },
       keyboard: { ...defaultSettings.keyboard, ...current.keyboard },
       about: { ...defaultSettings.about, ...current.about },
@@ -118,11 +123,29 @@ export function useSettings() {
     [updateSettings]
   );
 
+  const updateAudio = useCallback(
+    (
+      changes:
+        | Partial<AudioSettings>
+        | ((prev: AudioSettings) => AudioSettings)
+    ) => {
+      updateSettings((current) => ({
+        ...current,
+        audio:
+          typeof changes === "function"
+            ? changes(current.audio)
+            : { ...current.audio, ...changes },
+      }));
+    },
+    [updateSettings]
+  );
+
   return {
     settings,
     updateSettings,
     updateTheme,
     updateLlm,
+    updateAudio,
     updateDictionary,
     updateKeyboard,
     updateLanguage,

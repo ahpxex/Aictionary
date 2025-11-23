@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { getRuntimeAudioSettings } from "@/shared/state/audio-runtime";
 
 type TtsChunkEvent = {
   requestId: string;
@@ -24,10 +25,12 @@ export type StartTtsOptions = {
   text: string;
   format?: "mp3" | "wav" | "opus";
   cacheFilePath?: string;
+  voiceId?: string;
   referenceId?: string;
   model?: string;
   latency?: "normal" | "balanced";
   normalize?: boolean;
+  apiKey?: string;
 };
 
 export type TtsStreamHandle = {
@@ -41,6 +44,12 @@ const MIME_BY_FORMAT: Record<string, string> = {
   mp3: "audio/mpeg",
   wav: 'audio/wav; codecs="1"',
   opus: 'audio/ogg; codecs="opus"',
+};
+
+type ResolvedAudioConfig = {
+  apiKey: string;
+  model: string;
+  voiceId?: string;
 };
 
 export async function startFishTtsStream(
@@ -125,14 +134,17 @@ export async function startFishTtsStream(
             settleError(error);
           });
 
+          const audioConfig = resolveAudioConfig(options);
+
           const command = invoke("start_tts_stream", {
             args: {
               text: options.text,
               requestId,
               format: options.format,
               cacheFilePath: options.cacheFilePath,
-              referenceId: options.referenceId,
-              model: options.model,
+              referenceId: audioConfig.voiceId,
+              model: audioConfig.model,
+              apiKey: audioConfig.apiKey,
               latency: options.latency,
               normalize: options.normalize,
             },
@@ -359,6 +371,27 @@ class MediaSourceStreamPlayer {
     }
     this.pendingClose = false;
   }
+}
+
+function resolveAudioConfig(options: StartTtsOptions): ResolvedAudioConfig {
+  const runtime = getRuntimeAudioSettings();
+  const apiKey = (options.apiKey ?? runtime.apiKey).trim();
+  if (!apiKey) {
+    throw new Error("Audio API key is missing. Configure it in Settings > Audio.");
+  }
+
+  const model = (options.model ?? runtime.model ?? "s1").trim() || "s1";
+  const runtimeVoice = (runtime.voiceId || "").trim();
+  const voiceId =
+    options.voiceId ??
+    options.referenceId ??
+    (runtimeVoice.length > 0 ? runtimeVoice : undefined);
+
+  return {
+    apiKey,
+    model,
+    voiceId,
+  };
 }
 
 function decodeChunk(base64Value: string): Uint8Array {

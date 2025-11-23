@@ -13,6 +13,11 @@ export const defaultSettings: AppSettings = {
     apiKey: "",
     model: "gpt-4o-mini",
   },
+  audio: {
+    apiKey: "",
+    model: "s1",
+    voiceId: "",
+  },
   dictionary: {
     cachePath: "",
     lastUpdated: null,

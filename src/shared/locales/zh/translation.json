@@ -69,7 +69,8 @@
       "singular": "单数",
       "play_pronunciation": "播放发音",
       "stop_pronunciation": "停止发音",
-      "audio_error": "无法播放发音，请稍后再试。"
+      "audio_error": "无法播放发音，请稍后再试。",
+      "audio_not_configured": "请在 设置 → 音频 中配置 Fish Audio API Key 后再播放发音。"
     }
   },
   "statistics": {
@@ -128,6 +129,7 @@
       "appearance": "外观",
       "language": "语言",
       "llm": "大语言模型",
+      "audio": "音频",
       "dictionary": "词典",
       "keyboard": "键盘",
       "about": "关于"
@@ -203,6 +205,40 @@
         "error": "无法连接到提供商。请仔细检查基础 URL 和 API 密钥。",
         "models_success": "已加载 {{count}} 个模型。",
         "models_error": "无法获取模型列表，请检查凭据。"
+      }
+    },
+    "audio": {
+      "title": "音频流",
+      "description": "配置 Fish Audio 凭证，用于播放单词发音。",
+      "api_key": {
+        "label": "API Key",
+        "placeholder": "fish_...",
+        "helper": "仅存储在本地，请在 Fish Audio 控制台生成。"
+      },
+      "model": {
+        "label": "TTS 模型",
+        "placeholder": "选择模型",
+        "helper": "S1 音质最佳，旧版模型适合兼容或轻量场景。",
+        "options": {
+          "s1": "S1（最新，高品质）",
+          "speech16": "Speech 1.6（旧版，稳定）",
+          "speech15": "Speech 1.5（轻量）"
+        }
+      },
+      "voice": {
+        "label": "语音克隆",
+        "placeholder": "选择语音",
+        "helper": "先加载 Fish Audio 中的语音克隆，再选择用于发音。",
+        "load": "加载语音",
+        "loading": "正在加载…",
+        "empty": "该账号暂无可用语音。",
+        "none": "使用默认语音",
+        "missing_api_key": "请输入 API Key 后再加载语音。",
+        "custom": "自定义语音（{{voice}}）",
+        "toast": {
+          "success": "已加载 {{count}} 个语音。",
+          "error": "无法加载语音，请检查 API Key。"
+        }
       }
     },
     "dictionary": {
