@@ -48,6 +48,7 @@ impl AudioCacheWriter {
 #[serde(rename_all = "camelCase")]
 pub struct AudioCacheArgs {
     pub word: String,
+    pub provider: Option<String>,
     pub model: Option<String>,
     pub voice_id: Option<String>,
     pub format: Option<String>,
@@ -103,10 +104,15 @@ fn build_audio_cache_path(app: &AppHandle, args: &AudioCacheArgs) -> Result<Path
     let format_input = args.format.as_deref().unwrap_or("mp3");
     let format = sanitize_segment(Some(format_input)).unwrap_or_else(|| "mp3".into());
     let word_segment = sanitize_segment(Some(args.word.as_str())).unwrap_or_else(|| "word".into());
+    let provider_segment = sanitize_segment(args.provider.as_deref());
     let model_segment = sanitize_segment(args.model.as_deref());
     let voice_segment = sanitize_segment(args.voice_id.as_deref());
 
     let mut filename = word_segment;
+    if let Some(provider) = provider_segment {
+        filename.push_str("--");
+        filename.push_str(&provider);
+    }
     if let Some(model) = model_segment {
         filename.push_str("--");
         filename.push_str(&model);

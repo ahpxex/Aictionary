@@ -26,12 +26,8 @@ export type StartTtsOptions = {
   text: string;
   format?: "mp3" | "wav" | "opus";
   cacheFilePath?: string;
-  voiceId?: string;
-  referenceId?: string;
-  model?: string;
   latency?: "normal" | "balanced";
   normalize?: boolean;
-  apiKey?: string;
 };
 
 export type TtsStreamHandle = {
@@ -48,12 +44,15 @@ const MIME_BY_FORMAT: Record<string, string> = {
 };
 
 type ResolvedAudioConfig = {
+  provider: "fish" | "openai";
   apiKey: string;
   model: string;
-  voiceId?: string;
+  /** Fish reference id or OpenAI-compatible voice name. */
+  voice?: string;
+  baseUrl?: string;
 };
 
-export async function startFishTtsStream(
+export async function startTtsStream(
   options: StartTtsOptions
 ): Promise<TtsStreamHandle> {
   if (!options.text?.trim()) {
@@ -139,7 +138,7 @@ export async function startFishTtsStream(
             settleError(error);
           });
 
-          const audioConfig = resolveAudioConfig(options);
+          const audioConfig = resolveAudioConfig();
 
           const command = invoke("start_tts_stream", {
             args: {
@@ -147,7 +146,12 @@ export async function startFishTtsStream(
               requestId,
               format: options.format,
               cacheFilePath: options.cacheFilePath,
-              referenceId: audioConfig.voiceId,
+              provider: audioConfig.provider,
+              baseUrl: audioConfig.baseUrl,
+              referenceId:
+                audioConfig.provider === "fish" ? audioConfig.voice : undefined,
+              voice:
+                audioConfig.provider === "openai" ? audioConfig.voice : undefined,
               model: audioConfig.model,
               apiKey: audioConfig.apiKey,
               latency: options.latency,
@@ -216,10 +220,10 @@ export type PlayTtsResult = {
   stop: () => Promise<void>;
 };
 
-export async function playFishTts(
+export async function playTts(
   options: PlayTtsOptions
 ): Promise<PlayTtsResult> {
-  const handle = await startFishTtsStream(options);
+  const handle = await startTtsStream(options);
   const mimeType =
     options.mimeTypeOverride ??
     MIME_BY_FORMAT[options.format ?? "mp3"] ??
@@ -482,26 +486,37 @@ class MediaSourceStreamPlayer {
   }
 }
 
-function resolveAudioConfig(options: StartTtsOptions): ResolvedAudioConfig {
+function resolveAudioConfig(): ResolvedAudioConfig {
   const runtime = getRuntimeAudioSettings();
-  const apiKey = (options.apiKey ?? runtime.apiKey).trim();
+
+  if (runtime.provider === "openai") {
+    const baseUrl = runtime.openai.baseUrl.trim();
+    if (!baseUrl) {
+      throw new Error(
+        "TTS endpoint URL is missing. Configure it in Settings > Audio."
+      );
+    }
+
+    return {
+      provider: "openai",
+      baseUrl,
+      apiKey: runtime.openai.apiKey.trim(),
+      model: runtime.openai.model.trim() || "tts-1",
+      voice: runtime.openai.voice.trim() || "alloy",
+    };
+  }
+
+  const apiKey = runtime.fish.apiKey.trim();
   if (!apiKey) {
     throw new Error("Audio API key is missing. Configure it in Settings > Audio.");
   }
 
-  const providedVoice = (options.voiceId ?? "").trim();
-  const providedReference = (options.referenceId ?? "").trim();
-  const model = (options.model ?? runtime.model ?? "s1").trim() || "s1";
-  const runtimeVoice = (runtime.voiceId || "").trim();
-  const voiceId =
-    providedVoice ||
-    providedReference ||
-    (runtimeVoice.length > 0 ? runtimeVoice : undefined);
-
+  const voiceId = runtime.fish.voiceId.trim();
   return {
+    provider: "fish",
     apiKey,
-    model,
-    voiceId,
+    model: runtime.fish.model.trim() || "s1",
+    voice: voiceId.length > 0 ? voiceId : undefined,
   };
 }
 

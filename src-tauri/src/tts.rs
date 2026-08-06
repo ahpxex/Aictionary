@@ -16,11 +16,49 @@ pub struct TtsStreamArgs {
     pub request_id: String,
     pub format: Option<String>,
     pub model: Option<String>,
+    /// "fish" (default) or "openai" for any OpenAI-compatible
+    /// /v1/audio/speech endpoint.
+    pub provider: Option<String>,
+    /// Fish Audio custom voice reference id.
     pub reference_id: Option<String>,
+    /// OpenAI-compatible voice name (e.g. "alloy").
+    pub voice: Option<String>,
+    /// Endpoint base for OpenAI-compatible providers.
+    pub base_url: Option<String>,
     pub cache_file_path: Option<String>,
     pub latency: Option<String>,
     pub normalize: Option<bool>,
+    #[serde(default)]
     pub api_key: String,
+}
+
+/// Build the synthesis endpoint from a user-supplied base URL. Accepts a
+/// bare host, a base ending in /v1, or the full /audio/speech path.
+fn openai_speech_endpoint(base_url: &str) -> String {
+    let base = base_url.trim().trim_end_matches('/');
+    if base.ends_with("/audio/speech") {
+        base.to_string()
+    } else if base.ends_with("/v1") {
+        format!("{base}/audio/speech")
+    } else {
+        format!("{base}/v1/audio/speech")
+    }
+}
+
+/// Pull a human-readable message out of a provider error body. Fish uses
+/// {"message": ...}; OpenAI-compatible endpoints use {"error": {"message": ...}}.
+fn extract_error_message(details: &str) -> Option<String> {
+    let value = serde_json::from_str::<Value>(details).ok()?;
+    value
+        .get("message")
+        .and_then(Value::as_str)
+        .or_else(|| {
+            value
+                .get("error")
+                .and_then(|e| e.get("message"))
+                .and_then(Value::as_str)
+        })
+        .map(str::to_string)
 }
 
 #[derive(Clone, Serialize)]
@@ -65,7 +103,10 @@ pub async fn start_tts_stream(app: AppHandle, args: TtsStreamArgs) -> Result<(),
         request_id,
         format,
         model,
+        provider,
         reference_id,
+        voice,
+        base_url,
         cache_file_path,
         latency,
         normalize,
@@ -73,7 +114,11 @@ pub async fn start_tts_stream(app: AppHandle, args: TtsStreamArgs) -> Result<(),
     } = args;
 
     let resolved_api_key = api_key.trim().to_string();
-    if resolved_api_key.is_empty() {
+    let is_openai = matches!(provider.as_deref(), Some("openai"));
+
+    // Fish Audio always needs a key; OpenAI-compatible wrappers often run
+    // locally without authentication.
+    if !is_openai && resolved_api_key.is_empty() {
         let message = "Audio API key is missing.".to_string();
         emit_tts_error(&app, &request_id, &message);
         return Err(message);
@@ -120,28 +165,61 @@ pub async fn start_tts_stream(app: AppHandle, args: TtsStreamArgs) -> Result<(),
     };
 
     let client = reqwest::Client::new();
-    let body = FishTtsBody {
-        text: normalized_text,
-        format: resolved_format.clone(),
-        reference_id: reference_id.filter(|value| !value.trim().is_empty()),
-        normalize: normalize.unwrap_or(true),
-        latency: latency_value.to_string(),
+
+    let request = if is_openai {
+        let endpoint_base = base_url.as_deref().map(str::trim).unwrap_or_default();
+        if endpoint_base.is_empty() {
+            let message = "TTS endpoint URL is missing.".to_string();
+            emit_tts_error(&app, &request_id, &message);
+            return Err(message);
+        }
+
+        let body = serde_json::json!({
+            "model": model
+                .as_deref()
+                .map(str::trim)
+                .filter(|value| !value.is_empty())
+                .unwrap_or("tts-1"),
+            "input": normalized_text,
+            "voice": voice
+                .as_deref()
+                .map(str::trim)
+                .filter(|value| !value.is_empty())
+                .unwrap_or("alloy"),
+            "response_format": resolved_format,
+        });
+
+        let mut builder = client
+            .post(openai_speech_endpoint(endpoint_base))
+            .header("content-type", "application/json")
+            .json(&body);
+        if !resolved_api_key.is_empty() {
+            builder = builder.bearer_auth(&resolved_api_key);
+        }
+        builder
+    } else {
+        let body = FishTtsBody {
+            text: normalized_text,
+            format: resolved_format.clone(),
+            reference_id: reference_id.filter(|value| !value.trim().is_empty()),
+            normalize: normalize.unwrap_or(true),
+            latency: latency_value.to_string(),
+        };
+
+        client
+            .post(FISH_TTS_URL)
+            .header("authorization", format!("Bearer {resolved_api_key}"))
+            .header("content-type", "application/json")
+            .header("model", model.unwrap_or_else(|| "s1".to_string()))
+            .json(&body)
     };
 
-    let resolved_model = model.unwrap_or_else(|| "s1".to_string());
+    let provider_name = if is_openai { "TTS provider" } else { "Fish Audio" };
 
-    let response = match client
-        .post(FISH_TTS_URL)
-        .header("authorization", format!("Bearer {resolved_api_key}"))
-        .header("content-type", "application/json")
-        .header("model", resolved_model)
-        .json(&body)
-        .send()
-        .await
-    {
+    let response = match request.send().await {
         Ok(result) => result,
         Err(err) => {
-            let message = format!("Failed to contact Fish Audio: {err}");
+            let message = format!("Failed to contact {provider_name}: {err}");
             emit_tts_error(&app, &request_id, &message);
             return Err(message);
         }
@@ -154,12 +232,8 @@ pub async fn start_tts_stream(app: AppHandle, args: TtsStreamArgs) -> Result<(),
             .await
             .unwrap_or_else(|_| "Unable to read error message".to_string());
 
-        let friendly = serde_json::from_str::<Value>(&details)
-            .ok()
-            .and_then(|value| value.get("message").and_then(|m| m.as_str()).map(|s| s.to_string()));
-
-        let message = friendly.unwrap_or_else(|| {
-            format!("Fish Audio request failed ({status}): {details}")
+        let message = extract_error_message(&details).unwrap_or_else(|| {
+            format!("{provider_name} request failed ({status}): {details}")
         });
 
         emit_tts_error(&app, &request_id, &message);

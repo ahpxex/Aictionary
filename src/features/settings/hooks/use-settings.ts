@@ -1,6 +1,10 @@
 import { useAtom } from "jotai";
 import { useCallback, useMemo } from "react";
-import { defaultSettings, settingsAtom } from "@/shared/state/settings";
+import {
+  defaultSettings,
+  normalizeAudioSettings,
+  settingsAtom,
+} from "@/shared/state/settings";
 import {
   AppSettings,
   AudioSettings,
@@ -20,7 +24,7 @@ export function useSettings() {
       ...current,
       theme: { ...defaultSettings.theme, ...(current.theme ?? {}) },
       llm: { ...defaultSettings.llm, ...(current.llm ?? {}) },
-      audio: { ...defaultSettings.audio, ...(current.audio ?? {}) },
+      audio: normalizeAudioSettings(current.audio),
       anki: {
         ...defaultSettings.anki,
         ...(current.anki ?? {}),

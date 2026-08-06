@@ -229,27 +229,61 @@
       }
     },
     "audio": {
-      "title": "音频流",
-      "description": "配置 Fish Audio 凭证，用于播放单词发音。",
-      "api_key": {
-        "label": "API Key",
-        "placeholder": "fish_...",
-        "helper": "仅存储在本地，请在 Fish Audio 控制台生成。"
+      "title": "发音",
+      "description": "选择用于单词发音的语音合成提供商。",
+      "provider": {
+        "label": "提供商",
+        "fish": "Fish Audio",
+        "openai": "OpenAI 兼容",
+        "helper": "OpenAI 兼容涵盖 OpenAI API 及 openai-edge-tts 等自建服务。"
       },
-      "model": {
-        "label": "TTS 模型",
-        "placeholder": "选择模型",
-        "helper": "S1 音质最佳，旧版模型适合兼容或轻量场景。",
-        "options": {
-          "s1": "S1（最新，高品质）",
-          "speech16": "Speech 1.6（旧版，稳定）",
-          "speech15": "Speech 1.5（轻量）"
+      "fish": {
+        "title": "Fish Audio",
+        "description": "来自 api.fish.audio 的流式语音合成。",
+        "api_key": {
+          "label": "API Key",
+          "placeholder": "fa-...",
+          "helper": "仅存储在本地，请在 Fish Audio 控制台生成。"
+        },
+        "model": {
+          "label": "TTS 模型",
+          "placeholder": "选择模型",
+          "helper": "S1 音质最佳，旧版模型适合兼容或轻量场景。",
+          "options": {
+            "s1": "S1（最佳音质）",
+            "speech16": "Speech 1.6",
+            "speech15": "Speech 1.5（轻量）"
+          }
+        },
+        "voice": {
+          "label": "Reference ID",
+          "placeholder": "可选的音色引用 ID",
+          "helper": "留空则使用默认语音。"
         }
       },
-      "voice": {
-        "label": "Reference ID",
-        "placeholder": "输入 Fish Audio Reference ID（可选）",
-        "helper": "留空则使用默认语音。"
+      "openai": {
+        "title": "OpenAI 兼容",
+        "description": "任何实现 /v1/audio/speech 接口的服务。",
+        "base_url": {
+          "label": "服务地址",
+          "placeholder": "http://localhost:5050/v1",
+          "helper": "服务的 Base URL，如 https://api.openai.com/v1 或本地 openai-edge-tts 实例。"
+        },
+        "api_key": {
+          "label": "API Key",
+          "placeholder": "sk-...（本地服务可留空）",
+          "helper": "填写后以 Bearer 方式发送，本地服务通常无需配置。"
+        },
+        "model": {
+          "label": "模型",
+          "placeholder": "tts-1",
+          "helper": "传给接口的模型名，如 tts-1 或 tts-1-hd。"
+        },
+        "voice": {
+          "label": "音色",
+          "placeholder": "alloy",
+          "helper": "音色名称，如 alloy、echo，edge-tts 服务可用 en-US-AndrewNeural。"
+        }
       }
     },
     "anki": {

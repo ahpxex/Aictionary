@@ -10,14 +10,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useSettings } from "@/features/settings/hooks/use-settings";
 import { FISH_AUDIO_MODEL_OPTIONS } from "@/features/settings/constants/audio";
+import type { TtsProviderKind } from "@/shared/types/settings";
 
 export function AudioTab() {
   const { t } = useTranslation();
   const { settings, updateAudio } = useSettings();
+  const audio = settings.audio;
 
-  const modelOptions = useMemo(
+  const fishModelOptions = useMemo(
     () =>
       FISH_AUDIO_MODEL_OPTIONS.map((option) => ({
         value: option.value,
@@ -26,6 +29,14 @@ export function AudioTab() {
     [t]
   );
 
+  const updateFish = (changes: Partial<typeof audio.fish>) => {
+    updateAudio((prev) => ({ ...prev, fish: { ...prev.fish, ...changes } }));
+  };
+
+  const updateOpenAi = (changes: Partial<typeof audio.openai>) => {
+    updateAudio((prev) => ({ ...prev, openai: { ...prev.openai, ...changes } }));
+  };
+
   return (
     <div className="flex flex-col">
       <Section
@@ -33,39 +44,72 @@ export function AudioTab() {
         description={t("settings.audio.description")}
         contentClassName="grid gap-4"
       >
+        <div className="grid gap-2">
+          <Label>{t("settings.audio.provider.label")}</Label>
+          <ToggleGroup
+            type="single"
+            variant="outline"
+            spacing={0}
+            size="sm"
+            value={audio.provider}
+            onValueChange={(value) => {
+              if (!value) return;
+              updateAudio({ provider: value as TtsProviderKind });
+            }}
+            className="w-fit bg-transparent"
+          >
+            <ToggleGroupItem value="fish">
+              {t("settings.audio.provider.fish")}
+            </ToggleGroupItem>
+            <ToggleGroupItem value="openai">
+              {t("settings.audio.provider.openai")}
+            </ToggleGroupItem>
+          </ToggleGroup>
+          <p className="text-xs text-muted-foreground">
+            {t("settings.audio.provider.helper")}
+          </p>
+        </div>
+      </Section>
+
+      {audio.provider === "fish" ? (
+        <Section
+          title={t("settings.audio.fish.title")}
+          description={t("settings.audio.fish.description")}
+          contentClassName="grid gap-4"
+        >
           <div className="grid gap-2">
-            <Label htmlFor="audio-api-key">
-              {t("settings.audio.api_key.label")}
+            <Label htmlFor="fish-api-key">
+              {t("settings.audio.fish.api_key.label")}
             </Label>
             <Input
-              id="audio-api-key"
+              id="fish-api-key"
               type="password"
-              placeholder={t("settings.audio.api_key.placeholder")}
-              value={settings.audio.apiKey}
+              placeholder={t("settings.audio.fish.api_key.placeholder")}
+              value={audio.fish.apiKey}
               onChange={(event) =>
-                updateAudio({ apiKey: event.target.value.trim() })
+                updateFish({ apiKey: event.target.value.trim() })
               }
             />
             <p className="text-xs text-muted-foreground">
-              {t("settings.audio.api_key.helper")}
+              {t("settings.audio.fish.api_key.helper")}
             </p>
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="audio-model">
-              {t("settings.audio.model.label")}
+            <Label htmlFor="fish-model">
+              {t("settings.audio.fish.model.label")}
             </Label>
             <Select
-              value={settings.audio.model}
-              onValueChange={(value) => updateAudio({ model: value })}
+              value={audio.fish.model}
+              onValueChange={(value) => updateFish({ model: value })}
             >
-              <SelectTrigger id="audio-model">
+              <SelectTrigger id="fish-model">
                 <SelectValue
-                  placeholder={t("settings.audio.model.placeholder")}
+                  placeholder={t("settings.audio.fish.model.placeholder")}
                 />
               </SelectTrigger>
               <SelectContent>
-                {modelOptions.map((option) => (
+                {fishModelOptions.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
                   </SelectItem>
@@ -73,25 +117,97 @@ export function AudioTab() {
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">
-              {t("settings.audio.model.helper")}
+              {t("settings.audio.fish.model.helper")}
             </p>
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="audio-voice">
-              {t("settings.audio.voice.label")}
+            <Label htmlFor="fish-voice">
+              {t("settings.audio.fish.voice.label")}
             </Label>
             <Input
-              id="audio-voice"
-              placeholder={t("settings.audio.voice.placeholder")}
-              value={settings.audio.voiceId}
-              onChange={(event) => updateAudio({ voiceId: event.target.value })}
+              id="fish-voice"
+              placeholder={t("settings.audio.fish.voice.placeholder")}
+              value={audio.fish.voiceId}
+              onChange={(event) => updateFish({ voiceId: event.target.value })}
             />
             <p className="text-xs text-muted-foreground">
-              {t("settings.audio.voice.helper")}
+              {t("settings.audio.fish.voice.helper")}
             </p>
           </div>
         </Section>
+      ) : (
+        <Section
+          title={t("settings.audio.openai.title")}
+          description={t("settings.audio.openai.description")}
+          contentClassName="grid gap-4"
+        >
+          <div className="grid gap-2">
+            <Label htmlFor="openai-base-url">
+              {t("settings.audio.openai.base_url.label")}
+            </Label>
+            <Input
+              id="openai-base-url"
+              placeholder={t("settings.audio.openai.base_url.placeholder")}
+              value={audio.openai.baseUrl}
+              onChange={(event) =>
+                updateOpenAi({ baseUrl: event.target.value.trim() })
+              }
+            />
+            <p className="text-xs text-muted-foreground">
+              {t("settings.audio.openai.base_url.helper")}
+            </p>
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="openai-api-key">
+              {t("settings.audio.openai.api_key.label")}
+            </Label>
+            <Input
+              id="openai-api-key"
+              type="password"
+              placeholder={t("settings.audio.openai.api_key.placeholder")}
+              value={audio.openai.apiKey}
+              onChange={(event) =>
+                updateOpenAi({ apiKey: event.target.value.trim() })
+              }
+            />
+            <p className="text-xs text-muted-foreground">
+              {t("settings.audio.openai.api_key.helper")}
+            </p>
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="openai-model">
+              {t("settings.audio.openai.model.label")}
+            </Label>
+            <Input
+              id="openai-model"
+              placeholder={t("settings.audio.openai.model.placeholder")}
+              value={audio.openai.model}
+              onChange={(event) => updateOpenAi({ model: event.target.value })}
+            />
+            <p className="text-xs text-muted-foreground">
+              {t("settings.audio.openai.model.helper")}
+            </p>
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="openai-voice">
+              {t("settings.audio.openai.voice.label")}
+            </Label>
+            <Input
+              id="openai-voice"
+              placeholder={t("settings.audio.openai.voice.placeholder")}
+              value={audio.openai.voice}
+              onChange={(event) => updateOpenAi({ voice: event.target.value })}
+            />
+            <p className="text-xs text-muted-foreground">
+              {t("settings.audio.openai.voice.helper")}
+            </p>
+          </div>
+        </Section>
+      )}
     </div>
   );
 }

@@ -17,7 +17,7 @@ import {
 } from "@/shared/lib/dictionary-entry";
 import {
   playCachedAudio,
-  playFishTts,
+  playTts,
   type PlayTtsResult,
 } from "@/shared/services/tts-service";
 import { useSettings } from "@/features/settings/hooks/use-settings";
@@ -366,7 +366,15 @@ export function EntryView({
   const [isPlaying, setIsPlaying] = useState(false);
   const [isSavingToAnki, setIsSavingToAnki] = useState(false);
   const playerRef = useRef<PlayTtsResult | null>(null);
-  const isAudioConfigured = Boolean(settings.audio.apiKey.trim());
+  const audio = settings.audio;
+  const isAudioConfigured =
+    audio.provider === "openai"
+      ? Boolean(audio.openai.baseUrl.trim())
+      : Boolean(audio.fish.apiKey.trim());
+  const activeVoice =
+    audio.provider === "openai" ? audio.openai.voice : audio.fish.voiceId;
+  const activeModel =
+    audio.provider === "openai" ? audio.openai.model : audio.fish.model;
   const isAnkiConfigured = Boolean(
     settings.anki.apiUrl.trim() && settings.anki.deckName.trim()
   );
@@ -420,8 +428,9 @@ export function EntryView({
     let cacheEntry: { path: string; exists: boolean } | null = null;
     try {
       cacheEntry = await resolveAudioCache(entry.headword, {
-        model: settings.audio.model,
-        voiceId: settings.audio.voiceId,
+        provider: audio.provider,
+        model: activeModel,
+        voiceId: activeVoice,
         format: AUDIO_FORMAT,
       });
     } catch (error) {
@@ -442,7 +451,7 @@ export function EntryView({
       }
 
       if (!player) {
-        player = await playFishTts({
+        player = await playTts({
           text: entry.headword,
           autoplay: true,
           format: AUDIO_FORMAT,

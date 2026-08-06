@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 
 export type AudioCacheOptions = {
+  provider?: string | null;
   model?: string | null;
   voiceId?: string | null;
   format?: string | null;
@@ -18,6 +19,7 @@ export async function resolveAudioCache(
   const result = await invoke<AudioCacheEntry>("resolve_audio_cache_entry", {
     args: {
       word,
+      provider: options.provider ?? null,
       model: options.model ?? null,
       voiceId: options.voiceId ?? null,
       format: options.format ?? null,

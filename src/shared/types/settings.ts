@@ -10,10 +10,31 @@ export type LlmProvider = {
   model: string;
 };
 
-export type AudioSettings = {
+export type TtsProviderKind = "fish" | "openai";
+
+export type FishAudioSettings = {
   apiKey: string;
   model: string;
+  /** Fish Audio reference id selecting a custom voice. */
   voiceId: string;
+};
+
+/**
+ * Any endpoint speaking the OpenAI `/v1/audio/speech` contract: the OpenAI
+ * API itself or self-hosted wrappers such as openai-edge-tts. The API key is
+ * optional because local wrappers often run without authentication.
+ */
+export type OpenAiTtsSettings = {
+  baseUrl: string;
+  apiKey: string;
+  model: string;
+  voice: string;
+};
+
+export type AudioSettings = {
+  provider: TtsProviderKind;
+  fish: FishAudioSettings;
+  openai: OpenAiTtsSettings;
 };
 
 export type AnkiSettings = {

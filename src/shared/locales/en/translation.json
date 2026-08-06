@@ -229,27 +229,61 @@
       }
     },
     "audio": {
-      "title": "Audio streaming",
-      "description": "Configure Fish Audio credentials for pronunciation playback.",
-      "api_key": {
-        "label": "API key",
-        "placeholder": "fish_...",
-        "helper": "Stored securely on this device only. Generate keys in your Fish Audio dashboard."
+      "title": "Pronunciation",
+      "description": "Choose the text-to-speech provider used for word playback.",
+      "provider": {
+        "label": "Provider",
+        "fish": "Fish Audio",
+        "openai": "OpenAI compatible",
+        "helper": "OpenAI compatible covers the OpenAI API and self-hosted wrappers such as openai-edge-tts."
       },
-      "model": {
-        "label": "TTS model",
-        "placeholder": "Select model",
-        "helper": "S1 offers the most natural speech. Legacy models remain available for compatibility.",
-        "options": {
-          "s1": "S1 (latest, high quality)",
-          "speech16": "Speech 1.6 (legacy, stable)",
-          "speech15": "Speech 1.5 (lightweight)"
+      "fish": {
+        "title": "Fish Audio",
+        "description": "Streaming TTS from api.fish.audio.",
+        "api_key": {
+          "label": "API key",
+          "placeholder": "fa-...",
+          "helper": "Stored locally only. Generate one in the Fish Audio console."
+        },
+        "model": {
+          "label": "TTS model",
+          "placeholder": "Select a model",
+          "helper": "S1 sounds best; the older models trade quality for speed.",
+          "options": {
+            "s1": "S1 (best quality)",
+            "speech16": "Speech 1.6",
+            "speech15": "Speech 1.5 (light)"
+          }
+        },
+        "voice": {
+          "label": "Reference ID",
+          "placeholder": "Optional voice reference id",
+          "helper": "Leave empty to use the default voice."
         }
       },
-      "voice": {
-        "label": "Reference ID",
-        "placeholder": "Enter a Fish Audio reference ID (optional)",
-        "helper": "Leave empty to use the default system voice."
+      "openai": {
+        "title": "OpenAI compatible",
+        "description": "Any endpoint speaking the /v1/audio/speech contract.",
+        "base_url": {
+          "label": "Endpoint URL",
+          "placeholder": "http://localhost:5050/v1",
+          "helper": "Base URL of the service, e.g. https://api.openai.com/v1 or a local openai-edge-tts instance."
+        },
+        "api_key": {
+          "label": "API key",
+          "placeholder": "sk-... (optional for local services)",
+          "helper": "Sent as a Bearer token when set. Local wrappers may not need one."
+        },
+        "model": {
+          "label": "Model",
+          "placeholder": "tts-1",
+          "helper": "Model name passed to the endpoint, e.g. tts-1 or tts-1-hd."
+        },
+        "voice": {
+          "label": "Voice",
+          "placeholder": "alloy",
+          "helper": "Voice name, e.g. alloy, echo, or en-US-AndrewNeural for edge-tts wrappers."
+        }
       }
     },
     "anki": {
