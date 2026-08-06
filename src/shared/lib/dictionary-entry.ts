@@ -57,6 +57,40 @@ export function splitMeaningsByPriority(
   return { visible, hidden };
 }
 
+/**
+ * Chinese labels for Wiktionary part-of-speech names. These pair with the
+ * English pos in the bilingual runner (e.g. "NOUN | 名词"); they describe the
+ * dictionary data itself, not the UI language, so they live here instead of
+ * the i18n catalogs.
+ */
+const POS_LABELS_ZH: Record<string, string> = {
+  noun: "名词",
+  verb: "动词",
+  adjective: "形容词",
+  adverb: "副词",
+  pronoun: "代词",
+  preposition: "介词",
+  conjunction: "连词",
+  interjection: "感叹词",
+  determiner: "限定词",
+  article: "冠词",
+  numeral: "数词",
+  particle: "助词",
+  name: "专有名词",
+  phrase: "短语",
+  proverb: "谚语",
+  prefix: "前缀",
+  suffix: "后缀",
+  affix: "词缀",
+  abbreviation: "缩写",
+  symbol: "符号",
+  character: "字符",
+};
+
+export function posLabelZh(pos: string): string | null {
+  return POS_LABELS_ZH[pos.toLowerCase()] ?? null;
+}
+
 /** Group the relation edges of a pos group by relation type. */
 export function groupRelationsByType(
   group: DictionaryPosGroup

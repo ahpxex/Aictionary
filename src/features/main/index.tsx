@@ -1,10 +1,8 @@
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useDictionarySearch } from "@/features/main/hooks/use-dictionary-search";
-import { ComparisonList } from "@/features/main/components/comparison-list";
-import { PosGroupList } from "@/features/main/components/pos-group-list";
+import { EntryView } from "@/features/main/components/entry-view";
 import { SearchForm } from "@/features/main/components/search-form";
-import { WordSummaryCard } from "@/features/main/components/word-summary";
 
 export function MainPage() {
   const { t } = useTranslation();
@@ -25,8 +23,8 @@ export function MainPage() {
   }, []);
 
   return (
-    <div className="flex flex-1 flex-col gap-8">
-      <div className="flex flex-col items-center gap-4">
+    <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-10">
+      <div className="flex flex-col gap-4">
         <SearchForm
           ref={searchFormRef}
           onSearch={search}
@@ -34,9 +32,7 @@ export function MainPage() {
           initialValue={result?.entry.headword}
         />
         {!result && !isGeneratingFromLlm && (
-          <p className="text-muted-foreground text-sm">
-            {t("main.empty_state")}
-          </p>
+          <p className="text-sm text-muted-foreground">{t("main.empty_state")}</p>
         )}
       </div>
 
@@ -50,11 +46,7 @@ export function MainPage() {
       )}
 
       {result && !isGeneratingFromLlm && (
-        <div className="flex flex-col gap-6">
-          <WordSummaryCard result={result} />
-          <PosGroupList entry={result.entry} onSearchWord={search} />
-          <ComparisonList entry={result.entry} />
-        </div>
+        <EntryView result={result} onSearchWord={search} />
       )}
     </div>
   );

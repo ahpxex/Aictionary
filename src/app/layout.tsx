@@ -1,6 +1,5 @@
 import { Outlet, NavLink, useNavigate } from "react-router";
-import { BookOpenText, LineChart, Settings } from "lucide-react";
-import { ReactNode, useEffect } from "react";
+import { useEffect } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
@@ -11,13 +10,12 @@ import { useGlobalShortcuts } from "@/shared/hooks/use-global-shortcuts";
 type NavItem = {
   to: string;
   labelKey: string;
-  icon: ReactNode;
 };
 
 const NAV_ITEMS: NavItem[] = [
-  { to: "/", labelKey: "nav.dictionary", icon: <BookOpenText className="size-4" /> },
-  { to: "/statistics", labelKey: "nav.statistics", icon: <LineChart className="size-4" /> },
-  { to: "/settings", labelKey: "nav.settings", icon: <Settings className="size-4" /> },
+  { to: "/", labelKey: "nav.dictionary" },
+  { to: "/statistics", labelKey: "nav.statistics" },
+  { to: "/settings", labelKey: "nav.settings" },
 ];
 
 export function AppLayout() {
@@ -59,27 +57,34 @@ export function AppLayout() {
   return (
     <div className="bg-background text-foreground flex min-h-screen flex-col">
       <header className="border-b">
-        <nav className="mx-auto flex h-14 w-full max-w-6xl items-center justify-center gap-1 px-4 text-sm font-medium">
-          {NAV_ITEMS.map(({ to, labelKey, icon }) => (
-            <NavLink
-              key={to}
-              to={to}
-              className={({ isActive }) =>
-                cn(
-                  "hover:bg-muted/60 focus-visible:ring-ring inline-flex items-center gap-2 rounded-md px-3 py-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
-                  isActive
-                    ? "bg-muted text-primary"
-                    : "text-muted-foreground"
-                )
-              }
-            >
-              {icon}
-              {t(labelKey)}
-            </NavLink>
-          ))}
+        <nav className="mx-auto flex h-12 w-full max-w-6xl items-center justify-between px-6">
+          <NavLink
+            to="/"
+            className="text-sm font-bold lowercase tracking-tight focus-visible:outline-none"
+          >
+            aictionary
+          </NavLink>
+          <div className="flex items-center gap-6">
+            {NAV_ITEMS.map(({ to, labelKey }) => (
+              <NavLink
+                key={to}
+                to={to}
+                className={({ isActive }) =>
+                  cn(
+                    "focus-visible:ring-ring relative inline-flex h-12 items-center text-xs font-medium uppercase tracking-[0.15em] transition-colors focus-visible:outline-none focus-visible:ring-2",
+                    isActive
+                      ? "text-foreground after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  )
+                }
+              >
+                {t(labelKey)}
+              </NavLink>
+            ))}
+          </div>
         </nav>
       </header>
-      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 py-6">
+      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-6 py-8">
         <Outlet />
       </main>
     </div>
