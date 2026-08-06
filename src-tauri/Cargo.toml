@@ -32,6 +32,8 @@ futures-util = "0.3"
 rusqlite = { version = "0.32", features = ["bundled"] }
 flate2 = "1"
 sha2 = "0.10"
+# Dev-only automation bridge; only initialized under cfg(debug_assertions).
+tauri-plugin-mcp-bridge = "0.12"
 tauri-plugin-single-instance = { version = "2.3.6", features = ["deep-link"] }
 base64 = "0.22"
 
