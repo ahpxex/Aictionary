@@ -56,7 +56,7 @@ export const SearchForm = forwardRef<SearchFormRef, SearchFormProps>(
     return (
       <form
         onSubmit={handleSubmit}
-        className="flex h-8 min-w-0 flex-1 items-center gap-2 border border-border bg-background px-2.5 transition-colors focus-within:border-foreground/50"
+        className="flex h-8 min-w-0 flex-1 items-center gap-2 border-b border-border px-0.5 transition-colors focus-within:border-foreground"
       >
         {isSearching ? (
           <Loader2 className="size-3.5 shrink-0 animate-spin text-muted-foreground" />

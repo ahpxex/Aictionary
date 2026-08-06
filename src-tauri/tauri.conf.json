@@ -15,8 +15,6 @@
         "title": "Aictionary",
         "width": 800,
         "height": 600,
-        "titleBarStyle": "Overlay",
-        "hiddenTitle": true,
         "minWidth": 640,
         "minHeight": 480
       }

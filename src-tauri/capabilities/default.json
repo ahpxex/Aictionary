@@ -14,7 +14,6 @@
     "opener:allow-open-path",
     "opener:allow-reveal-item-in-dir",
     "autostart:default",
-    "mcp-bridge:default",
-    "core:window:allow-start-dragging"
+    "mcp-bridge:default"
   ]
 }

@@ -63,23 +63,8 @@ export function AppLayout() {
 
   return (
     <div className="bg-background text-foreground flex min-h-screen flex-col">
-      {/* Window chrome: the native titlebar is hidden (titleBarStyle
-          Overlay), so this bar hosts the traffic lights inset, the drag
-          region, the query bar, and navigation. */}
-      <header
-        data-tauri-drag-region
-        className="sticky top-0 z-40 border-b bg-background"
-      >
-        <div
-          data-tauri-drag-region
-          className="flex h-12 w-full items-center gap-6 pl-20 pr-6"
-        >
-          <NavLink
-            to="/"
-            className="shrink-0 text-sm font-bold lowercase tracking-tight focus-visible:outline-none"
-          >
-            aictionary
-          </NavLink>
+      <header className="sticky top-0 z-40 border-b bg-background">
+        <div className="flex h-12 w-full items-center gap-6 px-6">
           <div className="w-full max-w-sm">
             <SearchForm
               onSearch={handleSearch}
@@ -87,7 +72,7 @@ export function AppLayout() {
               initialValue={result?.entry.headword}
             />
           </div>
-          <div data-tauri-drag-region className="flex-1" />
+          <div className="flex-1" />
           <div className="flex shrink-0 items-center gap-6">
             {NAV_ITEMS.map(({ to, labelKey }) => (
               <NavLink
