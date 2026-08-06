@@ -5,13 +5,7 @@ import { openPath } from "@tauri-apps/plugin-opener";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { SettingsSection } from "@/features/settings/components/settings-section";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useSettings } from "@/features/settings/hooks/use-settings";
@@ -164,15 +158,12 @@ export function DictionaryTab() {
 
   return (
     <>
-      <div className="grid gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>{t("settings.dictionary.cache.title")}</CardTitle>
-            <CardDescription>
-              {t("settings.dictionary.why.items.0")}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-4">
+      <div className="flex flex-col">
+        <SettingsSection
+          title={t("settings.dictionary.cache.title")}
+          description={t("settings.dictionary.why.items.0")}
+          contentClassName="grid gap-4"
+        >
             <div className="grid gap-2">
               <Label htmlFor="cache-path">
                 {t("settings.dictionary.cache.label")}
@@ -271,8 +262,7 @@ export function DictionaryTab() {
                 {t("settings.dictionary.cache.button_clear")}
               </Button>
             </div>
-          </CardContent>
-        </Card>
+          </SettingsSection>
       </div>
 
       <DownloadDialog

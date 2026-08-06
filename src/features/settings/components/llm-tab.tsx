@@ -2,13 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { SettingsSection } from "@/features/settings/components/settings-section";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -126,13 +120,12 @@ export function LlmProvidersTab() {
   };
 
   return (
-    <div className="grid gap-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("settings.llm.title")}</CardTitle>
-          <CardDescription>{t("settings.llm.description")}</CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-4">
+    <div className="flex flex-col">
+      <SettingsSection
+        title={t("settings.llm.title")}
+        description={t("settings.llm.description")}
+        contentClassName="grid gap-4"
+      >
           <div className="grid gap-2">
             <Label htmlFor="llm-base-url">{t("settings.llm.base_url.label")}</Label>
             <Input
@@ -196,8 +189,7 @@ export function LlmProvidersTab() {
               </p>
             )}
           </div>
-        </CardContent>
-      </Card>
+        </SettingsSection>
     </div>
   );
 }

@@ -1,12 +1,6 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { SettingsSection } from "@/features/settings/components/settings-section";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -33,13 +27,12 @@ export function AudioTab() {
   );
 
   return (
-    <div className="grid gap-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("settings.audio.title")}</CardTitle>
-          <CardDescription>{t("settings.audio.description")}</CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-4">
+    <div className="flex flex-col">
+      <SettingsSection
+        title={t("settings.audio.title")}
+        description={t("settings.audio.description")}
+        contentClassName="grid gap-4"
+      >
           <div className="grid gap-2">
             <Label htmlFor="audio-api-key">
               {t("settings.audio.api_key.label")}
@@ -98,8 +91,7 @@ export function AudioTab() {
               {t("settings.audio.voice.helper")}
             </p>
           </div>
-        </CardContent>
-      </Card>
+        </SettingsSection>
     </div>
   );
 }

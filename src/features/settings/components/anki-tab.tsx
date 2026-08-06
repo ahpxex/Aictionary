@@ -1,11 +1,5 @@
 import { useTranslation } from "react-i18next";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { SettingsSection } from "@/features/settings/components/settings-section";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -23,13 +17,12 @@ export function AnkiTab() {
   const { settings, updateAnki } = useSettings();
 
   return (
-    <div className="grid gap-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("settings.anki.title")}</CardTitle>
-          <CardDescription>{t("settings.anki.description")}</CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-4">
+    <div className="flex flex-col">
+      <SettingsSection
+        title={t("settings.anki.title")}
+        description={t("settings.anki.description")}
+        contentClassName="grid gap-4"
+      >
           <div className="grid gap-2">
             <Label htmlFor="anki-api-url">
               {t("settings.anki.api_url.label")}
@@ -88,8 +81,7 @@ export function AnkiTab() {
               {t("settings.anki.card_theme.helper")}
             </p>
           </div>
-        </CardContent>
-      </Card>
+        </SettingsSection>
     </div>
   );
 }

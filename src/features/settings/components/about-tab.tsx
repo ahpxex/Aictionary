@@ -1,13 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { SettingsSection } from "@/features/settings/components/settings-section";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { useSettings } from "@/features/settings/hooks/use-settings";
 import { getName, getVersion } from "@tauri-apps/api/app";
@@ -28,15 +22,11 @@ export function AboutTab() {
   }, [settings.about.version]);
 
   return (
-    <div className="grid gap-6 md:grid-cols-[1fr_0.8fr]">
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("settings.about.info.title")}</CardTitle>
-          <CardDescription>
-            Build details for debugging and support references.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+    <div className="flex flex-col">
+      <SettingsSection
+        title={t("settings.about.info.title")}
+        description="Build details for debugging and support references."
+      >
           <Table>
             <TableBody>
               <TableRow>
@@ -57,14 +47,12 @@ export function AboutTab() {
               </TableRow>
             </TableBody>
           </Table>
-        </CardContent>
-      </Card>
+        </SettingsSection>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("settings.about.resources.title")}</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-3">
+      <SettingsSection
+        title={t("settings.about.resources.title")}
+        contentClassName="grid gap-3"
+      >
           <p className="text-muted-foreground text-sm">
             For support or feature requests, open an issue in the repository or
             contact the maintainer.
@@ -98,8 +86,7 @@ export function AboutTab() {
               </a>
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </SettingsSection>
     </div>
   );
 }

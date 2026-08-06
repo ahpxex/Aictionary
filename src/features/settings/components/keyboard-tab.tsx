@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { SettingsSection } from "@/features/settings/components/settings-section";
 import { KbdInput } from "@/components/ui/kbd-input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -20,15 +20,12 @@ export function KeyboardTab() {
   };
 
   return (
-    <div className="grid gap-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("settings.keyboard.shortcuts.title")}</CardTitle>
-          <CardDescription>
-            {t("settings.keyboard.shortcuts.description")}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-4">
+    <div className="flex flex-col">
+      <SettingsSection
+        title={t("settings.keyboard.shortcuts.title")}
+        description={t("settings.keyboard.shortcuts.description")}
+        contentClassName="grid gap-4"
+      >
           <div className="flex items-center justify-between gap-4 rounded-lg border bg-muted/40 px-4 py-3">
             <div className="space-y-1">
               <p className="text-sm font-medium">
@@ -66,8 +63,7 @@ export function KeyboardTab() {
           <Button variant="outline" onClick={handleReset}>
             {t("settings.keyboard.shortcuts.reset")}
           </Button>
-        </CardContent>
-      </Card>
+        </SettingsSection>
     </div>
   );
 }

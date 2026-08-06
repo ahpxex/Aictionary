@@ -1,11 +1,5 @@
 import { useTranslation } from "react-i18next";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { SettingsSection } from "@/features/settings/components/settings-section";
 import {
   Select,
   SelectContent,
@@ -27,15 +21,12 @@ export function AppearanceTab() {
   const { settings, updateTheme, updateLanguage, updateSystem } = useSettings();
 
   return (
-    <div className="grid gap-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("settings.appearance.title")}</CardTitle>
-          <CardDescription>
-            {t("settings.appearance.description")}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex gap-4">
+    <div className="flex flex-col">
+      <SettingsSection
+        title={t("settings.appearance.title")}
+        description={t("settings.appearance.description")}
+        contentClassName="flex gap-4"
+      >
           <div className="space-y-3">
             <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               {t("settings.appearance.mode.label")}
@@ -65,17 +56,12 @@ export function AppearanceTab() {
               </ToggleGroupItem>
             </ToggleGroup>
           </div>
-        </CardContent>
-      </Card>
+        </SettingsSection>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("settings.language.title")}</CardTitle>
-          <CardDescription>
-            {t("settings.language.description")}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+      <SettingsSection
+        title={t("settings.language.title")}
+        description={t("settings.language.description")}
+      >
           <div className="space-y-2">
             <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
               {t("settings.language.label")}
@@ -96,17 +82,13 @@ export function AppearanceTab() {
               </SelectContent>
             </Select>
           </div>
-        </CardContent>
-      </Card>
+        </SettingsSection>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("settings.appearance.desktop.title")}</CardTitle>
-          <CardDescription>
-            {t("settings.appearance.desktop.description")}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
+      <SettingsSection
+        title={t("settings.appearance.desktop.title")}
+        description={t("settings.appearance.desktop.description")}
+        contentClassName="flex flex-col gap-4"
+      >
           <div className="flex items-center justify-between gap-4">
             <div className="space-y-0.5">
               <p className="text-sm font-medium">
@@ -146,8 +128,7 @@ export function AppearanceTab() {
               }
             />
           </div>
-        </CardContent>
-      </Card>
+        </SettingsSection>
     </div>
   );
 }

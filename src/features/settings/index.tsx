@@ -1,6 +1,7 @@
+import { ComponentType } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
 import { AppearanceTab } from "@/features/settings/components/appearance-tab";
 import { AudioTab } from "@/features/settings/components/audio-tab";
 import { LlmProvidersTab } from "@/features/settings/components/llm-tab";
@@ -21,6 +22,16 @@ const tabs = [
 
 type SettingsTabValue = (typeof tabs)[number]["value"];
 
+const TAB_COMPONENTS: Record<SettingsTabValue, ComponentType> = {
+  appearance: AppearanceTab,
+  llm: LlmProvidersTab,
+  audio: AudioTab,
+  anki: AnkiTab,
+  dictionary: DictionaryTab,
+  keyboard: KeyboardTab,
+  about: AboutTab,
+};
+
 export function SettingsPage() {
   const { t } = useTranslation();
   const location = useLocation();
@@ -33,46 +44,46 @@ export function SettingsPage() {
     ? (pathSegment as SettingsTabValue)
     : "appearance";
 
-  const handleTabChange = (value: string) => {
-    const tab = value as SettingsTabValue;
-    const path = tab === "appearance" ? "/settings" : `/settings/${tab}`;
+  const handleTabChange = (value: SettingsTabValue) => {
+    const path = value === "appearance" ? "/settings" : `/settings/${value}`;
     navigate(path);
   };
 
+  const ActiveTab = TAB_COMPONENTS[currentTab];
+
   return (
-    <Tabs
-      value={currentTab}
-      onValueChange={handleTabChange}
-      className="flex flex-1 flex-col gap-6"
-    >
-      <TabsList>
-        {tabs.map((tab) => (
-          <TabsTrigger key={tab.value} value={tab.value}>
-            {t(tab.labelKey)}
-          </TabsTrigger>
-        ))}
-      </TabsList>
-      <TabsContent value="appearance">
-        <AppearanceTab />
-      </TabsContent>
-      <TabsContent value="llm">
-        <LlmProvidersTab />
-      </TabsContent>
-      <TabsContent value="audio">
-        <AudioTab />
-      </TabsContent>
-      <TabsContent value="anki">
-        <AnkiTab />
-      </TabsContent>
-      <TabsContent value="dictionary">
-        <DictionaryTab />
-      </TabsContent>
-      <TabsContent value="keyboard">
-        <KeyboardTab />
-      </TabsContent>
-      <TabsContent value="about">
-        <AboutTab />
-      </TabsContent>
-    </Tabs>
+    <div className="grid flex-1 grid-cols-[10rem_1fr] items-start">
+      {/* Section directory: right-aligned labels against the spine, the
+          active entry marked by a tick crossing it. */}
+      <nav className="sticky top-8 flex flex-col py-1" aria-label={t("nav.settings")}>
+        {tabs.map((tab) => {
+          const isActive = tab.value === currentTab;
+          return (
+            <button
+              key={tab.value}
+              type="button"
+              onClick={() => handleTabChange(tab.value)}
+              className={cn(
+                "relative py-2 pr-5 text-right text-sm transition-colors focus-visible:outline-none",
+                isActive
+                  ? "font-semibold text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {t(tab.labelKey)}
+              {isActive && (
+                <span
+                  aria-hidden
+                  className="absolute -right-px top-1/2 h-4 w-0.5 -translate-y-1/2 bg-foreground"
+                />
+              )}
+            </button>
+          );
+        })}
+      </nav>
+      <div className="min-h-[60vh] border-l border-border py-1 pl-8">
+        <ActiveTab />
+      </div>
+    </div>
   );
 }
