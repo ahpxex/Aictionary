@@ -172,14 +172,6 @@
         "system": "跟随系统",
         "dark": "深色"
       },
-      "accent": {
-        "label": "强调色",
-        "blue": "蓝色",
-        "purple": "紫色",
-        "green": "绿色",
-        "orange": "橙色",
-        "rose": "玫瑰红"
-      },
       "desktop": {
         "title": "桌面集成",
         "description": "控制托盘图标、Dock 图标以及应用是否随系统启动。",

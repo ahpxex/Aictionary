@@ -1,6 +1,5 @@
 export type ThemePreference = {
   mode: "system" | "light" | "dark";
-  accent: "blue" | "purple" | "green" | "orange" | "rose";
 };
 
 export type LanguagePreference = "en" | "zh";

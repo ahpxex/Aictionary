@@ -13,9 +13,11 @@ export function AppearanceSync() {
     setTheme(settings.theme.mode);
   }, [settings.theme.mode, setTheme]);
 
+  // Accent personalization was removed; clear the attribute left behind by
+  // older versions so their CSS no longer applies.
   useEffect(() => {
-    document.documentElement.dataset.accent = settings.theme.accent;
-  }, [settings.theme.accent]);
+    delete document.documentElement.dataset.accent;
+  }, []);
 
   useEffect(() => {
     if (settings.language !== i18n.language) {

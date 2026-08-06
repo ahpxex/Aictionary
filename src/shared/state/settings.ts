@@ -5,7 +5,6 @@ import { AppSettings } from "@/shared/types/settings";
 export const defaultSettings: AppSettings = {
   theme: {
     mode: "system",
-    accent: "blue",
   },
   language: "en",
   llm: {

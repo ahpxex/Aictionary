@@ -16,40 +16,6 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useSettings } from "@/features/settings/hooks/use-settings";
-import { cn } from "@/lib/utils";
-
-const accentOptions = [
-  {
-    value: "blue",
-    label: "Blue",
-    className: "bg-blue-500",
-    borderClassName: "border-blue-500",
-  },
-  {
-    value: "purple",
-    label: "Purple",
-    className: "bg-purple-500",
-    borderClassName: "border-purple-500",
-  },
-  {
-    value: "green",
-    label: "Green",
-    className: "bg-emerald-500",
-    borderClassName: "border-emerald-500",
-  },
-  {
-    value: "orange",
-    label: "Orange",
-    className: "bg-orange-500",
-    borderClassName: "border-orange-500",
-  },
-  {
-    value: "rose",
-    label: "Rose",
-    className: "bg-rose-500",
-    borderClassName: "border-rose-500",
-  },
-] as const;
 
 const languageOptions = [
   { value: "en", labelKey: "settings.language.options.en" },
@@ -97,34 +63,6 @@ export function AppearanceTab() {
               <ToggleGroupItem value="dark">
                 {t("settings.appearance.mode.dark")}
               </ToggleGroupItem>
-            </ToggleGroup>
-          </div>
-          <div className="space-y-3">
-            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              {t("settings.appearance.accent.label")}
-            </span>
-            <ToggleGroup
-              type="single"
-              variant="outline"
-              size="sm"
-              value={settings.theme.accent}
-              onValueChange={(value) => {
-                if (!value) return;
-                updateTheme({ accent: value as typeof accentOptions[number]["value"] });
-              }}
-              className="w-fit flex-wrap justify-start"
-            >
-              {accentOptions.map((accent) => (
-                <ToggleGroupItem
-                  key={accent.value}
-                  value={accent.value}
-                >
-                  <span
-                    className={cn("size-4 rounded-full", accent.className)}
-                  />
-
-                </ToggleGroupItem>
-              ))}
             </ToggleGroup>
           </div>
         </CardContent>

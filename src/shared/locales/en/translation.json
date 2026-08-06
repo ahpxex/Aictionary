@@ -172,14 +172,6 @@
         "system": "System",
         "dark": "Dark"
       },
-      "accent": {
-        "label": "Accent Color",
-        "blue": "Blue",
-        "purple": "Purple",
-        "green": "Green",
-        "orange": "Orange",
-        "rose": "Rose"
-      },
       "desktop": {
         "title": "Desktop integration",
         "description": "Control the tray icon, dock icon, and whether AIctionary starts automatically.",
