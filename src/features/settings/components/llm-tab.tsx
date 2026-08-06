@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import { SettingsSection } from "@/features/settings/components/settings-section";
+import { Section } from "@/shared/components/section";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -121,7 +121,7 @@ export function LlmProvidersTab() {
 
   return (
     <div className="flex flex-col">
-      <SettingsSection
+      <Section
         title={t("settings.llm.title")}
         description={t("settings.llm.description")}
         contentClassName="grid gap-4"
@@ -189,7 +189,7 @@ export function LlmProvidersTab() {
               </p>
             )}
           </div>
-        </SettingsSection>
+        </Section>
     </div>
   );
 }

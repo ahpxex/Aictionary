@@ -1,12 +1,6 @@
 import { Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Section } from "@/shared/components/section";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
@@ -40,90 +34,87 @@ export function AggregatedMetrics({ aggregates, onRemoveWord }: AggregatedMetric
     .filter((item): item is AggregatedMetric => Boolean(item));
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t("statistics.metrics.title")}</CardTitle>
-        <CardDescription>
-          {t("statistics.metrics.description")}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Tabs defaultValue={available[0]?.period ?? "day"} className="flex flex-col gap-4">
-          <TabsList>
-            {available.map((item) => (
-              <TabsTrigger key={item.period} value={item.period}>
-                {PERIOD_LABEL[item.period]}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+    <Section
+      title={t("statistics.metrics.title")}
+      description={t("statistics.metrics.description")}
+    >
+      <Tabs defaultValue={available[0]?.period ?? "day"} className="flex flex-col gap-4">
+        <TabsList>
           {available.map((item) => (
-            <TabsContent key={item.period} value={item.period}>
-              {item.buckets.length === 0 ? (
-                <div className="text-muted-foreground text-sm">
-                  {t("statistics.metrics.empty_state")}
-                </div>
-              ) : (
-                <div className="grid gap-4">
-                  {item.buckets.slice(0, 5).map((bucket) => (
-                    <Card key={bucket.label} className="border-muted">
-                      <CardHeader className="flex-row items-center justify-between gap-4">
-                        <CardTitle className="text-base font-semibold">
-                          {bucket.label}
-                        </CardTitle>
-                        <span className="text-muted-foreground text-sm">
-                          {bucket.total} queries
-                        </span>
-                      </CardHeader>
-                      <CardContent className="overflow-x-auto">
-                        <Table className="table-fixed">
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>{t("statistics.metrics.table.word")}</TableHead>
-                              <TableHead className="w-[120px] text-right">
-                                {t("statistics.metrics.table.count")}
-                              </TableHead>
-                              {onRemoveWord && <TableHead className="w-[60px]"></TableHead>}
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {bucket.words.slice(0, 5).map((word) => (
-                              <TableRow key={word.word}>
-                                <TableCell className="font-medium">
-                                  <span
-                                    className="block max-w-[12rem] truncate"
-                                    title={word.word}
-                                  >
-                                    {word.word}
-                                  </span>
-                                </TableCell>
-                                <TableCell className="w-[120px] text-right">
-                                  {word.count}
-                                </TableCell>
-                                {onRemoveWord && (
-                                  <TableCell className="w-[60px]">
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      onClick={() => onRemoveWord(word.word)}
-                                      className="size-8"
-                                    >
-                                      <Trash2 className="size-4" />
-                                    </Button>
-                                  </TableCell>
-                                )}
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </TabsContent>
+            <TabsTrigger key={item.period} value={item.period}>
+              {PERIOD_LABEL[item.period]}
+            </TabsTrigger>
           ))}
-        </Tabs>
-      </CardContent>
-    </Card>
+        </TabsList>
+        {available.map((item) => (
+          <TabsContent key={item.period} value={item.period}>
+            {item.buckets.length === 0 ? (
+              <div className="text-muted-foreground text-sm">
+                {t("statistics.metrics.empty_state")}
+              </div>
+            ) : (
+              <div className="flex flex-col gap-6">
+                {item.buckets.slice(0, 5).map((bucket) => (
+                  <div key={bucket.label} className="flex flex-col gap-2">
+                    <div className="flex items-baseline justify-between gap-4 border-b border-border pb-2">
+                      <span className="font-semibold tabular-nums">
+                        {bucket.label}
+                      </span>
+                      <span className="text-muted-foreground text-sm">
+                        {t("statistics.overview.total_queries.queried_times", {
+                          count: bucket.total,
+                        })}
+                      </span>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <Table className="table-fixed">
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>{t("statistics.metrics.table.word")}</TableHead>
+                            <TableHead className="w-[120px] text-right">
+                              {t("statistics.metrics.table.count")}
+                            </TableHead>
+                            {onRemoveWord && <TableHead className="w-[60px]"></TableHead>}
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {bucket.words.slice(0, 5).map((word) => (
+                            <TableRow key={word.word}>
+                              <TableCell className="font-medium">
+                                <span
+                                  className="block max-w-[12rem] truncate"
+                                  title={word.word}
+                                >
+                                  {word.word}
+                                </span>
+                              </TableCell>
+                              <TableCell className="w-[120px] text-right tabular-nums">
+                                {word.count}
+                              </TableCell>
+                              {onRemoveWord && (
+                                <TableCell className="w-[60px]">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => onRemoveWord(word.word)}
+                                    className="size-8"
+                                  >
+                                    <Trash2 className="size-4" />
+                                  </Button>
+                                </TableCell>
+                              )}
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        ))}
+      </Tabs>
+    </Section>
   );
 }

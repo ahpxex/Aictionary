@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import { SettingsSection } from "@/features/settings/components/settings-section";
+import { Section } from "@/shared/components/section";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { useSettings } from "@/features/settings/hooks/use-settings";
 import { getName, getVersion } from "@tauri-apps/api/app";
@@ -23,7 +23,7 @@ export function AboutTab() {
 
   return (
     <div className="flex flex-col">
-      <SettingsSection
+      <Section
         title={t("settings.about.info.title")}
         description="Build details for debugging and support references."
       >
@@ -47,9 +47,9 @@ export function AboutTab() {
               </TableRow>
             </TableBody>
           </Table>
-        </SettingsSection>
+        </Section>
 
-      <SettingsSection
+      <Section
         title={t("settings.about.resources.title")}
         contentClassName="grid gap-3"
       >
@@ -86,7 +86,7 @@ export function AboutTab() {
               </a>
             </Button>
           </div>
-        </SettingsSection>
+        </Section>
     </div>
   );
 }

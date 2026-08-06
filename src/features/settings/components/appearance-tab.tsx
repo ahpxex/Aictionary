@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { SettingsSection } from "@/features/settings/components/settings-section";
+import { Section } from "@/shared/components/section";
 import {
   Select,
   SelectContent,
@@ -22,7 +22,7 @@ export function AppearanceTab() {
 
   return (
     <div className="flex flex-col">
-      <SettingsSection
+      <Section
         title={t("settings.appearance.title")}
         description={t("settings.appearance.description")}
         contentClassName="flex gap-4"
@@ -56,9 +56,9 @@ export function AppearanceTab() {
               </ToggleGroupItem>
             </ToggleGroup>
           </div>
-        </SettingsSection>
+        </Section>
 
-      <SettingsSection
+      <Section
         title={t("settings.language.title")}
         description={t("settings.language.description")}
       >
@@ -82,9 +82,9 @@ export function AppearanceTab() {
               </SelectContent>
             </Select>
           </div>
-        </SettingsSection>
+        </Section>
 
-      <SettingsSection
+      <Section
         title={t("settings.appearance.desktop.title")}
         description={t("settings.appearance.desktop.description")}
         contentClassName="flex flex-col gap-4"
@@ -128,7 +128,7 @@ export function AppearanceTab() {
               }
             />
           </div>
-        </SettingsSection>
+        </Section>
     </div>
   );
 }

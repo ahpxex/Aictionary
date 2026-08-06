@@ -1,12 +1,6 @@
 import { Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Section } from "@/shared/components/section";
 import {
   Table,
   TableBody,
@@ -27,14 +21,11 @@ type TopWordsTableProps = {
 export function TopWordsTable({ metrics, onRemoveWord }: TopWordsTableProps) {
   const { t } = useTranslation();
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t("statistics.top_words.title")}</CardTitle>
-        <CardDescription>
-          {t("statistics.top_words.description")}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="overflow-x-auto">
+    <Section
+      title={t("statistics.top_words.title")}
+      description={t("statistics.top_words.description")}
+      contentClassName="overflow-x-auto"
+    >
         <Table className="table-fixed">
           <TableHeader>
             <TableRow>
@@ -87,7 +78,6 @@ export function TopWordsTable({ metrics, onRemoveWord }: TopWordsTableProps) {
             )}
           </TableBody>
         </Table>
-      </CardContent>
-    </Card>
+    </Section>
   );
 }

@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { SettingsSection } from "@/features/settings/components/settings-section";
+import { Section } from "@/shared/components/section";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -28,7 +28,7 @@ export function AudioTab() {
 
   return (
     <div className="flex flex-col">
-      <SettingsSection
+      <Section
         title={t("settings.audio.title")}
         description={t("settings.audio.description")}
         contentClassName="grid gap-4"
@@ -91,7 +91,7 @@ export function AudioTab() {
               {t("settings.audio.voice.helper")}
             </p>
           </div>
-        </SettingsSection>
+        </Section>
     </div>
   );
 }

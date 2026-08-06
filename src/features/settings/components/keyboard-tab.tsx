@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { SettingsSection } from "@/features/settings/components/settings-section";
+import { Section } from "@/shared/components/section";
 import { KbdInput } from "@/components/ui/kbd-input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -21,7 +21,7 @@ export function KeyboardTab() {
 
   return (
     <div className="flex flex-col">
-      <SettingsSection
+      <Section
         title={t("settings.keyboard.shortcuts.title")}
         description={t("settings.keyboard.shortcuts.description")}
         contentClassName="grid gap-4"
@@ -63,7 +63,7 @@ export function KeyboardTab() {
           <Button variant="outline" onClick={handleReset}>
             {t("settings.keyboard.shortcuts.reset")}
           </Button>
-        </SettingsSection>
+        </Section>
     </div>
   );
 }

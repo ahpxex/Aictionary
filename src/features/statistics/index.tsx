@@ -1,7 +1,6 @@
-import { BookMarked, Clock, Download, FileText, Hash } from "lucide-react";
+import { Download, FileText } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AggregatedMetrics } from "@/features/statistics/components/aggregated-metrics";
 import { TopWordsTable } from "@/features/statistics/components/top-words-table";
 import { useStatistics } from "@/features/statistics/hooks/use-statistics";
@@ -23,85 +22,70 @@ export function StatisticsPage() {
     return t("statistics.overview.learned_words.hint_lots", { count });
   };
 
+  const overview = [
+    {
+      id: "learned",
+      label: t("statistics.overview.learned_words.title"),
+      value: snapshot.learnedWords.length.toLocaleString(),
+      hint: getLearnedHint(snapshot.learnedWords.length),
+    },
+    {
+      id: "queries",
+      label: t("statistics.overview.total_queries.title"),
+      value: totalQueries.toLocaleString(),
+      hint: t("statistics.overview.total_queries.queried_times", {
+        count: totalQueries,
+      }),
+    },
+    {
+      id: "top",
+      label: t("statistics.overview.most_frequent.title"),
+      value: topMetric ? topMetric.word : "–",
+      hint: topMetric
+        ? t("statistics.overview.total_queries.queried_times", {
+            count: topMetric.count,
+          })
+        : t("statistics.top_words.empty_state"),
+    },
+  ];
+
   return (
-    <div className="flex flex-1 flex-col gap-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-3xl">{t("statistics.title")}</CardTitle>
-          <CardDescription className="text-base">
-            {t("statistics.description")}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-6">
-          {/* Metrics Grid */}
-          <div className="grid gap-6 md:grid-cols-3">
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold uppercase text-muted-foreground">
-                  {t("statistics.overview.learned_words.title")}
-                </span>
-                <BookMarked className="size-4 text-muted-foreground" />
-              </div>
-              <span className="text-3xl font-bold tracking-tight">
-                {snapshot.learnedWords.length}
-              </span>
-              <span className="text-sm text-muted-foreground">
-                {getLearnedHint(snapshot.learnedWords.length)}
-              </span>
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold uppercase text-muted-foreground">
-                  {t("statistics.overview.total_queries.title")}
-                </span>
-                <Hash className="size-4 text-muted-foreground" />
-              </div>
-              <span className="text-3xl font-bold tracking-tight">
-                {totalQueries}
-              </span>
-              <span className="text-sm text-muted-foreground">
-                {t("statistics.overview.total_queries.queried_times", { count: totalQueries })}
-              </span>
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold uppercase text-muted-foreground">
-                  {t("statistics.overview.most_frequent.title")}
-                </span>
-                <Clock className="size-4 text-muted-foreground" />
-              </div>
-              <span className="text-3xl font-bold tracking-tight">
-                {topMetric ? topMetric.word : "–"}
-              </span>
-              <span className="text-sm text-muted-foreground">
-                {topMetric
-                  ? t("statistics.overview.total_queries.queried_times", { count: topMetric.count })
-                  : t("statistics.top_words.empty_state")}
-              </span>
-            </div>
+    <div className="flex flex-1 flex-col gap-10">
+      {/* Overview: three oversized figures separated by hairlines. */}
+      <div className="grid grid-cols-3 border-y border-border">
+        {overview.map((item, index) => (
+          <div
+            key={item.id}
+            className={`flex flex-col gap-2 py-6 ${
+              index > 0 ? "border-l border-border pl-6" : ""
+            } ${index < overview.length - 1 ? "pr-6" : ""}`}
+          >
+            <span className="text-[0.65rem] font-medium uppercase tracking-[0.15em] text-muted-foreground">
+              {item.label}
+            </span>
+            <span className="break-words text-5xl font-bold leading-none tracking-tighter tabular-nums">
+              {item.value}
+            </span>
+            <span className="text-sm text-muted-foreground">{item.hint}</span>
           </div>
+        ))}
+      </div>
 
-          {/* Export Buttons */}
-          <div className="flex flex-wrap justify-end gap-3 border-t pt-6">
-            <Button onClick={exportLearnedWords}>
-              <Download className="mr-2 size-4" />
-              {t("statistics.export.learned_words")}
-            </Button>
-            <Button variant="outline" onClick={exportQueryMetrics}>
-              <FileText className="mr-2 size-4" />
-              {t("statistics.export.query_counts")}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex flex-wrap justify-end gap-3">
+        <Button onClick={exportLearnedWords}>
+          <Download className="mr-2 size-4" />
+          {t("statistics.export.learned_words")}
+        </Button>
+        <Button variant="outline" onClick={exportQueryMetrics}>
+          <FileText className="mr-2 size-4" />
+          {t("statistics.export.query_counts")}
+        </Button>
+      </div>
 
-      <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
+      <div className="grid items-start gap-10 lg:grid-cols-[2fr_1fr]">
         <AggregatedMetrics aggregates={snapshot.aggregates} onRemoveWord={removeWord} />
         <TopWordsTable metrics={snapshot.queryMetrics} onRemoveWord={removeWord} />
       </div>
     </div>
   );
 }
-

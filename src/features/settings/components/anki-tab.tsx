@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { SettingsSection } from "@/features/settings/components/settings-section";
+import { Section } from "@/shared/components/section";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -18,7 +18,7 @@ export function AnkiTab() {
 
   return (
     <div className="flex flex-col">
-      <SettingsSection
+      <Section
         title={t("settings.anki.title")}
         description={t("settings.anki.description")}
         contentClassName="grid gap-4"
@@ -81,7 +81,7 @@ export function AnkiTab() {
               {t("settings.anki.card_theme.helper")}
             </p>
           </div>
-        </SettingsSection>
+        </Section>
     </div>
   );
 }

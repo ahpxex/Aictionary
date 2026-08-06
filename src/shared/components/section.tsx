@@ -2,11 +2,11 @@ import { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 /**
- * A flat settings section in the app's rail-and-spine language: uppercase
+ * A flat content section in the app's rail-and-spine language: uppercase
  * eyebrow title, optional description, content below. Sections stack with
  * hairline separators instead of card boxes.
  */
-export function SettingsSection({
+export function Section({
   title,
   description,
   children,

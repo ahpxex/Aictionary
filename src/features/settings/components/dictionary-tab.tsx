@@ -5,7 +5,7 @@ import { openPath } from "@tauri-apps/plugin-opener";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import { SettingsSection } from "@/features/settings/components/settings-section";
+import { Section } from "@/shared/components/section";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useSettings } from "@/features/settings/hooks/use-settings";
@@ -159,7 +159,7 @@ export function DictionaryTab() {
   return (
     <>
       <div className="flex flex-col">
-        <SettingsSection
+        <Section
           title={t("settings.dictionary.cache.title")}
           description={t("settings.dictionary.why.items.0")}
           contentClassName="grid gap-4"
@@ -262,7 +262,7 @@ export function DictionaryTab() {
                 {t("settings.dictionary.cache.button_clear")}
               </Button>
             </div>
-          </SettingsSection>
+          </Section>
       </div>
 
       <DownloadDialog
