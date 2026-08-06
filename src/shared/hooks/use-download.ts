@@ -13,6 +13,7 @@ import type {
 export function useDownload() {
   const [state, setState] = useState<DownloadState>({
     isDownloading: false,
+    isVerifying: false,
     isExtracting: false,
     progress: null,
     extractProgress: null,
@@ -42,6 +43,7 @@ export function useDownload() {
     setState((prev) => ({
       ...prev,
       isDownloading: false,
+      isVerifying: false,
       isExtracting: false,
       error: error.message,
     }));
@@ -54,9 +56,18 @@ export function useDownload() {
     }));
   }, []);
 
+  const handleVerifyProgress = useCallback((progress: ExtractProgress) => {
+    setState((prev) => ({
+      ...prev,
+      isVerifying: true,
+      extractProgress: progress,
+    }));
+  }, []);
+
   const handleExtractProgress = useCallback((progress: ExtractProgress) => {
     setState((prev) => ({
       ...prev,
+      isVerifying: false,
       isExtracting: true,
       extractProgress: progress,
     }));
@@ -65,6 +76,7 @@ export function useDownload() {
   const handleExtractComplete = useCallback(() => {
     setState((prev) => ({
       ...prev,
+      isVerifying: false,
       isExtracting: false,
       extractProgress: null,
     }));
@@ -74,6 +86,7 @@ export function useDownload() {
     async (options: DownloadOptions): Promise<DownloadComplete> => {
       setState({
         isDownloading: true,
+        isVerifying: false,
         isExtracting: false,
         progress: null,
         extractProgress: null,
@@ -99,6 +112,10 @@ export function useDownload() {
           handleRetry(retry);
           options.onRetry?.(retry);
         },
+        onVerifyProgress: (progress) => {
+          handleVerifyProgress(progress);
+          options.onVerifyProgress?.(progress);
+        },
         onExtractProgress: (progress) => {
           handleExtractProgress(progress);
           options.onExtractProgress?.(progress);
@@ -118,6 +135,7 @@ export function useDownload() {
         setState((prev) => ({
           ...prev,
           isDownloading: false,
+          isVerifying: false,
           isExtracting: false,
           error: message,
         }));
@@ -129,6 +147,7 @@ export function useDownload() {
       handleComplete,
       handleError,
       handleRetry,
+      handleVerifyProgress,
       handleExtractProgress,
       handleExtractComplete,
     ]
@@ -137,6 +156,7 @@ export function useDownload() {
   const reset = useCallback(() => {
     setState({
       isDownloading: false,
+      isVerifying: false,
       isExtracting: false,
       progress: null,
       extractProgress: null,

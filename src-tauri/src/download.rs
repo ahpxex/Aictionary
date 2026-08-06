@@ -1,7 +1,9 @@
+use flate2::read::GzDecoder;
 use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use std::fs::{self, File};
-use std::io::{self, Write};
+use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use tauri::{AppHandle, Emitter};
 
@@ -190,87 +192,241 @@ pub async fn download_file(app: AppHandle, args: DownloadArgs) -> Result<Downloa
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ExtractZipArgs {
-    pub zip_path: String,
-    pub extract_to: String,
+pub struct ExtractGzipArgs {
+    pub gzip_path: String,
+    pub dest_path: String,
+    /// Lowercase hex SHA-256 of the gzip file, taken from the release's
+    /// SHA256SUMS.txt. When present, the archive is verified before
+    /// extraction and rejected on mismatch.
+    pub expected_sha256: Option<String>,
 }
 
+/// Progress for verification and extraction, measured in bytes of the
+/// compressed archive consumed so far.
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ExtractProgress {
-    pub current: usize,
-    pub total: usize,
+    pub current: u64,
+    pub total: u64,
     pub file_name: String,
 }
 
-#[tauri::command]
-pub async fn extract_zip(app: AppHandle, args: ExtractZipArgs) -> Result<String, String> {
-    let zip_path = PathBuf::from(&args.zip_path);
-    let extract_to = PathBuf::from(&args.extract_to);
+const PROGRESS_CHUNK: u64 = 4 * 1024 * 1024;
 
-    if !zip_path.exists() {
-        return Err("Zip file does not exist".into());
+fn compute_sha256(app: &AppHandle, path: &Path, total: u64) -> Result<String, String> {
+    let mut file =
+        File::open(path).map_err(|e| format!("Failed to open archive for verification: {}", e))?;
+    let mut hasher = Sha256::new();
+    let mut buffer = vec![0u8; 1024 * 1024];
+    let mut read_total: u64 = 0;
+    let mut last_emit: u64 = 0;
+
+    loop {
+        let read = file
+            .read(&mut buffer)
+            .map_err(|e| format!("Failed to read archive for verification: {}", e))?;
+        if read == 0 {
+            break;
+        }
+        hasher.update(&buffer[..read]);
+        read_total += read as u64;
+
+        if read_total - last_emit >= PROGRESS_CHUNK || read_total >= total {
+            app.emit(
+                "verify-progress",
+                ExtractProgress {
+                    current: read_total,
+                    total,
+                    file_name: path
+                        .file_name()
+                        .map(|name| name.to_string_lossy().into_owned())
+                        .unwrap_or_default(),
+                },
+            )
+            .ok();
+            last_emit = read_total;
+        }
     }
 
-    fs::create_dir_all(&extract_to)
-        .map_err(|e| format!("Failed to create extraction directory: {}", e))?;
+    let digest = hasher.finalize();
+    Ok(digest.iter().map(|b| format!("{:02x}", b)).collect())
+}
 
-    let file = File::open(&zip_path).map_err(|e| format!("Failed to open zip file: {}", e))?;
-    let mut archive =
-        zip::ZipArchive::new(file).map_err(|e| format!("Failed to read zip archive: {}", e))?;
+fn gunzip_with_progress(
+    app: &AppHandle,
+    gzip_path: &Path,
+    dest_path: &Path,
+    total: u64,
+) -> Result<(), String> {
+    struct CountingReader<R: Read> {
+        inner: R,
+        read: std::rc::Rc<std::cell::Cell<u64>>,
+    }
 
-    let total_files = archive.len();
+    impl<R: Read> Read for CountingReader<R> {
+        fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+            let read = self.inner.read(buf)?;
+            self.read.set(self.read.get() + read as u64);
+            Ok(read)
+        }
+    }
+
+    let file = File::open(gzip_path).map_err(|e| format!("Failed to open archive: {}", e))?;
+    let compressed_read = std::rc::Rc::new(std::cell::Cell::new(0u64));
+    let counting = CountingReader {
+        inner: std::io::BufReader::new(file),
+        read: compressed_read.clone(),
+    };
+    let mut decoder = GzDecoder::new(counting);
+
+    if let Some(parent) = dest_path.parent() {
+        fs::create_dir_all(parent)
+            .map_err(|e| format!("Failed to create extraction directory: {}", e))?;
+    }
+
+    // Decompress into a temporary sibling first so an interrupted run never
+    // leaves a truncated database at the final path.
+    let partial_path = dest_path.with_extension("sqlite.part");
+    let mut out =
+        File::create(&partial_path).map_err(|e| format!("Failed to create output file: {}", e))?;
+
+    let file_name = dest_path
+        .file_name()
+        .map(|name| name.to_string_lossy().into_owned())
+        .unwrap_or_default();
+
+    let mut buffer = vec![0u8; 1024 * 1024];
+    let mut last_emit: u64 = 0;
+
+    let result: Result<(), String> = loop {
+        let read = match decoder.read(&mut buffer) {
+            Ok(read) => read,
+            Err(e) => break Err(format!("Failed to decompress archive: {}", e)),
+        };
+        if read == 0 {
+            break Ok(());
+        }
+        if let Err(e) = out.write_all(&buffer[..read]) {
+            break Err(format!("Failed to write extracted data: {}", e));
+        }
+
+        let current = compressed_read.get();
+        if current - last_emit >= PROGRESS_CHUNK {
+            app.emit(
+                "extract-progress",
+                ExtractProgress {
+                    current,
+                    total,
+                    file_name: file_name.clone(),
+                },
+            )
+            .ok();
+            last_emit = current;
+        }
+    };
+
+    if let Err(err) = result {
+        drop(out);
+        fs::remove_file(&partial_path).ok();
+        return Err(err);
+    }
+
+    out.flush()
+        .map_err(|e| format!("Failed to flush extracted data: {}", e))?;
+    drop(out);
+
+    fs::rename(&partial_path, dest_path)
+        .map_err(|e| format!("Failed to move extracted file into place: {}", e))?;
 
     app.emit(
-        "extract-start",
-        serde_json::json!({ "totalFiles": total_files }),
+        "extract-progress",
+        ExtractProgress {
+            current: total,
+            total,
+            file_name,
+        },
     )
     .ok();
 
-    for i in 0..total_files {
-        let mut file = archive
-            .by_index(i)
-            .map_err(|e| format!("Failed to access file in archive: {}", e))?;
+    Ok(())
+}
 
-        let file_name = file.name().to_string();
+/// Verify (optionally) and decompress a downloaded gzip archive, then
+/// delete the archive on success. Used for the dictionary's
+/// distribution.sqlite.gz release asset.
+#[tauri::command]
+pub async fn extract_gzip(app: AppHandle, args: ExtractGzipArgs) -> Result<String, String> {
+    let gzip_path = PathBuf::from(&args.gzip_path);
+    let dest_path = PathBuf::from(&args.dest_path);
 
-        app.emit(
-            "extract-progress",
-            ExtractProgress {
-                current: i + 1,
-                total: total_files,
-                file_name: file_name.clone(),
-            },
-        )
-        .ok();
-
-        let outpath = extract_to.join(file.name());
-
-        if file.is_dir() {
-            fs::create_dir_all(&outpath)
-                .map_err(|e| format!("Failed to create directory: {}", e))?;
-        } else {
-            if let Some(parent) = outpath.parent() {
-                fs::create_dir_all(parent)
-                    .map_err(|e| format!("Failed to create parent directory: {}", e))?;
-            }
-            let mut outfile =
-                File::create(&outpath).map_err(|e| format!("Failed to create file: {}", e))?;
-            io::copy(&mut file, &mut outfile)
-                .map_err(|e| format!("Failed to extract file: {}", e))?;
-        }
-
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::PermissionsExt;
-            if let Some(mode) = file.unix_mode() {
-                fs::set_permissions(&outpath, fs::Permissions::from_mode(mode))
-                    .map_err(|e| format!("Failed to set permissions: {}", e))?;
-            }
-        }
+    if !gzip_path.is_file() {
+        return Err("Archive file does not exist".into());
     }
 
-    app.emit("extract-complete", serde_json::json!({})).ok();
+    let total = fs::metadata(&gzip_path)
+        .map(|meta| meta.len())
+        .unwrap_or(0);
 
-    Ok(extract_to.to_string_lossy().into())
+    app.emit("extract-start", serde_json::json!({ "totalBytes": total }))
+        .ok();
+
+    let expected = args
+        .expected_sha256
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(str::to_lowercase);
+
+    let result = tauri::async_runtime::spawn_blocking(move || -> Result<String, String> {
+        if let Some(expected) = expected {
+            let actual = compute_sha256(&app, &gzip_path, total)?;
+            if actual != expected {
+                return Err(format!(
+                    "Checksum mismatch for downloaded dictionary: expected {}, got {}",
+                    expected, actual
+                ));
+            }
+        }
+
+        gunzip_with_progress(&app, &gzip_path, &dest_path, total)?;
+        fs::remove_file(&gzip_path).ok();
+
+        app.emit("extract-complete", serde_json::json!({})).ok();
+
+        Ok(dest_path.to_string_lossy().into_owned())
+    })
+    .await
+    .map_err(|e| format!("Extraction task failed: {}", e))?;
+
+    result
+}
+
+/// Fetch a small text file (e.g. a release's SHA256SUMS.txt) over HTTP.
+/// Runs in Rust so release-asset downloads never depend on webview CORS.
+#[tauri::command]
+pub async fn fetch_text_file(url: String) -> Result<String, String> {
+    let url = url.trim().to_string();
+    if url.is_empty() {
+        return Err("URL is required".into());
+    }
+
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(60))
+        .build()
+        .map_err(|e| e.to_string())?;
+
+    let response = client
+        .get(&url)
+        .send()
+        .await
+        .map_err(|e| format!("Failed to fetch {}: {}", url, e))?;
+
+    if !response.status().is_success() {
+        return Err(format!("HTTP error: {}", response.status()));
+    }
+
+    response
+        .text()
+        .await
+        .map_err(|e| format!("Failed to read response body: {}", e))
 }

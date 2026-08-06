@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useTranslation } from "react-i18next";
 import { useSettings } from "@/features/settings/hooks/use-settings";
-import { getLatestDictionaryRelease } from "@/shared/services/github-service";
+import { planDictionaryDownload } from "@/shared/services/dictionary-download";
 import { DownloadDialog } from "@/shared/components/download-dialog";
 import type { DownloadOptions } from "@/shared/types/download";
 import {
@@ -84,9 +84,9 @@ export function DictionaryCacheSync() {
 
         if (!cancelled) {
           if (!cacheExists) {
-            // No cache or no JSON files found – treat as 0 entries and prompt user.
+            // No usable distribution.sqlite found – treat as 0 entries and prompt user.
             console.log(
-              "[DictionaryCacheSync] No dictionary entries found at cache path; treating as 0."
+              "[DictionaryCacheSync] No dictionary database found at cache path; treating as 0."
             );
             setEntryCount(0);
             setIncompleteDialogOpen(true);
@@ -143,32 +143,14 @@ export function DictionaryCacheSync() {
     }
 
     try {
-      const release = await getLatestDictionaryRelease();
-      const normalizedPath = resolvedCachePath.replace(/[\/\\]+$/, "");
-      const lastSlashIndex = Math.max(
-        normalizedPath.lastIndexOf("/"),
-        normalizedPath.lastIndexOf("\\")
-      );
-      const parentDir =
-        lastSlashIndex > 0
-          ? normalizedPath.substring(0, lastSlashIndex)
-          : normalizedPath;
-      const zipFileName = "open-english-dictionary.zip";
-      const zipPath = `${parentDir}/${zipFileName}`;
-
-      const options: DownloadOptions = {
-        url: release.downloadUrl,
-        filePath: zipPath,
-        maxRetries: 3,
-        extractAfterDownload: true,
-        extractTo: parentDir,
+      const { options } = await planDictionaryDownload(resolvedCachePath, {
         onComplete: (result) => {
           console.log("Dictionary re-downloaded:", result);
         },
         onExtractComplete: () => {
           console.log("Dictionary re-extracted successfully");
         },
-      };
+      });
 
       setDownloadOptions(options);
       setDownloadDialogOpen(true);

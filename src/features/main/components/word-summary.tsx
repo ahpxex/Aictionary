@@ -10,7 +10,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Volume2, Loader2, BookmarkPlus } from "lucide-react";
-import { WordDefinition } from "@/shared/types/dictionary";
+import { DictionaryLookupResult } from "@/shared/types/dictionary";
+import { collectPronunciations } from "@/shared/lib/dictionary-entry";
 import {
   playCachedAudio,
   playFishTts,
@@ -19,7 +20,7 @@ import {
 import { toast } from "sonner";
 import { useSettings } from "@/features/settings/hooks/use-settings";
 import { resolveAudioCache } from "@/shared/services/audio-cache";
-import { addDefinitionToAnki } from "@/shared/services/anki-service";
+import { addEntryToAnki } from "@/shared/services/anki-service";
 
 const MANUAL_STOP_MESSAGE = "Stream manually stopped";
 const AUDIO_FORMAT = "mp3";
@@ -43,7 +44,7 @@ function resolveErrorMessage(error: unknown, fallback: string) {
   return fallback;
 }
 
-export function WordSummaryCard({ definition }: { definition: WordDefinition }) {
+export function WordSummaryCard({ result }: { result: DictionaryLookupResult }) {
   const { t } = useTranslation();
   const { settings } = useSettings();
   const [isPlaying, setIsPlaying] = useState(false);
@@ -53,21 +54,10 @@ export function WordSummaryCard({ definition }: { definition: WordDefinition }) 
   const isAnkiConfigured = Boolean(
     settings.anki.apiUrl.trim() && settings.anki.deckName.trim()
   );
-  const hasWord = Boolean(definition.word?.trim());
 
-  const WORD_FORMS_LABELS: Record<string, string> = {
-    third_person_singular: t("main.word_summary.third_person"),
-    past_tense: t("main.word_summary.past_tense"),
-    past_participle: t("main.word_summary.past_participle"),
-    present_participle: t("main.word_summary.present_participle"),
-    comparative: t("main.word_summary.comparative"),
-    superlative: t("main.word_summary.superlative"),
-    plural: t("main.word_summary.plural"),
-    singular: t("main.word_summary.singular"),
-  };
-  const formEntries = Object.entries(definition.forms || {});
-  const formatKey = (key: string) =>
-    WORD_FORMS_LABELS[key] ?? key.replace(/_/g, " ");
+  const { entry, source } = result;
+  const hasWord = Boolean(entry.headword?.trim());
+  const pronunciations = collectPronunciations(entry);
 
   const stopPlayback = useCallback(async () => {
     if (!playerRef.current) {
@@ -91,7 +81,7 @@ export function WordSummaryCard({ definition }: { definition: WordDefinition }) 
     return () => {
       void stopPlayback();
     };
-  }, [definition.word, stopPlayback]);
+  }, [entry.headword, stopPlayback]);
 
   const handlePronunciationClick = async () => {
     if (!isAudioConfigured) {
@@ -111,7 +101,7 @@ export function WordSummaryCard({ definition }: { definition: WordDefinition }) 
 
     let cacheEntry: { path: string; exists: boolean } | null = null;
     try {
-      cacheEntry = await resolveAudioCache(definition.word, {
+      cacheEntry = await resolveAudioCache(entry.headword, {
         model: settings.audio.model,
         voiceId: settings.audio.voiceId,
         format: AUDIO_FORMAT,
@@ -135,7 +125,7 @@ export function WordSummaryCard({ definition }: { definition: WordDefinition }) 
 
       if (!player) {
         player = await playFishTts({
-          text: definition.word,
+          text: entry.headword,
           autoplay: true,
           format: AUDIO_FORMAT,
           cacheFilePath: cacheEntry?.path,
@@ -186,7 +176,7 @@ export function WordSummaryCard({ definition }: { definition: WordDefinition }) 
 
     setIsSavingToAnki(true);
     try {
-      await addDefinitionToAnki(definition, {
+      await addEntryToAnki(entry, {
         settingsOverride: settings.anki,
       });
       toast.success(t("main.word_summary.anki_success"));
@@ -208,11 +198,32 @@ export function WordSummaryCard({ definition }: { definition: WordDefinition }) 
 
   const ankiAriaLabel = t("main.word_summary.add_to_anki");
 
+  const entryTypeLabel =
+    entry.entry_type !== "standard"
+      ? t(`main.word_summary.entry_type.${entry.entry_type}`, {
+          defaultValue: entry.entry_type,
+        })
+      : null;
+
   return (
     <Card>
       <CardHeader>
         <div className="flex items-start justify-between gap-3">
-          <CardTitle className="text-3xl font-bold">{definition.word}</CardTitle>
+          <div className="flex flex-wrap items-baseline gap-3">
+            <CardTitle className="text-4xl font-bold tracking-tight">
+              {entry.headword}
+            </CardTitle>
+            {entryTypeLabel && (
+              <Badge variant="secondary" className="text-xs">
+                {entryTypeLabel}
+              </Badge>
+            )}
+            {source === "user" && (
+              <Badge variant="outline" className="text-xs">
+                {t("main.word_summary.ai_generated")}
+              </Badge>
+            )}
+          </div>
           <div className="flex items-center gap-1">
             <Button
               type="button"
@@ -248,26 +259,56 @@ export function WordSummaryCard({ definition }: { definition: WordDefinition }) 
             </Button>
           </div>
         </div>
-        <CardDescription className="flex flex-wrap items-center gap-3 text-base text-muted-foreground">
-          <span className="font-medium">/{definition.pronunciation}/</span>
-          <span>{definition.concise_definition}</span>
+        <CardDescription className="flex flex-col gap-2 text-base text-muted-foreground">
+          {pronunciations.length > 0 && (
+            <span className="flex flex-wrap items-center gap-x-4 gap-y-1">
+              {pronunciations.map((pronunciation, index) => (
+                <span key={`pron-${index}`} className="font-mono text-sm">
+                  {pronunciation.tags.length > 0 && (
+                    <span className="mr-1.5 text-[0.65rem] uppercase tracking-wider">
+                      {pronunciation.tags.join(" ")}
+                    </span>
+                  )}
+                  {pronunciation.ipa ?? pronunciation.text}
+                </span>
+              ))}
+            </span>
+          )}
+          <span className="text-foreground/90">{entry.headword_summary}</span>
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col gap-3">
-        {formEntries.length > 0 && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span className="text-xs uppercase tracking-wide text-foreground">
-              {t("main.word_summary.word_forms")}
-            </span>
-            <div className="flex flex-wrap gap-2">
-              {formEntries
-                .filter(([, value]) => value && value.trim() !== "")
-                .map(([key, value]) => (
-                  <Badge key={key} variant="outline" className="text-xs font-medium">
-                    {formatKey(key)}：{value}
-                  </Badge>
-                ))}
-            </div>
+      <CardContent className="flex flex-col">
+        {entry.memory_hook?.trim() && (
+          <div className="border-t border-border py-4 text-sm leading-relaxed">
+            <p className="mb-1.5 text-xs uppercase tracking-widest text-muted-foreground">
+              {t("main.word_summary.memory_hook")}
+            </p>
+            <p>{entry.memory_hook}</p>
+          </div>
+        )}
+
+        {entry.study_notes.length > 0 && (
+          <div className="border-t border-border py-4 text-sm">
+            <p className="mb-1.5 text-xs uppercase tracking-widest text-muted-foreground">
+              {t("main.word_summary.study_notes")}
+            </p>
+            <ul className="flex flex-col gap-1 leading-relaxed">
+              {entry.study_notes.map((note, index) => (
+                <li key={`note-${index}`} className="flex gap-2">
+                  <span className="select-none text-muted-foreground">–</span>
+                  <span>{note}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {entry.etymology_note?.trim() && (
+          <div className="border-t border-border pt-4 text-sm leading-relaxed text-muted-foreground">
+            <p className="mb-1.5 text-xs uppercase tracking-widest">
+              {t("main.word_summary.etymology")}
+            </p>
+            <p>{entry.etymology_note}</p>
           </div>
         )}
       </CardContent>

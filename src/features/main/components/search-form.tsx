@@ -38,7 +38,7 @@ export const SearchForm = forwardRef<SearchFormRef, SearchFormProps>(
   return (
     <form
       onSubmit={handleSubmit}
-      className="bg-card border-input flex w-full max-w-2xl items-center gap-2 rounded-lg border p-2 shadow-sm"
+      className="bg-card border-input flex w-full max-w-2xl items-center gap-2 border p-2"
     >
       <Search className="text-muted-foreground size-4" />
       <Input

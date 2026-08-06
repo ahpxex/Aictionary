@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { toast } from "sonner";
 import { openPath } from "@tauri-apps/plugin-opener";
@@ -18,7 +18,9 @@ import { useSettings } from "@/features/settings/hooks/use-settings";
 import { formatDistanceToNow } from "date-fns";
 import { FolderOpen } from "lucide-react";
 import { DownloadDialog } from "@/shared/components/download-dialog";
-import { getLatestDictionaryRelease } from "@/shared/services/github-service";
+import { planDictionaryDownload } from "@/shared/services/dictionary-download";
+import { getDictionaryMetadata } from "@/shared/services/dictionary-service";
+import type { DictionaryMetadata } from "@/shared/types/dictionary";
 import type { DownloadOptions } from "@/shared/types/download";
 import { MIN_FULL_DICTIONARY_ENTRIES } from "@/shared/constants/dictionary";
 
@@ -30,6 +32,35 @@ export function DictionaryTab() {
   const [downloadDialogOpen, setDownloadDialogOpen] = useState(false);
   const [downloadOptions, setDownloadOptions] =
     useState<DownloadOptions | null>(null);
+  const [metadata, setMetadata] = useState<DictionaryMetadata | null>(null);
+
+  const cachePath = settings.dictionary.cachePath.trim();
+  const lastUpdated = settings.dictionary.lastUpdated;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!cachePath) {
+      setMetadata(null);
+      return;
+    }
+
+    getDictionaryMetadata(cachePath)
+      .then((data) => {
+        if (!cancelled) {
+          setMetadata(data);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setMetadata(null);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [cachePath, lastUpdated]);
 
   const handleBrowseFolder = async () => {
     try {
@@ -90,35 +121,17 @@ export function DictionaryTab() {
 
     setIsRefreshing(true);
     try {
-      // Fetch the latest release from GitHub
-      const release = await getLatestDictionaryRelease();
-
-      // Prepare download options
-      const zipFileName = "open-english-dictionary.zip";
-      const cachePath = settings.dictionary.cachePath.replace(/[\/\\]+$/, ""); // Remove trailing slashes
-
-      // Extract to parent directory since zip contains 'dictionary' folder
-      const lastSlashIndex = Math.max(
-        cachePath.lastIndexOf("/"),
-        cachePath.lastIndexOf("\\")
+      const { options } = await planDictionaryDownload(
+        settings.dictionary.cachePath,
+        {
+          onComplete: (result) => {
+            console.log("Dictionary downloaded:", result);
+          },
+          onExtractComplete: () => {
+            console.log("Dictionary extracted successfully");
+          },
+        }
       );
-      const parentDir =
-        lastSlashIndex > 0 ? cachePath.substring(0, lastSlashIndex) : cachePath;
-      const zipPath = `${parentDir}/${zipFileName}`;
-
-      const options: DownloadOptions = {
-        url: release.downloadUrl,
-        filePath: zipPath,
-        maxRetries: 3,
-        extractAfterDownload: true,
-        extractTo: parentDir, // Extract to parent dir, zip creates 'dictionary' folder
-        onComplete: (result) => {
-          console.log("Dictionary downloaded:", result);
-        },
-        onExtractComplete: () => {
-          console.log("Dictionary extracted successfully");
-        },
-      };
 
       setDownloadOptions(options);
       setDownloadDialogOpen(true);
@@ -196,6 +209,40 @@ export function DictionaryTab() {
                   : t("settings.dictionary.cache.never")}
               </span>
             </div>
+            {metadata && (
+              <div className="flex flex-col gap-1 rounded-lg border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
+                <div className="flex flex-wrap gap-x-6 gap-y-1">
+                  <span>
+                    {t("settings.dictionary.metadata.entries")}{" "}
+                    <span className="font-medium text-foreground">
+                      {metadata.entry_count?.toLocaleString() ?? "-"}
+                    </span>
+                  </span>
+                  <span>
+                    {t("settings.dictionary.metadata.user_entries")}{" "}
+                    <span className="font-medium text-foreground">
+                      {metadata.user_entry_count?.toLocaleString() ?? 0}
+                    </span>
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-x-6 gap-y-1">
+                  <span>
+                    {t("settings.dictionary.metadata.schema")}{" "}
+                    <span className="font-medium text-foreground">
+                      {metadata.distribution_schema_version ?? "-"}
+                    </span>
+                  </span>
+                  {metadata.definition_language?.name && (
+                    <span>
+                      {t("settings.dictionary.metadata.definition_language")}{" "}
+                      <span className="font-medium text-foreground">
+                        {metadata.definition_language.name}
+                      </span>
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
             <div className="flex flex-wrap gap-2">
               <Button onClick={handleRedownload} disabled={isRefreshing}>
                 {isRefreshing

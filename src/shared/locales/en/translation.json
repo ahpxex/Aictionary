@@ -41,10 +41,6 @@
       "title": "Compare with",
       "description": "Understand nuances between related words."
     },
-    "definitions": {
-      "example_label_zh": "例句：",
-      "example_label_en": "Example:"
-    },
     "llm": {
       "missing_config": "The word isn't cached locally and no AI provider is configured yet.",
       "missing_cache_path": "Set a dictionary cache path before asking the AI to help.",
@@ -58,15 +54,6 @@
       "dictionary": "Unable to query the dictionary. Please try again later."
     },
     "word_summary": {
-      "word_forms": "Word forms",
-      "third_person": "3rd person singular",
-      "past_tense": "Past tense",
-      "past_participle": "Past participle",
-      "present_participle": "Present participle",
-      "comparative": "Comparative",
-      "superlative": "Superlative",
-      "plural": "Plural",
-      "singular": "Singular",
       "play_pronunciation": "Play pronunciation",
       "stop_pronunciation": "Stop pronunciation",
       "audio_error": "Couldn't play the pronunciation. Please try again.",
@@ -74,7 +61,44 @@
       "add_to_anki": "Save to Anki",
       "anki_success": "Card saved to Anki.",
       "anki_error": "Couldn't add this word to Anki. Please try again.",
-      "anki_not_configured": "Set your AnkiConnect address and deck in Settings → Anki first."
+      "anki_not_configured": "Set your AnkiConnect address and deck in Settings → Anki first.",
+      "ai_generated": "AI generated",
+      "memory_hook": "Memory hook",
+      "study_notes": "Study notes",
+      "etymology": "Etymology",
+      "entry_type": {
+        "proper_name": "Proper name",
+        "affix": "Affix",
+        "proverb": "Proverb"
+      }
+    },
+    "priority": {
+      "core": "Core",
+      "common": "Common",
+      "rare": "Rare"
+    },
+    "pos_group": {
+      "proper_name": "Proper name",
+      "show_rare": "Show {{count}} rare meanings",
+      "hide_rare": "Hide rare meanings",
+      "usage_label": "Usage"
+    },
+    "relations": {
+      "synonym": "Synonyms",
+      "antonym": "Antonyms",
+      "related_term": "Related terms",
+      "derived_term": "Derived terms",
+      "show_more": "Show related words ({{count}})"
+    },
+    "form_tags": {
+      "plural": "plural",
+      "comparative": "comparative",
+      "superlative": "superlative",
+      "past": "past",
+      "participle": "participle",
+      "present": "present",
+      "singular": "singular",
+      "third-person": "third-person"
     }
   },
   "statistics": {
@@ -294,6 +318,12 @@
         "redownload_error": "Failed to re-download cache.",
         "show_error": "Failed to open directory.",
         "clear_success": "Cache path cleared."
+      },
+      "metadata": {
+        "entries": "Entries:",
+        "user_entries": "My AI entries:",
+        "schema": "Schema:",
+        "definition_language": "Definitions:"
       }
     },
     "keyboard": {
@@ -348,7 +378,8 @@
       "complete": "Download complete!",
       "error": "Download failed",
       "close": "Close",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "verifying": "Verifying checksum..."
     }
   }
 }

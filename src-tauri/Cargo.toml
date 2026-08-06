@@ -29,9 +29,14 @@ serde_json = "1"
 reqwest = { version = "0.12", features = ["json", "stream"] }
 tokio = { version = "1", features = ["full"] }
 futures-util = "0.3"
-zip = "2.2"
+rusqlite = { version = "0.32", features = ["bundled"] }
+flate2 = "1"
+sha2 = "0.10"
 tauri-plugin-single-instance = { version = "2.3.6", features = ["deep-link"] }
 base64 = "0.22"
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-autostart = "2"
+
+[dev-dependencies]
+tempfile = "3"

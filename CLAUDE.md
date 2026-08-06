@@ -64,13 +64,41 @@ src/
 - Example: LLM provider testing uses `invoke("test_llm_provider", { ... })`
 - Backend code in `src-tauri/src/`
 
+### Dictionary Data Contract
+
+The dictionary consumes the `distribution_entry_v5` contract of
+`ahpxex/open-dictionary` (release v2.0 and later):
+
+- The release ships `distribution.sqlite.gz` (a gzip-compressed SQLite
+  artifact) plus `SHA256SUMS.txt`. There are no per-word JSON files anymore.
+- The extracted `distribution.sqlite` lives in the dictionary cache
+  directory. Lookups go through the Rust command `dictionary_query`, which
+  matches `normalized_headword` (lowercased input) via the
+  `(headword_language_code, normalized_headword)` index and returns the full
+  `entries.document_json` product row.
+- User-generated (LLM) entries are stored separately in
+  `user_dictionary.sqlite` in the same directory, so re-downloading the
+  dictionary never touches user data. Lookups fall back to it when the
+  distributed dictionary misses.
+- TypeScript types for the contract live in `src/shared/types/dictionary.ts`
+  (`DictionaryEntry`, `DictionaryLookupResult`, ...). Rendering helpers
+  (pronunciation aggregation, rare-meaning folding with the contract's
+  "never leave an entry empty" fallback rule, relation grouping) live in
+  `src/shared/lib/dictionary-entry.ts`.
+- LLM generation (`src/shared/services/llm-service.ts`) produces only
+  explanatory fields; the full v5 envelope is assembled deterministically in
+  code. User entries may carry an app-level `comparisons` extension field
+  that distributed entries never have.
+
 ### GitHub Service
 
 `src/shared/services/github-service.ts` provides functions to fetch dictionary releases from GitHub:
 
-- `getLatestDictionaryRelease()`: Fetches the latest release of `open-english-dictionary.zip` from `ahpxex/open-dictionary`
-- `getAllDictionaryReleases()`: Fetches all releases containing the dictionary file
-- Returns: version, download URL, file size, and publication date
+- `getLatestDictionaryRelease()`: Fetches the latest release carrying
+  `distribution.sqlite.gz` from `ahpxex/open-dictionary`
+- `getAllDictionaryReleases()`: Fetches all releases containing the dictionary artifact
+- Returns: version, download URL, file size, publication date, and the
+  `SHA256SUMS.txt` URL when published
 - Uses GitHub's public API (no authentication required)
 
 ### Download Service
@@ -80,8 +108,12 @@ The app includes a comprehensive download service with progress tracking and ret
 **Backend (Rust)**: `src-tauri/src/download.rs`
 
 - `download_file` command: Downloads files with progress tracking and automatic retries
-- `extract_zip` command: Extracts zip archives with progress feedback
-- Event emissions: `download-progress`, `download-complete`, `download-error`, `download-retry`, `extract-progress`, `extract-complete`
+- `extract_gzip` command: Verifies the archive against an expected SHA-256
+  (when provided) and decompresses it with progress feedback; writes to a
+  `.part` file and renames atomically, then deletes the archive
+- `fetch_text_file` command: Fetches small text assets (checksum manifests)
+  through Rust so release downloads never depend on webview CORS
+- Event emissions: `download-progress`, `download-complete`, `download-error`, `download-retry`, `verify-progress`, `extract-progress`, `extract-complete`
 - Exponential backoff for retries (2^attempt seconds between attempts)
 - Configurable max retries (default: 3)
 
@@ -89,6 +121,10 @@ The app includes a comprehensive download service with progress tracking and ret
 
 - **Types**: `src/shared/types/download.ts` - TypeScript interfaces for download operations
 - **Service**: `src/shared/services/download-service.ts` - Wrapper for Tauri commands with event listeners
+- **Planner**: `src/shared/services/dictionary-download.ts` -
+  `planDictionaryDownload(cachePath)` resolves the latest release, fetches
+  and parses the checksum manifest, and returns ready-to-use
+  `DownloadOptions`
 - **Hook**: `src/shared/hooks/use-download.ts` - React hook for managing download state
 - **Component**: `src/shared/components/download-dialog.tsx` - Dialog with progress UI
 
@@ -97,7 +133,7 @@ The app includes a comprehensive download service with progress tracking and ret
 ```typescript
 import { useState } from "react";
 import { DownloadDialog } from "@/shared/components/download-dialog";
-import { getLatestDictionaryRelease } from "@/shared/services/github-service";
+import { planDictionaryDownload } from "@/shared/services/dictionary-download";
 import type { DownloadOptions } from "@/shared/types/download";
 
 const [dialogOpen, setDialogOpen] = useState(false);
@@ -105,24 +141,11 @@ const [options, setOptions] = useState<DownloadOptions | null>(null);
 
 // Trigger download from GitHub
 const handleDownload = async () => {
-  const release = await getLatestDictionaryRelease();
-
-  // If zip contains 'dictionary' folder and cachePath is '/app/dictionary',
-  // extract to parent '/app/' so zip creates '/app/dictionary'
-  const cachePath = "/app/dictionary".replace(/[\/\\]+$/, "");
-  const parentDir = cachePath.substring(0,
-    Math.max(cachePath.lastIndexOf("/"), cachePath.lastIndexOf("\\"))
-  );
-
-  setOptions({
-    url: release.downloadUrl,
-    filePath: `${parentDir}/file.zip`,
-    maxRetries: 3,
-    extractAfterDownload: true,
-    extractTo: parentDir, // Extract to parent, not cachePath itself
+  const { options } = await planDictionaryDownload(cachePath, {
     onComplete: (result) => console.log("Downloaded:", result.filePath),
     onExtractComplete: () => console.log("Extraction complete!"),
   });
+  setOptions(options);
   setDialogOpen(true);
 };
 
@@ -139,11 +162,11 @@ const handleDownload = async () => {
 
 - Real-time progress tracking (bytes downloaded, percentage)
 - Automatic retry with exponential backoff
-- Zip extraction with simple progress bar
+- SHA-256 verification against the release's checksum manifest
+- Gzip extraction with progress bar and atomic rename
 - Localized UI (English/Chinese)
 - Error handling with user-friendly messages
-- Non-dismissible dialog during active download/extraction
-- Smart path handling: extracts to parent directory when zip contains target folder
+- Non-dismissible dialog during active download/verification/extraction
 
 ### UI Patterns
 

@@ -1,5 +1,9 @@
 import { invoke } from "@tauri-apps/api/core";
-import { WordDefinition } from "@/shared/types/dictionary";
+import type {
+  DictionaryEntry,
+  DictionaryLookupResult,
+  DictionaryMetadata,
+} from "@/shared/types/dictionary";
 
 export type DictionaryErrorCode =
   | "NOT_FOUND"
@@ -48,7 +52,7 @@ function determineErrorCode(message: string): DictionaryErrorCode {
 export async function queryDictionary(
   word: string,
   cachePath: string
-): Promise<WordDefinition> {
+): Promise<DictionaryLookupResult> {
   const trimmedWord = word.trim();
   if (!trimmedWord) {
     throw new DictionaryQueryError("Word is required", "INVALID_WORD");
@@ -60,7 +64,7 @@ export async function queryDictionary(
   }
 
   try {
-    return await invoke<WordDefinition>("dictionary_query", {
+    return await invoke<DictionaryLookupResult>("dictionary_query", {
       word: trimmedWord,
       cache_path: trimmedCachePath,
       cachePath: trimmedCachePath,
@@ -71,8 +75,9 @@ export async function queryDictionary(
   }
 }
 
+/** Persist a user-generated entry into the local user dictionary. */
 export async function writeDictionaryEntry(
-  definition: WordDefinition,
+  entry: DictionaryEntry,
   cachePath: string
 ) {
   const trimmedCachePath = cachePath.trim();
@@ -83,7 +88,21 @@ export async function writeDictionaryEntry(
   await invoke("upsert_dictionary_entry", {
     args: {
       cachePath: trimmedCachePath,
-      entry: definition,
+      entry,
     },
+  });
+}
+
+/** Read the metadata embedded in the installed dictionary artifact. */
+export async function getDictionaryMetadata(
+  cachePath: string
+): Promise<DictionaryMetadata> {
+  const trimmedCachePath = cachePath.trim();
+  if (!trimmedCachePath) {
+    throw new DictionaryQueryError("Dictionary cache path is missing", "MISSING_CACHE_PATH");
+  }
+
+  return invoke<DictionaryMetadata>("dictionary_metadata", {
+    cachePath: trimmedCachePath,
   });
 }

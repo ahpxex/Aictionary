@@ -1,12 +1,16 @@
 import { getRuntimeAnkiSettings } from "@/shared/state/anki-runtime";
-import type { WordDefinition } from "@/shared/types/dictionary";
+import type { DictionaryEntry } from "@/shared/types/dictionary";
 import type { AnkiSettings } from "@/shared/types/settings";
+import {
+  collectPronunciations,
+  splitMeaningsByPriority,
+} from "@/shared/lib/dictionary-entry";
 
 const ANKICONNECT_VERSION = 6;
 const DEFAULT_MODEL_NAME = "Basic";
 type AnkiCardTheme = AnkiSettings["cardTheme"];
 
-type AddDefinitionOptions = {
+type AddEntryOptions = {
   signal?: AbortSignal;
   settingsOverride?: Partial<AnkiSettings>;
 };
@@ -33,14 +37,6 @@ function escapeHtml(value: string) {
 
 function formatMultiline(value: string) {
   return escapeHtml(value).replace(/\n/g, "<br />");
-}
-
-function formatFormLabel(key: string) {
-  return key
-    .split("_")
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
 }
 
 function resolveCardTheme(theme?: AnkiCardTheme): AnkiCardTheme {
@@ -100,9 +96,7 @@ function buildCardStyles() {
 
     .aic-pron {
       margin-top: 6px;
-      font-size: 0.85rem;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
+      font-size: 0.9rem;
       color: var(--aic-muted);
     }
 
@@ -174,6 +168,10 @@ function buildCardStyles() {
       margin-bottom: 6px;
     }
 
+    .aic-gloss {
+      font-weight: 600;
+    }
+
     .aic-example {
       margin-top: 6px;
       font-size: 0.82rem;
@@ -190,19 +188,26 @@ function buildCardStyles() {
   `.trim();
 }
 
-function buildFrontContent(
-  definition: WordDefinition,
-  theme: AnkiCardTheme
-) {
+function formatPronunciations(entry: DictionaryEntry): string {
+  const pronunciations = collectPronunciations(entry);
+  if (!pronunciations.length) {
+    return "";
+  }
+
+  return pronunciations
+    .map((pronunciation) => {
+      const rendered = pronunciation.ipa ?? pronunciation.text ?? "";
+      const tags = pronunciation.tags.join(" ");
+      return escapeHtml(tags ? `${tags} ${rendered}` : rendered);
+    })
+    .join(" · ");
+}
+
+function buildFrontContent(entry: DictionaryEntry, theme: AnkiCardTheme) {
   const styles = buildCardStyles();
   const themeAttr = resolveCardTheme(theme);
-  const word = escapeHtml(definition.word ?? "");
-  const pronunciation = definition.pronunciation?.trim()
-    ? `/${escapeHtml(definition.pronunciation)}/`
-    : "";
-  const concise = definition.concise_definition?.trim()
-    ? formatMultiline(definition.concise_definition)
-    : "";
+  const word = escapeHtml(entry.headword ?? "");
+  const pronunciation = formatPronunciations(entry);
 
   return `
   ${styles}
@@ -210,100 +215,137 @@ function buildFrontContent(
     <div class="aic-card">
       <div class="aic-word">${word}</div>
       ${pronunciation ? `<div class="aic-pron">${pronunciation}</div>` : ""}
-      ${concise ? `<div class="aic-definition">${concise}</div>` : ""}
     </div>
   </div>
   `.trim();
 }
 
-function buildFormsSection(definition: WordDefinition) {
-  const entries = Object.entries(definition.forms ?? {}).filter(
-    ([, value]) => Boolean(value && value.trim())
-  );
+function buildFormsSection(entry: DictionaryEntry) {
+  const badges = entry.pos_groups
+    .flatMap((group) => group.forms)
+    .filter((form) => form.text.trim())
+    .map(
+      (form) => `
+        <span class="aic-badge">${escapeHtml(
+          form.tags.length ? `${form.tags.join(" ")} · ${form.text}` : form.text
+        )}</span>
+      `
+    );
 
-  if (!entries.length) {
+  if (!badges.length) {
     return "";
   }
-
-  const content = entries
-    .map(
-      ([key, value]) => `
-        <span class="aic-badge">${formatFormLabel(key)} · ${escapeHtml(value)}</span>
-      `
-    )
-    .join("\n");
 
   return `
     <div class="aic-section">
       <div class="aic-section-title">Word forms</div>
-      <div class="aic-badges">${content}</div>
+      <div class="aic-badges">${badges.join("\n")}</div>
     </div>
   `;
 }
 
-function buildDefinitionsSection(definition: WordDefinition) {
-  if (!definition.definitions?.length) {
+function buildMeaningsSection(entry: DictionaryEntry) {
+  const cards = entry.pos_groups.map((group) => {
+    // Cards stay compact: rare meanings are dropped unless the group has
+    // nothing else (the distribution contract's fallback rule).
+    const { visible } = splitMeaningsByPriority(group);
+
+    const meanings = visible
+      .map((meaning) => {
+        const segments: string[] = [];
+        const gloss = meaning.short_gloss?.trim();
+        if (gloss) {
+          segments.push(`<div class="aic-gloss">${escapeHtml(gloss)}</div>`);
+        }
+        segments.push(`<div>${formatMultiline(meaning.learner_explanation)}</div>`);
+
+        const examples = meaning.examples
+          .slice(0, 1)
+          .flatMap((example) => [
+            `<div class="aic-example">EN · ${formatMultiline(example.text)}</div>`,
+            `<div class="aic-example">CN · ${formatMultiline(example.translation)}</div>`,
+          ]);
+
+        return `${segments.join("\n")}${examples.join("\n")}`;
+      })
+      .join('<div style="height: 8px"></div>');
+
+    return `
+      <div class="aic-definition-card">
+        <strong>${escapeHtml(group.pos)}</strong>
+        <div class="aic-muted">${formatMultiline(group.summary)}</div>
+        <div style="height: 6px"></div>
+        ${meanings}
+      </div>
+    `;
+  });
+
+  if (!cards.length) {
     return "";
   }
 
-  const cards = definition.definitions
-    .map((entry, index) => {
-      const segments: string[] = [];
-      if (entry.explanation_en?.trim()) {
-        segments.push(`<div>${formatMultiline(entry.explanation_en)}</div>`);
-      }
-
-      if (entry.explanation_cn?.trim()) {
-        segments.push(`<div class="aic-muted">${formatMultiline(entry.explanation_cn)}</div>`);
-      }
-
-      const examples: string[] = [];
-      if (entry.example_en?.trim()) {
-        examples.push(`<div class="aic-example">EN · ${formatMultiline(entry.example_en)}</div>`);
-      }
-
-      if (entry.example_cn?.trim()) {
-        examples.push(`<div class="aic-example">CN · ${formatMultiline(entry.example_cn)}</div>`);
-      }
-
-      return `
-        <div class="aic-definition-card">
-          <strong>${escapeHtml(entry.pos || `Sense ${index + 1}`)}</strong>
-          ${segments.join("\n")}
-          ${examples.join("\n")}
-        </div>
-      `;
-    })
-    .join("\n");
-
   return `
     <div class="aic-section">
-      <div class="aic-section-title">Definitions</div>
+      <div class="aic-section-title">Meanings</div>
       <div class="aic-stack">
-        ${cards}
+        ${cards.join("\n")}
       </div>
     </div>
   `;
 }
 
-function buildComparisonSection(definition: WordDefinition) {
-  if (!definition.comparison?.length) {
+function buildStudySection(entry: DictionaryEntry) {
+  const blocks: string[] = [];
+
+  if (entry.memory_hook?.trim()) {
+    blocks.push(`
+      <div class="aic-definition-card">
+        <strong>Memory hook</strong>
+        <div>${formatMultiline(entry.memory_hook)}</div>
+      </div>
+    `);
+  }
+
+  if (entry.study_notes.length) {
+    const notes = entry.study_notes
+      .map((note) => `<div>· ${formatMultiline(note)}</div>`)
+      .join("\n");
+    blocks.push(`
+      <div class="aic-definition-card">
+        <strong>Study notes</strong>
+        ${notes}
+      </div>
+    `);
+  }
+
+  if (!blocks.length) {
     return "";
   }
 
-  const blocks = definition.comparison
-    .filter((entry) => entry.word_to_compare?.trim() && entry.analysis?.trim())
+  return `
+    <div class="aic-section">
+      <div class="aic-section-title">Study</div>
+      <div class="aic-stack">
+        ${blocks.join("\n")}
+      </div>
+    </div>
+  `;
+}
+
+function buildComparisonSection(entry: DictionaryEntry) {
+  const comparisons = entry.comparisons ?? [];
+  const blocks = comparisons
+    .filter((comparison) => comparison.word.trim() && comparison.analysis.trim())
     .map(
-      (entry) => `
+      (comparison) => `
         <div class="aic-comparison-card">
-          <strong>${escapeHtml(entry.word_to_compare)}</strong>
-          <div>${formatMultiline(entry.analysis)}</div>
+          <strong>${escapeHtml(comparison.word)}</strong>
+          <div>${formatMultiline(comparison.analysis)}</div>
         </div>
       `
-    )
-    .join("\n");
+    );
 
-  if (!blocks) {
+  if (!blocks.length) {
     return "";
   }
 
@@ -311,22 +353,20 @@ function buildComparisonSection(definition: WordDefinition) {
     <div class="aic-section">
       <div class="aic-section-title">Comparisons</div>
       <div class="aic-stack">
-        ${blocks}
+        ${blocks.join("\n")}
       </div>
     </div>
   `;
 }
 
-function buildBackContent(
-  definition: WordDefinition,
-  theme: AnkiCardTheme
-) {
+function buildBackContent(entry: DictionaryEntry, theme: AnkiCardTheme) {
   const styles = buildCardStyles();
   const themeAttr = resolveCardTheme(theme);
   const sections = [
-    buildFormsSection(definition),
-    buildDefinitionsSection(definition),
-    buildComparisonSection(definition),
+    buildMeaningsSection(entry),
+    buildFormsSection(entry),
+    buildStudySection(entry),
+    buildComparisonSection(entry),
   ].filter(Boolean);
 
   const footer = `
@@ -339,9 +379,9 @@ function buildBackContent(
     ${styles}
     <div class="aic-theme" data-theme="${themeAttr}">
       <div class="aic-card">
-        <div class="aic-word aic-word--small">${escapeHtml(definition.word ?? "")}</div>
-        ${definition.concise_definition?.trim() ? `<div class="aic-definition">${formatMultiline(
-          definition.concise_definition
+        <div class="aic-word aic-word--small">${escapeHtml(entry.headword ?? "")}</div>
+        ${entry.headword_summary?.trim() ? `<div class="aic-definition">${formatMultiline(
+          entry.headword_summary
         )}</div>` : ""}
         ${sections.join("\n")}
         ${footer}
@@ -409,9 +449,9 @@ async function ensureDeckExists(
   }
 }
 
-export async function addDefinitionToAnki(
-  definition: WordDefinition,
-  options?: AddDefinitionOptions
+export async function addEntryToAnki(
+  entry: DictionaryEntry,
+  options?: AddEntryOptions
 ) {
   const runtimeSettings = getRuntimeAnkiSettings();
   const settings: AnkiSettings = {
@@ -426,13 +466,13 @@ export async function addDefinitionToAnki(
     throw new Error("Incomplete Anki configuration");
   }
 
-  if (!definition.word?.trim()) {
+  if (!entry.headword?.trim()) {
     throw new Error("Missing word definition");
   }
 
   const cardTheme = resolveCardTheme(settings.cardTheme);
-  const front = buildFrontContent(definition, cardTheme);
-  const back = buildBackContent(definition, cardTheme);
+  const front = buildFrontContent(entry, cardTheme);
+  const back = buildBackContent(entry, cardTheme);
 
   const payload: AnkiRequestPayload<{ note: Record<string, unknown> }> = {
     action: "addNote",

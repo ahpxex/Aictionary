@@ -36,10 +36,18 @@ export async function downloadFile(
     options.onRetry?.(event.payload);
   });
 
+  let unlistenVerifyProgress: (() => void) | null = null;
   let unlistenExtractProgress: (() => void) | null = null;
   let unlistenExtractComplete: (() => void) | null = null;
 
-  if (options.extractAfterDownload && options.extractTo) {
+  if (options.gunzip) {
+    unlistenVerifyProgress = await listen<ExtractProgress>(
+      "verify-progress",
+      (event) => {
+        options.onVerifyProgress?.(event.payload);
+      }
+    );
+
     unlistenExtractProgress = await listen<ExtractProgress>(
       "extract-progress",
       (event) => {
@@ -61,11 +69,12 @@ export async function downloadFile(
       },
     });
 
-    if (options.extractAfterDownload && options.extractTo) {
-      await invoke<string>("extract_zip", {
+    if (options.gunzip) {
+      await invoke<string>("extract_gzip", {
         args: {
-          zipPath: result.filePath,
-          extractTo: options.extractTo,
+          gzipPath: result.filePath,
+          destPath: options.gunzip.destPath,
+          expectedSha256: options.gunzip.expectedSha256 ?? null,
         },
       });
     }
@@ -76,39 +85,16 @@ export async function downloadFile(
     unlistenComplete();
     unlistenError();
     unlistenRetry();
+    unlistenVerifyProgress?.();
     unlistenExtractProgress?.();
     unlistenExtractComplete?.();
   }
 }
 
-export async function extractZip(
-  zipPath: string,
-  extractTo: string,
-  onProgress?: (progress: ExtractProgress) => void,
-  onComplete?: () => void
-): Promise<string> {
-  const unlistenProgress = await listen<ExtractProgress>(
-    "extract-progress",
-    (event) => {
-      onProgress?.(event.payload);
-    }
-  );
-
-  const unlistenComplete = await listen("extract-complete", () => {
-    onComplete?.();
-  });
-
-  try {
-    const result = await invoke<string>("extract_zip", {
-      args: {
-        zipPath,
-        extractTo,
-      },
-    });
-
-    return result;
-  } finally {
-    unlistenProgress();
-    unlistenComplete();
-  }
+/**
+ * Fetch a text file (e.g. SHA256SUMS.txt) through the Rust backend so
+ * release-asset downloads never depend on webview CORS policies.
+ */
+export async function fetchTextFile(url: string): Promise<string> {
+  return invoke<string>("fetch_text_file", { url });
 }

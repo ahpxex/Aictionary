@@ -68,17 +68,20 @@ export function useDictionarySearch() {
           setIsGeneratingFromLlm(true);
 
           try {
-            const aiDefinition = await generateDefinitionFromLlm(
+            const aiEntry = await generateDefinitionFromLlm(
               normalized,
               settings.llm
             );
-            setResult({ result: aiDefinition, word: normalized });
+            setResult({
+              result: { source: "user", entry: aiEntry },
+              word: normalized,
+            });
             toast.success(
               t("main.llm.success", { model: settings.llm.model })
             );
             try {
               await writeDictionaryEntry(
-                aiDefinition,
+                aiEntry,
                 settings.dictionary.cachePath
               );
             } catch (persistError) {

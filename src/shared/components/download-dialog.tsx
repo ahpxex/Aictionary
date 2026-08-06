@@ -39,6 +39,7 @@ export function DownloadDialog({
   const { t } = useTranslation();
   const {
     isDownloading,
+    isVerifying,
     isExtracting,
     progress,
     extractProgress,
@@ -54,7 +55,7 @@ export function DownloadDialog({
         ...downloadOptions,
         onComplete: (result) => {
           downloadOptions.onComplete?.(result);
-          if (!downloadOptions.extractAfterDownload) {
+          if (!downloadOptions.gunzip) {
             setTimeout(() => {
               onSuccess?.();
               onOpenChange(false);
@@ -76,15 +77,15 @@ export function DownloadDialog({
     }
   }, [open, downloadOptions]);
 
+  const canClose = !isDownloading && !isVerifying && !isExtracting;
+  const showProgress = progress && progress.total > 0;
+
   const handleClose = () => {
-    if (!isDownloading && !isExtracting) {
+    if (canClose) {
       onOpenChange(false);
       reset();
     }
   };
-
-  const canClose = !isDownloading && !isExtracting;
-  const showProgress = progress && progress.total > 0;
 
   return (
     <Dialog open={open} onOpenChange={canClose ? onOpenChange : undefined}>
@@ -106,6 +107,8 @@ export function DownloadDialog({
           <DialogDescription>
             {isExtracting
               ? t("download.dialog.extracting")
+              : isVerifying
+              ? t("download.dialog.verifying")
               : isDownloading
               ? t("download.dialog.downloading")
               : error
@@ -152,28 +155,42 @@ export function DownloadDialog({
                 </div>
               )}
 
-              {isExtracting && extractProgress && (
+              {(isVerifying || isExtracting) && extractProgress && (
                 <div className="space-y-2">
                   <Progress
-                    value={Math.min(
-                      100,
-                      (extractProgress.current / extractProgress.total) * 100
-                    )}
+                    value={
+                      extractProgress.total > 0
+                        ? Math.min(
+                            100,
+                            (extractProgress.current / extractProgress.total) *
+                              100
+                          )
+                        : 0
+                    }
                     className="h-2"
                   />
                   <div className="text-sm text-muted-foreground text-center">
-                    {Math.min(
-                      100,
-                      Math.round(
-                        (extractProgress.current / extractProgress.total) * 100
-                      )
-                    )}
+                    {extractProgress.total > 0
+                      ? Math.min(
+                          100,
+                          Math.round(
+                            (extractProgress.current / extractProgress.total) *
+                              100
+                          )
+                        )
+                      : 0}
                     %
                   </div>
                 </div>
               )}
 
-              {!isDownloading && !isExtracting && !error && (
+              {(isVerifying || isExtracting) && !extractProgress && (
+                <div className="flex justify-center">
+                  <Spinner />
+                </div>
+              )}
+
+              {!isDownloading && !isVerifying && !isExtracting && !error && (
                 <div className="text-center text-sm font-medium text-green-600 dark:text-green-500">
                   {t("download.dialog.complete")}
                 </div>

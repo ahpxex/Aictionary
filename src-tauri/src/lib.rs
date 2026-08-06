@@ -78,6 +78,7 @@ pub fn run() {
             dictionary::get_default_dictionary_path,
             dictionary::check_dictionary_cache_exists,
             dictionary::count_dictionary_entries,
+            dictionary::dictionary_metadata,
             // LLM commands
             llm::test_llm_provider,
             // Export commands
@@ -85,7 +86,8 @@ pub fn run() {
             export::export_query_metrics,
             // Download commands
             download::download_file,
-            download::extract_zip,
+            download::extract_gzip,
+            download::fetch_text_file,
             // Audio cache commands
             audio_cache::resolve_audio_cache_entry,
             audio_cache::read_audio_cache_file,

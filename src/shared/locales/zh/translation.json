@@ -41,10 +41,6 @@
       "title": "对比词汇",
       "description": "了解相关单词之间的细微差别。"
     },
-    "definitions": {
-      "example_label_zh": "例句：",
-      "example_label_en": "例句："
-    },
     "llm": {
       "missing_config": "该单词不在本地缓存中，且尚未配置 AI 提供商。",
       "missing_cache_path": "使用 AI 补齐前请先设置词典缓存路径。",
@@ -58,15 +54,6 @@
       "dictionary": "无法查询词典，请稍后再试。"
     },
     "word_summary": {
-      "word_forms": "词形",
-      "third_person": "第三人称",
-      "past_tense": "过去式",
-      "past_participle": "过去分词",
-      "present_participle": "现在分词",
-      "comparative": "比较级",
-      "superlative": "最高级",
-      "plural": "复数",
-      "singular": "单数",
       "play_pronunciation": "播放发音",
       "stop_pronunciation": "停止发音",
       "audio_error": "无法播放发音，请稍后再试。",
@@ -74,7 +61,44 @@
       "add_to_anki": "保存到 Anki",
       "anki_success": "已保存卡片到 Anki。",
       "anki_error": "无法添加到 Anki，请稍后再试。",
-      "anki_not_configured": "请先在 设置 → Anki 中配置 AnkiConnect 地址和牌组。"
+      "anki_not_configured": "请先在 设置 → Anki 中配置 AnkiConnect 地址和牌组。",
+      "ai_generated": "AI 生成",
+      "memory_hook": "记忆钩子",
+      "study_notes": "学习要点",
+      "etymology": "词源",
+      "entry_type": {
+        "proper_name": "专有名词",
+        "affix": "词缀",
+        "proverb": "谚语"
+      }
+    },
+    "priority": {
+      "core": "核心",
+      "common": "常见",
+      "rare": "罕见"
+    },
+    "pos_group": {
+      "proper_name": "专有名词",
+      "show_rare": "显示 {{count}} 个罕见义项",
+      "hide_rare": "收起罕见义项",
+      "usage_label": "用法"
+    },
+    "relations": {
+      "synonym": "近义词",
+      "antonym": "反义词",
+      "related_term": "相关词",
+      "derived_term": "派生词",
+      "show_more": "显示相关词汇（{{count}}）"
+    },
+    "form_tags": {
+      "plural": "复数",
+      "comparative": "比较级",
+      "superlative": "最高级",
+      "past": "过去式",
+      "participle": "分词",
+      "present": "现在时",
+      "singular": "单数",
+      "third-person": "第三人称"
     }
   },
   "statistics": {
@@ -294,6 +318,12 @@
         "redownload_error": "重新下载缓存失败。",
         "show_error": "打开目录失败。",
         "clear_success": "缓存路径已清除。"
+      },
+      "metadata": {
+        "entries": "词条数：",
+        "user_entries": "我的 AI 词条：",
+        "schema": "数据契约：",
+        "definition_language": "释义语言："
       }
     },
     "keyboard": {
@@ -348,7 +378,8 @@
       "complete": "下载完成！",
       "error": "下载失败",
       "close": "关闭",
-      "cancel": "取消"
+      "cancel": "取消",
+      "verifying": "正在校验文件完整性..."
     }
   }
 }

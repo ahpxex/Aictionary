@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useDictionarySearch } from "@/features/main/hooks/use-dictionary-search";
 import { ComparisonList } from "@/features/main/components/comparison-list";
-import { DefinitionsList } from "@/features/main/components/definitions-list";
+import { PosGroupList } from "@/features/main/components/pos-group-list";
 import { SearchForm } from "@/features/main/components/search-form";
 import { WordSummaryCard } from "@/features/main/components/word-summary";
 
@@ -31,7 +31,7 @@ export function MainPage() {
           ref={searchFormRef}
           onSearch={search}
           isSearching={isSearching}
-          initialValue={result?.word}
+          initialValue={result?.entry.headword}
         />
         {!result && !isGeneratingFromLlm && (
           <p className="text-muted-foreground text-sm">
@@ -51,11 +51,9 @@ export function MainPage() {
 
       {result && !isGeneratingFromLlm && (
         <div className="flex flex-col gap-6">
-          <WordSummaryCard definition={result} />
-          <div className="flex flex-col gap-4">
-            <DefinitionsList definition={result} />
-          </div>
-          <ComparisonList definition={result} />
+          <WordSummaryCard result={result} />
+          <PosGroupList entry={result.entry} onSearchWord={search} />
+          <ComparisonList entry={result.entry} />
         </div>
       )}
     </div>
