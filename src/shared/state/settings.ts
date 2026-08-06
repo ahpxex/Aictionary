@@ -13,7 +13,10 @@ export const defaultSettings: AppSettings = {
     model: "gpt-4o-mini",
   },
   audio: {
-    provider: "fish",
+    provider: "edge",
+    edge: {
+      voice: "en-US-AndrewNeural",
+    },
     fish: {
       apiKey: "",
       model: "s1",
@@ -24,6 +27,11 @@ export const defaultSettings: AppSettings = {
       apiKey: "",
       model: "tts-1",
       voice: "alloy",
+    },
+    elevenlabs: {
+      apiKey: "",
+      voiceId: "",
+      model: "eleven_multilingual_v2",
     },
   },
   anki: {
@@ -73,8 +81,10 @@ export function normalizeAudioSettings(value: unknown): AudioSettings {
   if (!value || typeof value !== "object") {
     return {
       provider: defaults.provider,
+      edge: { ...defaults.edge },
       fish: { ...defaults.fish },
       openai: { ...defaults.openai },
+      elevenlabs: { ...defaults.elevenlabs },
     };
   }
 
@@ -85,10 +95,14 @@ export function normalizeAudioSettings(value: unknown): AudioSettings {
   };
 
   if (!("provider" in raw) && ("apiKey" in raw || "voiceId" in raw)) {
+    const legacyKey = typeof raw.apiKey === "string" ? raw.apiKey : "";
     return {
-      provider: "fish",
+      // A configured legacy install keeps Fish; an untouched one gets the
+      // zero-configuration Edge default.
+      provider: legacyKey.trim() ? "fish" : "edge",
+      edge: { ...defaults.edge },
       fish: {
-        apiKey: typeof raw.apiKey === "string" ? raw.apiKey : "",
+        apiKey: legacyKey,
         model:
           typeof raw.model === "string" && raw.model.trim()
             ? raw.model
@@ -96,12 +110,22 @@ export function normalizeAudioSettings(value: unknown): AudioSettings {
         voiceId: typeof raw.voiceId === "string" ? raw.voiceId : "",
       },
       openai: { ...defaults.openai },
+      elevenlabs: { ...defaults.elevenlabs },
     };
   }
 
+  const provider =
+    raw.provider === "fish" ||
+    raw.provider === "openai" ||
+    raw.provider === "elevenlabs"
+      ? raw.provider
+      : "edge";
+
   return {
-    provider: raw.provider === "openai" ? "openai" : "fish",
+    provider,
+    edge: { ...defaults.edge, ...(raw.edge ?? {}) },
     fish: { ...defaults.fish, ...(raw.fish ?? {}) },
     openai: { ...defaults.openai, ...(raw.openai ?? {}) },
+    elevenlabs: { ...defaults.elevenlabs, ...(raw.elevenlabs ?? {}) },
   };
 }

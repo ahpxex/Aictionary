@@ -235,7 +235,9 @@
         "label": "Provider",
         "fish": "Fish Audio",
         "openai": "OpenAI compatible",
-        "helper": "OpenAI compatible covers the OpenAI API and self-hosted wrappers such as openai-edge-tts."
+        "helper": "Edge is free and needs no configuration. OpenAI compatible covers the OpenAI API and self-hosted wrappers such as openai-edge-tts.",
+        "edge": "Edge (built-in)",
+        "elevenlabs": "ElevenLabs"
       },
       "fish": {
         "title": "Fish Audio",
@@ -283,6 +285,34 @@
           "label": "Voice",
           "placeholder": "alloy",
           "helper": "Voice name, e.g. alloy, echo, or en-US-AndrewNeural for edge-tts wrappers."
+        }
+      },
+      "edge": {
+        "title": "Edge (built-in)",
+        "description": "Microsoft Edge's read-aloud voices, spoken directly by the app. Free, no account or key required.",
+        "voice": {
+          "label": "Voice",
+          "placeholder": "en-US-AndrewNeural",
+          "helper": "Any Edge voice name, e.g. en-US-AriaNeural, en-GB-RyanNeural."
+        }
+      },
+      "elevenlabs": {
+        "title": "ElevenLabs",
+        "description": "Streaming synthesis from api.elevenlabs.io.",
+        "api_key": {
+          "label": "API key",
+          "placeholder": "xi-...",
+          "helper": "Stored locally only. Generate one in your ElevenLabs profile."
+        },
+        "voice": {
+          "label": "Voice ID",
+          "placeholder": "e.g. JBFqnCBsd6RMkjVDRZzb",
+          "helper": "The voice id from your ElevenLabs voice library."
+        },
+        "model": {
+          "label": "Model",
+          "placeholder": "eleven_multilingual_v2",
+          "helper": "Model id, e.g. eleven_multilingual_v2 or eleven_turbo_v2_5."
         }
       }
     },

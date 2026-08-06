@@ -44,10 +44,10 @@ const MIME_BY_FORMAT: Record<string, string> = {
 };
 
 type ResolvedAudioConfig = {
-  provider: "fish" | "openai";
+  provider: "edge" | "fish" | "openai" | "elevenlabs";
   apiKey: string;
   model: string;
-  /** Fish reference id or OpenAI-compatible voice name. */
+  /** Fish reference id, ElevenLabs voice id, or voice name elsewhere. */
   voice?: string;
   baseUrl?: string;
 };
@@ -151,7 +151,7 @@ export async function startTtsStream(
               referenceId:
                 audioConfig.provider === "fish" ? audioConfig.voice : undefined,
               voice:
-                audioConfig.provider === "openai" ? audioConfig.voice : undefined,
+                audioConfig.provider === "fish" ? undefined : audioConfig.voice,
               model: audioConfig.model,
               apiKey: audioConfig.apiKey,
               latency: options.latency,
@@ -232,10 +232,24 @@ export async function playTts(
   const player = new MediaSourceStreamPlayer(mimeType);
   const consumption = player.consume(handle.stream);
 
+  // The stream finishing only means the download is done; completion should
+  // report when sound actually stops. "ended" covers natural playback end,
+  // "pause" covers stop()/dispose(), and a rejected play() covers platforms
+  // that block autoplay - so this promise can never be left hanging.
+  let resolvePlaybackSettled!: () => void;
+  const playbackSettled = new Promise<void>((resolve) => {
+    resolvePlaybackSettled = resolve;
+  });
+  player.element.addEventListener("ended", resolvePlaybackSettled);
+  player.element.addEventListener("pause", resolvePlaybackSettled);
+
   if (options.autoplay ?? true) {
     void player.play().catch(() => {
       // Playback might be blocked by the platform. Consumers can call play() manually.
+      resolvePlaybackSettled();
     });
+  } else {
+    resolvePlaybackSettled();
   }
 
   const onEnded = () => {
@@ -245,7 +259,10 @@ export async function playTts(
   player.element.addEventListener("ended", onEnded);
 
   const playbackCompletion = Promise.all([handle.completion, consumption]).then(
-    ([event]) => event
+    async ([event]) => {
+      await playbackSettled;
+      return event;
+    }
   );
 
   return {
@@ -488,6 +505,32 @@ class MediaSourceStreamPlayer {
 
 function resolveAudioConfig(): ResolvedAudioConfig {
   const runtime = getRuntimeAudioSettings();
+
+  if (runtime.provider === "edge") {
+    return {
+      provider: "edge",
+      apiKey: "",
+      model: "",
+      voice: runtime.edge.voice.trim() || undefined,
+    };
+  }
+
+  if (runtime.provider === "elevenlabs") {
+    const apiKey = runtime.elevenlabs.apiKey.trim();
+    const voiceId = runtime.elevenlabs.voiceId.trim();
+    if (!apiKey || !voiceId) {
+      throw new Error(
+        "ElevenLabs API key and voice id are required. Configure them in Settings > Audio."
+      );
+    }
+
+    return {
+      provider: "elevenlabs",
+      apiKey,
+      voice: voiceId,
+      model: runtime.elevenlabs.model.trim() || "eleven_multilingual_v2",
+    };
+  }
 
   if (runtime.provider === "openai") {
     const baseUrl = runtime.openai.baseUrl.trim();

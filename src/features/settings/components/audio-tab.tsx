@@ -13,7 +13,34 @@ import {
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useSettings } from "@/features/settings/hooks/use-settings";
 import { FISH_AUDIO_MODEL_OPTIONS } from "@/features/settings/constants/audio";
-import type { TtsProviderKind } from "@/shared/types/settings";
+import type { AudioSettings, TtsProviderKind } from "@/shared/types/settings";
+
+const PROVIDERS: TtsProviderKind[] = ["edge", "fish", "openai", "elevenlabs"];
+
+type FieldProps = {
+  id: string;
+  labelKey: string;
+  value: string;
+  onChange: (value: string) => void;
+  password?: boolean;
+};
+
+function TextField({ id, labelKey, value, onChange, password }: FieldProps) {
+  const { t } = useTranslation();
+  return (
+    <div className="grid gap-2">
+      <Label htmlFor={id}>{t(`${labelKey}.label`)}</Label>
+      <Input
+        id={id}
+        type={password ? "password" : "text"}
+        placeholder={t(`${labelKey}.placeholder`)}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+      />
+      <p className="text-xs text-muted-foreground">{t(`${labelKey}.helper`)}</p>
+    </div>
+  );
+}
 
 export function AudioTab() {
   const { t } = useTranslation();
@@ -29,12 +56,11 @@ export function AudioTab() {
     [t]
   );
 
-  const updateFish = (changes: Partial<typeof audio.fish>) => {
-    updateAudio((prev) => ({ ...prev, fish: { ...prev.fish, ...changes } }));
-  };
-
-  const updateOpenAi = (changes: Partial<typeof audio.openai>) => {
-    updateAudio((prev) => ({ ...prev, openai: { ...prev.openai, ...changes } }));
+  const patchProvider = <K extends "edge" | "fish" | "openai" | "elevenlabs">(
+    key: K,
+    changes: Partial<AudioSettings[K]>
+  ) => {
+    updateAudio((prev) => ({ ...prev, [key]: { ...prev[key], ...changes } }));
   };
 
   return (
@@ -58,12 +84,11 @@ export function AudioTab() {
             }}
             className="w-fit bg-transparent"
           >
-            <ToggleGroupItem value="fish">
-              {t("settings.audio.provider.fish")}
-            </ToggleGroupItem>
-            <ToggleGroupItem value="openai">
-              {t("settings.audio.provider.openai")}
-            </ToggleGroupItem>
+            {PROVIDERS.map((provider) => (
+              <ToggleGroupItem key={provider} value={provider}>
+                {t(`settings.audio.provider.${provider}`)}
+              </ToggleGroupItem>
+            ))}
           </ToggleGroup>
           <p className="text-xs text-muted-foreground">
             {t("settings.audio.provider.helper")}
@@ -71,29 +96,34 @@ export function AudioTab() {
         </div>
       </Section>
 
-      {audio.provider === "fish" ? (
+      {audio.provider === "edge" && (
+        <Section
+          title={t("settings.audio.edge.title")}
+          description={t("settings.audio.edge.description")}
+          contentClassName="grid gap-4"
+        >
+          <TextField
+            id="edge-voice"
+            labelKey="settings.audio.edge.voice"
+            value={audio.edge.voice}
+            onChange={(value) => patchProvider("edge", { voice: value })}
+          />
+        </Section>
+      )}
+
+      {audio.provider === "fish" && (
         <Section
           title={t("settings.audio.fish.title")}
           description={t("settings.audio.fish.description")}
           contentClassName="grid gap-4"
         >
-          <div className="grid gap-2">
-            <Label htmlFor="fish-api-key">
-              {t("settings.audio.fish.api_key.label")}
-            </Label>
-            <Input
-              id="fish-api-key"
-              type="password"
-              placeholder={t("settings.audio.fish.api_key.placeholder")}
-              value={audio.fish.apiKey}
-              onChange={(event) =>
-                updateFish({ apiKey: event.target.value.trim() })
-              }
-            />
-            <p className="text-xs text-muted-foreground">
-              {t("settings.audio.fish.api_key.helper")}
-            </p>
-          </div>
+          <TextField
+            id="fish-api-key"
+            labelKey="settings.audio.fish.api_key"
+            value={audio.fish.apiKey}
+            onChange={(value) => patchProvider("fish", { apiKey: value.trim() })}
+            password
+          />
 
           <div className="grid gap-2">
             <Label htmlFor="fish-model">
@@ -101,7 +131,7 @@ export function AudioTab() {
             </Label>
             <Select
               value={audio.fish.model}
-              onValueChange={(value) => updateFish({ model: value })}
+              onValueChange={(value) => patchProvider("fish", { model: value })}
             >
               <SelectTrigger id="fish-model">
                 <SelectValue
@@ -121,91 +151,82 @@ export function AudioTab() {
             </p>
           </div>
 
-          <div className="grid gap-2">
-            <Label htmlFor="fish-voice">
-              {t("settings.audio.fish.voice.label")}
-            </Label>
-            <Input
-              id="fish-voice"
-              placeholder={t("settings.audio.fish.voice.placeholder")}
-              value={audio.fish.voiceId}
-              onChange={(event) => updateFish({ voiceId: event.target.value })}
-            />
-            <p className="text-xs text-muted-foreground">
-              {t("settings.audio.fish.voice.helper")}
-            </p>
-          </div>
+          <TextField
+            id="fish-voice"
+            labelKey="settings.audio.fish.voice"
+            value={audio.fish.voiceId}
+            onChange={(value) => patchProvider("fish", { voiceId: value })}
+          />
         </Section>
-      ) : (
+      )}
+
+      {audio.provider === "openai" && (
         <Section
           title={t("settings.audio.openai.title")}
           description={t("settings.audio.openai.description")}
           contentClassName="grid gap-4"
         >
-          <div className="grid gap-2">
-            <Label htmlFor="openai-base-url">
-              {t("settings.audio.openai.base_url.label")}
-            </Label>
-            <Input
-              id="openai-base-url"
-              placeholder={t("settings.audio.openai.base_url.placeholder")}
-              value={audio.openai.baseUrl}
-              onChange={(event) =>
-                updateOpenAi({ baseUrl: event.target.value.trim() })
-              }
-            />
-            <p className="text-xs text-muted-foreground">
-              {t("settings.audio.openai.base_url.helper")}
-            </p>
-          </div>
+          <TextField
+            id="openai-base-url"
+            labelKey="settings.audio.openai.base_url"
+            value={audio.openai.baseUrl}
+            onChange={(value) =>
+              patchProvider("openai", { baseUrl: value.trim() })
+            }
+          />
+          <TextField
+            id="openai-api-key"
+            labelKey="settings.audio.openai.api_key"
+            value={audio.openai.apiKey}
+            onChange={(value) =>
+              patchProvider("openai", { apiKey: value.trim() })
+            }
+            password
+          />
+          <TextField
+            id="openai-model"
+            labelKey="settings.audio.openai.model"
+            value={audio.openai.model}
+            onChange={(value) => patchProvider("openai", { model: value })}
+          />
+          <TextField
+            id="openai-voice"
+            labelKey="settings.audio.openai.voice"
+            value={audio.openai.voice}
+            onChange={(value) => patchProvider("openai", { voice: value })}
+          />
+        </Section>
+      )}
 
-          <div className="grid gap-2">
-            <Label htmlFor="openai-api-key">
-              {t("settings.audio.openai.api_key.label")}
-            </Label>
-            <Input
-              id="openai-api-key"
-              type="password"
-              placeholder={t("settings.audio.openai.api_key.placeholder")}
-              value={audio.openai.apiKey}
-              onChange={(event) =>
-                updateOpenAi({ apiKey: event.target.value.trim() })
-              }
-            />
-            <p className="text-xs text-muted-foreground">
-              {t("settings.audio.openai.api_key.helper")}
-            </p>
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="openai-model">
-              {t("settings.audio.openai.model.label")}
-            </Label>
-            <Input
-              id="openai-model"
-              placeholder={t("settings.audio.openai.model.placeholder")}
-              value={audio.openai.model}
-              onChange={(event) => updateOpenAi({ model: event.target.value })}
-            />
-            <p className="text-xs text-muted-foreground">
-              {t("settings.audio.openai.model.helper")}
-            </p>
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="openai-voice">
-              {t("settings.audio.openai.voice.label")}
-            </Label>
-            <Input
-              id="openai-voice"
-              placeholder={t("settings.audio.openai.voice.placeholder")}
-              value={audio.openai.voice}
-              onChange={(event) => updateOpenAi({ voice: event.target.value })}
-            />
-            <p className="text-xs text-muted-foreground">
-              {t("settings.audio.openai.voice.helper")}
-            </p>
-          </div>
+      {audio.provider === "elevenlabs" && (
+        <Section
+          title={t("settings.audio.elevenlabs.title")}
+          description={t("settings.audio.elevenlabs.description")}
+          contentClassName="grid gap-4"
+        >
+          <TextField
+            id="elevenlabs-api-key"
+            labelKey="settings.audio.elevenlabs.api_key"
+            value={audio.elevenlabs.apiKey}
+            onChange={(value) =>
+              patchProvider("elevenlabs", { apiKey: value.trim() })
+            }
+            password
+          />
+          <TextField
+            id="elevenlabs-voice"
+            labelKey="settings.audio.elevenlabs.voice"
+            value={audio.elevenlabs.voiceId}
+            onChange={(value) =>
+              patchProvider("elevenlabs", { voiceId: value.trim() })
+            }
+          />
+          <TextField
+            id="elevenlabs-model"
+            labelKey="settings.audio.elevenlabs.model"
+            value={audio.elevenlabs.model}
+            onChange={(value) => patchProvider("elevenlabs", { model: value })}
+          />
         </Section>
       )}
     </div>

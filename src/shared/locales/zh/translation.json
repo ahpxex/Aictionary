@@ -235,7 +235,9 @@
         "label": "提供商",
         "fish": "Fish Audio",
         "openai": "OpenAI 兼容",
-        "helper": "OpenAI 兼容涵盖 OpenAI API 及 openai-edge-tts 等自建服务。"
+        "helper": "Edge 免费且无需任何配置。OpenAI 兼容涵盖 OpenAI API 及 openai-edge-tts 等自建服务。",
+        "edge": "Edge（内置）",
+        "elevenlabs": "ElevenLabs"
       },
       "fish": {
         "title": "Fish Audio",
@@ -283,6 +285,34 @@
           "label": "音色",
           "placeholder": "alloy",
           "helper": "音色名称，如 alloy、echo，edge-tts 服务可用 en-US-AndrewNeural。"
+        }
+      },
+      "edge": {
+        "title": "Edge（内置）",
+        "description": "应用直连微软 Edge 朗读语音，免费使用，无需账号或密钥。",
+        "voice": {
+          "label": "音色",
+          "placeholder": "en-US-AndrewNeural",
+          "helper": "任意 Edge 音色名，如 en-US-AriaNeural、en-GB-RyanNeural。"
+        }
+      },
+      "elevenlabs": {
+        "title": "ElevenLabs",
+        "description": "来自 api.elevenlabs.io 的流式语音合成。",
+        "api_key": {
+          "label": "API Key",
+          "placeholder": "xi-...",
+          "helper": "仅存储在本地，请在 ElevenLabs 账户页生成。"
+        },
+        "voice": {
+          "label": "音色 ID",
+          "placeholder": "如 JBFqnCBsd6RMkjVDRZzb",
+          "helper": "ElevenLabs 音色库中的 voice id。"
+        },
+        "model": {
+          "label": "模型",
+          "placeholder": "eleven_multilingual_v2",
+          "helper": "模型 ID，如 eleven_multilingual_v2 或 eleven_turbo_v2_5。"
         }
       }
     },

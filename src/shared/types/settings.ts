@@ -10,7 +10,21 @@ export type LlmProvider = {
   model: string;
 };
 
-export type TtsProviderKind = "fish" | "openai";
+export type TtsProviderKind = "edge" | "fish" | "openai" | "elevenlabs";
+
+/**
+ * Microsoft Edge's read-aloud service, spoken natively over websocket.
+ * Free and keyless, so it works with zero configuration and is the default.
+ */
+export type EdgeTtsSettings = {
+  voice: string;
+};
+
+export type ElevenLabsSettings = {
+  apiKey: string;
+  voiceId: string;
+  model: string;
+};
 
 export type FishAudioSettings = {
   apiKey: string;
@@ -33,8 +47,10 @@ export type OpenAiTtsSettings = {
 
 export type AudioSettings = {
   provider: TtsProviderKind;
+  edge: EdgeTtsSettings;
   fish: FishAudioSettings;
   openai: OpenAiTtsSettings;
+  elevenlabs: ElevenLabsSettings;
 };
 
 export type AnkiSettings = {

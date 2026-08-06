@@ -368,13 +368,29 @@ export function EntryView({
   const playerRef = useRef<PlayTtsResult | null>(null);
   const audio = settings.audio;
   const isAudioConfigured =
-    audio.provider === "openai"
-      ? Boolean(audio.openai.baseUrl.trim())
-      : Boolean(audio.fish.apiKey.trim());
+    audio.provider === "edge"
+      ? true
+      : audio.provider === "openai"
+        ? Boolean(audio.openai.baseUrl.trim())
+        : audio.provider === "elevenlabs"
+          ? Boolean(audio.elevenlabs.apiKey.trim() && audio.elevenlabs.voiceId.trim())
+          : Boolean(audio.fish.apiKey.trim());
   const activeVoice =
-    audio.provider === "openai" ? audio.openai.voice : audio.fish.voiceId;
+    audio.provider === "edge"
+      ? audio.edge.voice
+      : audio.provider === "openai"
+        ? audio.openai.voice
+        : audio.provider === "elevenlabs"
+          ? audio.elevenlabs.voiceId
+          : audio.fish.voiceId;
   const activeModel =
-    audio.provider === "openai" ? audio.openai.model : audio.fish.model;
+    audio.provider === "edge"
+      ? ""
+      : audio.provider === "openai"
+        ? audio.openai.model
+        : audio.provider === "elevenlabs"
+          ? audio.elevenlabs.model
+          : audio.fish.model;
   const isAnkiConfigured = Boolean(
     settings.anki.apiUrl.trim() && settings.anki.deckName.trim()
   );
