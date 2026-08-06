@@ -199,4 +199,10 @@ GitHub Actions 会在 CI 中对 macOS / Windows / Linux 分别执行构建，并
 
 ---
 
+## License
+
+MIT. See [`LICENSE`](./LICENSE).
+
+---
+
 感谢使用 Aictionary，愿它能让你的查词过程更轻松一点点。
