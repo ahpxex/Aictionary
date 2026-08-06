@@ -12,6 +12,7 @@ import {
   collectPronunciations,
   groupRelationsByType,
   posLabelZh,
+  pronunciationsAreUniform,
   splitMeaningsByPriority,
 } from "@/shared/lib/dictionary-entry";
 import {
@@ -217,9 +218,11 @@ function RelationChips({
 
 function PosGroupSection({
   group,
+  showPronunciations,
   onSearchWord,
 }: {
   group: DictionaryPosGroup;
+  showPronunciations: boolean;
   onSearchWord?: (word: string) => void;
 }) {
   const { t } = useTranslation();
@@ -266,7 +269,8 @@ function PosGroupSection({
                 {t("main.pos_group.proper_name")}
               </span>
             )}
-            {group.pronunciations.map((pronunciation, index) => (
+            {showPronunciations &&
+              group.pronunciations.map((pronunciation, index) => (
               <span
                 key={`group-pron-${index}`}
                 className="font-mono text-sm text-muted-foreground"
@@ -369,7 +373,8 @@ export function EntryView({
 
   const { entry, source } = result;
   const hasWord = Boolean(entry.headword?.trim());
-  const pronunciations = collectPronunciations(entry);
+  const uniformPronunciations = pronunciationsAreUniform(entry);
+  const pronunciations = uniformPronunciations ? collectPronunciations(entry) : [];
   const comparisons = entry.comparisons ?? [];
 
   const stopPlayback = useCallback(async () => {
@@ -613,6 +618,7 @@ export function EntryView({
         <PosGroupSection
           key={`${entry.entry_id}-pos-${index}`}
           group={group}
+          showPronunciations={!uniformPronunciations}
           onSearchWord={onSearchWord}
         />
       ))}

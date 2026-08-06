@@ -33,6 +33,27 @@ export function collectPronunciations(
   return collected;
 }
 
+/**
+ * Whether every pos group that carries pronunciations carries the same
+ * ones. Uniform entries (the common case) show pronunciation once in the
+ * entry header; entries like "record", where noun and verb stress differ,
+ * show it per pos group instead.
+ */
+export function pronunciationsAreUniform(entry: DictionaryEntry): boolean {
+  const serialized = entry.pos_groups
+    .filter((group) => group.pronunciations.length > 0)
+    .map((group) =>
+      group.pronunciations
+        .map(
+          (pronunciation) =>
+            `${pronunciation.tags.join("+")}|${pronunciation.ipa ?? pronunciation.text ?? ""}`
+        )
+        .join(";")
+    );
+
+  return new Set(serialized).size <= 1;
+}
+
 export type MeaningVisibility = {
   visible: DictionaryMeaning[];
   hidden: DictionaryMeaning[];
