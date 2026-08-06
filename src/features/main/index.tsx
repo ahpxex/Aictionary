@@ -1,40 +1,21 @@
-import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useDictionarySearch } from "@/features/main/hooks/use-dictionary-search";
 import { EntryView } from "@/features/main/components/entry-view";
-import { SearchForm } from "@/features/main/components/search-form";
 
 export function MainPage() {
   const { t } = useTranslation();
-  const { isSearching, isGeneratingFromLlm, generatingModel, result, search } = useDictionarySearch();
-  const searchFormRef = useRef<{ focusInput: () => void }>(null);
-
-  // When a global "new-query" shortcut is triggered, the layout dispatches
-  // a window-level event that we listen for here to focus the search box.
-  useEffect(() => {
-    const handleFocusSearch = () => {
-      searchFormRef.current?.focusInput();
-    };
-
-    window.addEventListener("focus-search-input", handleFocusSearch);
-    return () => {
-      window.removeEventListener("focus-search-input", handleFocusSearch);
-    };
-  }, []);
+  const { isGeneratingFromLlm, generatingModel, result, search } = useDictionarySearch();
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-10">
-      <div className="flex flex-col gap-4">
-        <SearchForm
-          ref={searchFormRef}
-          onSearch={search}
-          isSearching={isSearching}
-          initialValue={result?.entry.headword}
-        />
-        {!result && !isGeneratingFromLlm && (
+    <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col">
+      {!result && !isGeneratingFromLlm && (
+        <div className="flex flex-1 flex-col items-center justify-center gap-2 py-24">
+          <p className="text-2xl font-bold tracking-tight text-muted-foreground/40">
+            aictionary
+          </p>
           <p className="text-sm text-muted-foreground">{t("main.empty_state")}</p>
-        )}
-      </div>
+        </div>
+      )}
 
       {isGeneratingFromLlm && (
         <div className="flex flex-col items-center justify-center gap-4 py-12">

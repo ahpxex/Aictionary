@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { useSettings } from "@/features/settings/hooks/use-settings";
 import { useDictionarySearch } from "@/features/main/hooks/use-dictionary-search";
+import { SearchForm } from "@/features/main/components/search-form";
 import { useGlobalShortcuts } from "@/shared/hooks/use-global-shortcuts";
 
 type NavItem = {
@@ -22,7 +23,13 @@ export function AppLayout() {
   const { t } = useTranslation();
   const { settings } = useSettings();
   const navigate = useNavigate();
-  const { search } = useDictionarySearch();
+  const { search, isSearching, result } = useDictionarySearch();
+
+  // Searching from any tab jumps back to the dictionary view.
+  const handleSearch = (word: string) => {
+    navigate("/");
+    search(word);
+  };
 
   // Global keyboard shortcuts are wired here so they work regardless of
   // which main tab (dictionary/statistics/settings) is currently active.
@@ -56,15 +63,32 @@ export function AppLayout() {
 
   return (
     <div className="bg-background text-foreground flex min-h-screen flex-col">
-      <header className="border-b">
-        <nav className="mx-auto flex h-12 w-full max-w-6xl items-center justify-between px-6">
+      {/* Window chrome: the native titlebar is hidden (titleBarStyle
+          Overlay), so this bar hosts the traffic lights inset, the drag
+          region, the query bar, and navigation. */}
+      <header
+        data-tauri-drag-region
+        className="sticky top-0 z-40 border-b bg-background"
+      >
+        <div
+          data-tauri-drag-region
+          className="flex h-12 w-full items-center gap-6 pl-20 pr-6"
+        >
           <NavLink
             to="/"
-            className="text-sm font-bold lowercase tracking-tight focus-visible:outline-none"
+            className="shrink-0 text-sm font-bold lowercase tracking-tight focus-visible:outline-none"
           >
             aictionary
           </NavLink>
-          <div className="flex items-center gap-6">
+          <div className="w-full max-w-sm">
+            <SearchForm
+              onSearch={handleSearch}
+              isSearching={isSearching}
+              initialValue={result?.entry.headword}
+            />
+          </div>
+          <div data-tauri-drag-region className="flex-1" />
+          <div className="flex shrink-0 items-center gap-6">
             {NAV_ITEMS.map(({ to, labelKey }) => (
               <NavLink
                 key={to}
@@ -82,7 +106,7 @@ export function AppLayout() {
               </NavLink>
             ))}
           </div>
-        </nav>
+        </div>
       </header>
       <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-6 py-8">
         <Outlet />
