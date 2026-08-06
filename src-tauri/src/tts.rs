@@ -73,6 +73,45 @@ fn extract_error_message(details: &str) -> Option<String> {
         .map(str::to_string)
 }
 
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EdgeVoice {
+    pub short_name: String,
+    pub locale: String,
+    pub gender: String,
+    pub friendly_name: String,
+}
+
+/// List the voices offered by Microsoft Edge's read-aloud service so the
+/// settings UI can present a picker instead of free-text entry.
+#[tauri::command]
+pub async fn list_edge_voices() -> Result<Vec<EdgeVoice>, String> {
+    let voices = msedge_tts::voice::tokio_runtime::get_voices_list_async()
+        .await
+        .map_err(|err| format!("Failed to load Edge voices: {err}"))?;
+
+    let mut result: Vec<EdgeVoice> = voices
+        .into_iter()
+        .filter_map(|voice| {
+            let short_name = voice.short_name?;
+            Some(EdgeVoice {
+                locale: voice.locale.unwrap_or_default(),
+                gender: voice.gender.unwrap_or_default(),
+                friendly_name: voice.friendly_name.unwrap_or_default(),
+                short_name,
+            })
+        })
+        .collect();
+
+    result.sort_by(|a, b| {
+        a.locale
+            .cmp(&b.locale)
+            .then_with(|| a.short_name.cmp(&b.short_name))
+    });
+
+    Ok(result)
+}
+
 /// Synthesize through Microsoft Edge's read-aloud service. Free, keyless,
 /// and therefore the app's zero-configuration default.
 async fn synthesize_edge(voice: &str, text: &str) -> Result<Vec<u8>, String> {

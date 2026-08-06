@@ -292,8 +292,11 @@
         "description": "应用直连微软 Edge 朗读语音，免费使用，无需账号或密钥。",
         "voice": {
           "label": "音色",
-          "placeholder": "en-US-AndrewNeural",
-          "helper": "任意 Edge 音色名，如 en-US-AriaNeural、en-GB-RyanNeural。"
+          "placeholder": "选择音色",
+          "helper": "音色来自微软 Edge 官方目录，学英语一般选 en-* 开头的音色。",
+          "search": "搜索音色...",
+          "loading": "正在加载音色列表...",
+          "empty": "没有匹配的音色。"
         }
       },
       "elevenlabs": {

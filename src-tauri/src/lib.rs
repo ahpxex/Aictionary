@@ -104,6 +104,7 @@ pub fn run() {
             audio_cache::read_audio_cache_file,
             // TTS commands
             tts::start_tts_stream,
+            tts::list_edge_voices,
             // Shortcuts commands
             shortcuts::setup_shortcuts,
             // Tray commands

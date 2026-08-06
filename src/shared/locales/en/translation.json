@@ -292,8 +292,11 @@
         "description": "Microsoft Edge's read-aloud voices, spoken directly by the app. Free, no account or key required.",
         "voice": {
           "label": "Voice",
-          "placeholder": "en-US-AndrewNeural",
-          "helper": "Any Edge voice name, e.g. en-US-AriaNeural, en-GB-RyanNeural."
+          "placeholder": "Choose a voice",
+          "helper": "Voices come from the Microsoft Edge catalog; English learners usually want an en-* voice.",
+          "search": "Search voices...",
+          "loading": "Loading voice catalog...",
+          "empty": "No matching voice."
         }
       },
       "elevenlabs": {

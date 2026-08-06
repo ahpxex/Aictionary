@@ -1,8 +1,24 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import { useTranslation } from "react-i18next";
+import { Check, ChevronsUpDown } from "lucide-react";
 import { Section } from "@/shared/components/section";
+import { Button } from "@/components/ui/button";
+import {
+  Command,
+  CommandEmpty,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 import {
   Select,
   SelectContent,
@@ -16,6 +32,103 @@ import { FISH_AUDIO_MODEL_OPTIONS } from "@/features/settings/constants/audio";
 import type { AudioSettings, TtsProviderKind } from "@/shared/types/settings";
 
 const PROVIDERS: TtsProviderKind[] = ["edge", "fish", "openai", "elevenlabs"];
+
+type EdgeVoice = {
+  shortName: string;
+  locale: string;
+  gender: string;
+  friendlyName: string;
+};
+
+/**
+ * Searchable picker over the live Edge voice catalog. Voices are fetched
+ * once, on first open, through the Rust backend.
+ */
+function EdgeVoicePicker({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (voice: string) => void;
+}) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const [voices, setVoices] = useState<EdgeVoice[] | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  const handleOpenChange = (next: boolean) => {
+    setOpen(next);
+    if (next && voices === null && !isLoading) {
+      setIsLoading(true);
+      setLoadError(null);
+      invoke<EdgeVoice[]>("list_edge_voices")
+        .then(setVoices)
+        .catch((error) => {
+          setLoadError(typeof error === "string" ? error : String(error));
+        })
+        .finally(() => setIsLoading(false));
+    }
+  };
+
+  return (
+    <div className="grid gap-2">
+      <Label>{t("settings.audio.edge.voice.label")}</Label>
+      <Popover open={open} onOpenChange={handleOpenChange}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className="w-full justify-between font-normal"
+          >
+            {value || t("settings.audio.edge.voice.placeholder")}
+            <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+          <Command>
+            <CommandInput placeholder={t("settings.audio.edge.voice.search")} />
+            <CommandList>
+              <CommandEmpty>
+                {isLoading
+                  ? t("settings.audio.edge.voice.loading")
+                  : loadError ?? t("settings.audio.edge.voice.empty")}
+              </CommandEmpty>
+              {(voices ?? []).map((voice) => (
+                <CommandItem
+                  key={voice.shortName}
+                  value={`${voice.shortName} ${voice.locale} ${voice.friendlyName}`}
+                  onSelect={() => {
+                    onChange(voice.shortName);
+                    setOpen(false);
+                  }}
+                >
+                  <Check
+                    className={cn(
+                      "size-4",
+                      voice.shortName === value ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  <span className="flex min-w-0 flex-col">
+                    <span className="truncate">{voice.shortName}</span>
+                    <span className="truncate text-xs text-muted-foreground">
+                      {voice.locale}
+                      {voice.gender ? ` \u00b7 ${voice.gender}` : ""}
+                    </span>
+                  </span>
+                </CommandItem>
+              ))}
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+      <p className="text-xs text-muted-foreground">
+        {t("settings.audio.edge.voice.helper")}
+      </p>
+    </div>
+  );
+}
 
 type FieldProps = {
   id: string;
@@ -102,11 +215,9 @@ export function AudioTab() {
           description={t("settings.audio.edge.description")}
           contentClassName="grid gap-4"
         >
-          <TextField
-            id="edge-voice"
-            labelKey="settings.audio.edge.voice"
+          <EdgeVoicePicker
             value={audio.edge.voice}
-            onChange={(value) => patchProvider("edge", { voice: value })}
+            onChange={(voice) => patchProvider("edge", { voice })}
           />
         </Section>
       )}
