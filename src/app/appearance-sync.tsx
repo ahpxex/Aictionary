@@ -27,12 +27,23 @@ export function AppearanceSync() {
 
   useEffect(() => {
     const mode = resolvedTheme === "dark" ? "dark" : "light";
-    getCurrentWindow()
-      .setBackgroundColor(WINDOW_BACKGROUND[mode])
+    const appWindow = getCurrentWindow();
+
+    // The native frame the compositor draws around the window - its border,
+    // titlebar and traffic lights - is painted from the platform appearance,
+    // which otherwise tracks the system setting and clashes with an app theme
+    // the user pinned the other way. Drive it from our own theme instead, and
+    // hand control back to the platform when the user chose "system".
+    appWindow
+      .setTheme(settings.theme.mode === "system" ? null : mode)
       .catch((error) => {
-        console.warn("Failed to sync window background color", error);
+        console.warn("Failed to sync window appearance", error);
       });
-  }, [resolvedTheme]);
+
+    appWindow.setBackgroundColor(WINDOW_BACKGROUND[mode]).catch((error) => {
+      console.warn("Failed to sync window background color", error);
+    });
+  }, [resolvedTheme, settings.theme.mode]);
 
   // Accent personalization was removed; clear the attribute left behind by
   // older versions so their CSS no longer applies.
