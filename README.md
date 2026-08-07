@@ -29,6 +29,23 @@
 
 ---
 
+## 词库来源
+
+词条数据来自上游项目 **[ahpxex/open-dictionary](https://github.com/ahpxex/open-dictionary)** —— 一部以 Wiktionary/Wiktextract 快照为基础、再用大模型补写学习者向解释的开源英汉词典。当前发行版收录 **84,212 个词条**。
+
+Aictionary 只是它的一个桌面端消费者：应用消费其 `distribution_entry_v5` 契约，从 GitHub Release 下载 `distribution.sqlite.gz` 到本地，所有查询都在本机完成。词库的构建管线、选词规则和释义质量都由上游负责，相关问题请到上游仓库反馈。
+
+许可上二者是分开的：
+
+| | 许可 |
+| :--- | :--- |
+| 上游词典**数据** | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)，Wiktionary 内容的衍生作品 |
+| 上游与本项目**代码** | MIT |
+
+数据依 ShareAlike 条款分发，再分发或二次加工时须以相同许可发布，并署名 Wiktionary 贡献者。
+
+---
+
 ## 下载与安装
 
 ### 从 GitHub Releases 安装
@@ -201,7 +218,9 @@ GitHub Actions 会在 CI 中对 macOS / Windows / Linux 分别执行构建，并
 
 ## License
 
-MIT. See [`LICENSE`](./LICENSE).
+本项目代码为 MIT，见 [`LICENSE`](./LICENSE)。
+
+内置词库并非本项目作品：它来自 [ahpxex/open-dictionary](https://github.com/ahpxex/open-dictionary)，以 **CC BY-SA 4.0** 发布，是 Wiktionary 内容的衍生作品，署名归 Wiktionary 贡献者。分发或二次加工该数据时须遵守 ShareAlike 条款。
 
 ---
 

@@ -452,6 +452,13 @@
         "available": "{{version}} is available",
         "view": "View release"
       },
+      "data": {
+        "title": "Dictionary data",
+        "body": "Entries come from open-dictionary, an open English–Chinese dictionary built from Wiktionary/Wiktextract snapshots. The data is licensed CC BY-SA 4.0 as a derivative of Wiktionary; attribution belongs to its contributors, and redistribution is bound by the ShareAlike terms.",
+        "data_license": "Dictionary data — CC BY-SA 4.0",
+        "code_license": "Aictionary and open-dictionary code — MIT",
+        "upstream": "Upstream repository"
+      },
       "resources": {
         "title": "Resources",
         "tauri": "Tauri documentation",

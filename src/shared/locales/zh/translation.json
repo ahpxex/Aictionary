@@ -452,6 +452,13 @@
         "available": "有新版本 {{version}}",
         "view": "查看版本"
       },
+      "data": {
+        "title": "词库数据",
+        "body": "词条来自 open-dictionary —— 一部以 Wiktionary/Wiktextract 快照为基础构建的开源英汉词典。数据作为 Wiktionary 的衍生作品以 CC BY-SA 4.0 发布，署名归其贡献者所有，再分发时受 ShareAlike 条款约束。",
+        "data_license": "词库数据 — CC BY-SA 4.0",
+        "code_license": "Aictionary 与 open-dictionary 代码 — MIT",
+        "upstream": "上游仓库"
+      },
       "resources": {
         "title": "资源",
         "tauri": "Tauri 文档",
