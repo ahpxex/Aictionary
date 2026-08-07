@@ -362,6 +362,12 @@
           "Re-download only if the cache becomes corrupted or outdated."
         ]
       },
+      "missing": {
+        "title": "Download the dictionary",
+        "description": "The offline dictionary hasn't been downloaded yet. Download it now to look up words without an internet connection?",
+        "confirm": "Download dictionary",
+        "cancel": "Not now"
+      },
       "incomplete": {
         "title": "Dictionary cache may be incomplete",
         "description": "The local dictionary cache contains only {{count}} entries. A full cache should have at least {{required}} entries. Do you want to re-download the cache now?",
@@ -372,6 +378,7 @@
         "browse_error": "Failed to browse folder.",
         "check_complete": "Dictionary cache looks complete ({{count}} entries).",
         "check_incomplete": "Dictionary cache may be incomplete ({{count}} entries, expected more than {{required}}).",
+        "check_missing": "The dictionary hasn't been downloaded yet.",
         "check_error": "Failed to check cache completeness.",
         "redownload_success": "Cache re-downloaded successfully!",
         "redownload_error": "Failed to re-download cache.",

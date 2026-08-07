@@ -30,7 +30,15 @@ export function DictionaryCacheSync() {
   const [downloadDialogOpen, setDownloadDialogOpen] = useState(false);
   const [downloadOptions, setDownloadOptions] = useState<DownloadOptions | null>(null);
   const [resolvedCachePath, setResolvedCachePath] = useState<string | null>(null);
-  const [incompleteDialogOpen, setIncompleteDialogOpen] = useState(false);
+  /**
+   * "missing" = the user never downloaded the dictionary, so there is nothing
+   * broken to report – just offer the first download.
+   * "incomplete" = a dictionary was downloaded before but the database is now
+   * gone or holds too few entries.
+   */
+  const [promptKind, setPromptKind] = useState<"missing" | "incomplete" | null>(
+    null
+  );
   const [entryCount, setEntryCount] = useState<number | null>(null);
 
   // Help verify that this component is actually mounting and running.
@@ -83,13 +91,18 @@ export function DictionaryCacheSync() {
         );
 
         if (!cancelled) {
+          // A previous successful download is the only signal that there ever
+          // was a cache; without it a missing database just means "not set up
+          // yet", never "corrupted".
+          const hasDownloadedBefore = Boolean(settings.dictionary.lastUpdated);
+
           if (!cacheExists) {
-            // No usable distribution.sqlite found – treat as 0 entries and prompt user.
             console.log(
-              "[DictionaryCacheSync] No dictionary database found at cache path; treating as 0."
+              "[DictionaryCacheSync] No dictionary database found at cache path.",
+              hasDownloadedBefore ? "Previously downloaded." : "Never downloaded."
             );
             setEntryCount(0);
-            setIncompleteDialogOpen(true);
+            setPromptKind(hasDownloadedBefore ? "incomplete" : "missing");
             return;
           }
 
@@ -112,7 +125,7 @@ export function DictionaryCacheSync() {
                 "entries)."
               );
               setEntryCount(count);
-              setIncompleteDialogOpen(true);
+              setPromptKind("incomplete");
             } else {
               console.log("[DictionaryCacheSync] Cache considered complete.");
             }
@@ -130,7 +143,7 @@ export function DictionaryCacheSync() {
     return () => {
       cancelled = true;
     };
-  }, [settings.dictionary.cachePath, updateDictionary]);
+  }, [settings.dictionary.cachePath, settings.dictionary.lastUpdated, updateDictionary]);
 
   const handleDownloadSuccess = () => {
     const timestamp = new Date().toISOString();
@@ -168,30 +181,45 @@ export function DictionaryCacheSync() {
         onSuccess={handleDownloadSuccess}
       />
 
-      <AlertDialog open={incompleteDialogOpen} onOpenChange={setIncompleteDialogOpen}>
+      <AlertDialog
+        open={promptKind !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPromptKind(null);
+          }
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {t("settings.dictionary.incomplete.title")}
+              {promptKind === "missing"
+                ? t("settings.dictionary.missing.title")
+                : t("settings.dictionary.incomplete.title")}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {t("settings.dictionary.incomplete.description", {
-                count: entryCount ?? 0,
-                required: MIN_FULL_DICTIONARY_ENTRIES,
-              })}
+              {promptKind === "missing"
+                ? t("settings.dictionary.missing.description")
+                : t("settings.dictionary.incomplete.description", {
+                    count: entryCount ?? 0,
+                    required: MIN_FULL_DICTIONARY_ENTRIES,
+                  })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>
-              {t("settings.dictionary.incomplete.cancel")}
+              {promptKind === "missing"
+                ? t("settings.dictionary.missing.cancel")
+                : t("settings.dictionary.incomplete.cancel")}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
-                setIncompleteDialogOpen(false);
+                setPromptKind(null);
                 void handleConfirmRedownload();
               }}
             >
-              {t("settings.dictionary.incomplete.confirm")}
+              {promptKind === "missing"
+                ? t("settings.dictionary.missing.confirm")
+                : t("settings.dictionary.incomplete.confirm")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
