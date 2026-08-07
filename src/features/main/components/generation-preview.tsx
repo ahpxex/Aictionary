@@ -1,6 +1,11 @@
 import { useTranslation } from "react-i18next";
 import { Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  EntryHeader,
+  RailLabel,
+  Row,
+} from "@/features/main/components/entry-layout";
 import type { GenerationPreview as Preview } from "@/shared/services/llm-service";
 
 type GenerationPreviewProps = {
@@ -25,11 +30,10 @@ function SkeletonLines({ widths }: { widths: string[] }) {
 /**
  * The entry as it streams in.
  *
- * Sections that have not arrived hold their place as pulsing skeletons
- * rather than being announced by a spinner: the page then keeps the shape
- * of the entry it is becoming, and each block simply resolves into text.
- * The provider takes tens of seconds over the full schema, so this is what
- * the user looks at for most of the wait.
+ * Laid out on the same rail as the finished entry - same header, same
+ * labelled rows - so completion swaps text into place instead of
+ * rearranging the page. Sections that have not arrived hold their spot as
+ * pulsing skeletons, which is what the user looks at for most of the wait.
  */
 export function GenerationPreviewPanel({
   word,
@@ -57,74 +61,84 @@ export function GenerationPreviewPanel({
   const posGroups = preview?.posGroups ?? [];
 
   return (
-    <div className="flex flex-col gap-8 py-8">
-      <div className="space-y-2">
-        <p className="text-4xl font-bold tracking-tight">{word}</p>
-        <p className="text-muted-foreground text-base">{summary}</p>
-      </div>
+    <article className="w-full">
+      <EntryHeader
+        headword={word}
+        summary={summary}
+        meta={
+          <span className="text-[0.65rem] uppercase tracking-[0.15em] text-muted-foreground">
+            {t("main.word_summary.ai_generated")}
+          </span>
+        }
+      />
 
-      {preview?.memoryHook ? (
-        <div className="rounded-lg border bg-muted/40 px-4 py-3">
+      <Row divider rail={<RailLabel>{t("main.word_summary.memory_hook")}</RailLabel>}>
+        {preview?.memoryHook ? (
           <p className="text-sm leading-relaxed">{preview.memoryHook}</p>
-        </div>
-      ) : (
-        <div className="rounded-lg border px-4 py-3">
-          <SkeletonLines widths={["100%", "82%"]} />
-        </div>
-      )}
+        ) : (
+          <SkeletonLines widths={["100%", "78%"]} />
+        )}
+      </Row>
 
-      {preview && preview.studyNotes.length > 0 ? (
-        <ul className="list-disc space-y-1 pl-5">
-          {preview.studyNotes.map((note, index) => (
-            <li key={index} className="text-sm text-muted-foreground">
-              {note}
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <SkeletonLines widths={["94%", "76%", "88%"]} />
-      )}
+      <Row divider rail={<RailLabel>{t("main.word_summary.study_notes")}</RailLabel>}>
+        {preview && preview.studyNotes.length > 0 ? (
+          <ul className="flex flex-col gap-1.5 text-sm leading-relaxed">
+            {preview.studyNotes.map((note, index) => (
+              <li key={index} className="flex gap-2">
+                <span className="text-muted-foreground">–</span>
+                <span>{note}</span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <SkeletonLines widths={["94%", "72%", "86%"]} />
+        )}
+      </Row>
 
       {posGroups.length > 0
         ? posGroups.map((group, groupIndex) => (
-            <div key={groupIndex} className="space-y-3">
-              {group.pos && (
-                <p className="text-sm font-medium italic text-muted-foreground">
-                  {group.pos}
-                </p>
-              )}
-              {group.summary && <p className="text-sm">{group.summary}</p>}
-              <div className="space-y-3">
+            <Row
+              key={groupIndex}
+              divider
+              rail={<RailLabel>{group.pos ?? ""}</RailLabel>}
+            >
+              <div className="flex flex-col gap-3">
+                {group.summary && (
+                  <p className="text-sm leading-relaxed">{group.summary}</p>
+                )}
                 {group.meanings.map((meaning, meaningIndex) => (
-                  <div key={meaningIndex} className="border-l-2 pl-3">
+                  <div key={meaningIndex} className="flex flex-col gap-1">
                     {meaning.shortGloss && (
                       <p className="text-sm font-medium">
                         {meaning.shortGloss}
                       </p>
                     )}
                     {meaning.learnerExplanation ? (
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-sm leading-relaxed text-muted-foreground">
                         {meaning.learnerExplanation}
                       </p>
                     ) : (
-                      <SkeletonLines widths={["90%", "64%"]} />
+                      <SkeletonLines widths={["90%", "62%"]} />
                     )}
                   </div>
                 ))}
               </div>
-            </div>
+            </Row>
           ))
         : // Two stand-ins: most entries open with a couple of senses, so the
-          // page settles rather than jumping when the real ones land.
+          // page settles rather than jumping when the real groups land.
           [0, 1].map((index) => (
-            <div key={index} className="space-y-3">
-              <Skeleton className="h-4 w-20" />
-              <div className="space-y-3 border-l-2 pl-3">
-                <Skeleton className="h-4 w-32" />
-                <SkeletonLines widths={["92%", "70%"]} />
+            <Row
+              key={index}
+              divider
+              rail={<Skeleton className="ml-auto h-3 w-12" />}
+            >
+              <div className="flex flex-col gap-3">
+                <Skeleton className="h-4 w-40" />
+                <SkeletonLines widths={["92%", "68%"]} />
               </div>
-            </div>
+            </Row>
           ))}
-    </div>
+    </article>
   );
 }

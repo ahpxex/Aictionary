@@ -1,4 +1,4 @@
-import { ReactNode, useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Volume2, Loader2, BookmarkPlus } from "lucide-react";
@@ -21,6 +21,11 @@ import {
   type PlayTtsResult,
 } from "@/shared/services/tts-service";
 import { useSettings } from "@/features/settings/hooks/use-settings";
+import {
+  EntryHeader,
+  RailLabel,
+  Row,
+} from "@/features/main/components/entry-layout";
 import { resolveAudioCache } from "@/shared/services/audio-cache";
 import { addEntryToAnki } from "@/shared/services/anki-service";
 
@@ -63,37 +68,6 @@ function resolveErrorMessage(error: unknown, fallback: string) {
  * right of the vertical spine. Rows stack without gaps so the spine reads
  * as one continuous line down the entry.
  */
-function Row({
-  rail,
-  children,
-  divider = false,
-  className = "",
-}: {
-  rail?: ReactNode;
-  children: ReactNode;
-  divider?: boolean;
-  className?: string;
-}) {
-  return (
-    <div
-      className={`grid grid-cols-[5.5rem_1fr] ${
-        divider ? "border-t border-border" : ""
-      } ${className}`}
-    >
-      <div className="pr-3 pt-4 text-right">{rail}</div>
-      <div className="border-l border-border py-4 pl-5">{children}</div>
-    </div>
-  );
-}
-
-function RailLabel({ children }: { children: ReactNode }) {
-  return (
-    <span className="text-[0.65rem] font-medium uppercase leading-5 tracking-[0.15em] text-muted-foreground">
-      {children}
-    </span>
-  );
-}
-
 function ExamplePair({
   text,
   translation,
@@ -543,12 +517,11 @@ export function EntryView({
   return (
     <article className="w-full">
       {/* Entry header: the headword is the hero. */}
-      <header className="flex flex-col gap-3 pb-6">
-        <div className="flex items-start justify-between gap-4">
-          <h1 className="break-words text-6xl font-bold leading-none tracking-tighter">
-            {entry.headword}
-          </h1>
-          <div className="flex shrink-0 items-center gap-1 pt-2">
+      <EntryHeader
+        headword={entry.headword}
+        summary={entry.headword_summary}
+        actions={
+          <>
             <Button
               type="button"
               variant="ghost"
@@ -581,36 +554,33 @@ export function EntryView({
               )}
               <span className="sr-only">{ankiAriaLabel}</span>
             </Button>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-          {pronunciations.map((pronunciation, index) => (
-            <span key={`pron-${index}`} className="font-mono text-sm text-muted-foreground">
-              {pronunciation.tags.length > 0 && (
-                <span className="mr-1.5 text-[0.65rem] uppercase tracking-wider">
-                  {pronunciation.tags.join(" ")}
-                </span>
-              )}
-              {pronunciation.ipa ?? pronunciation.text}
-            </span>
-          ))}
-          {entryTypeLabel && (
-            <span className="text-[0.65rem] uppercase tracking-[0.15em] text-muted-foreground">
-              {entryTypeLabel}
-            </span>
-          )}
-          {source === "user" && (
-            <span className="text-[0.65rem] uppercase tracking-[0.15em] text-muted-foreground">
-              {t("main.word_summary.ai_generated")}
-            </span>
-          )}
-        </div>
-
-        <p className="max-w-prose leading-relaxed text-foreground/90">
-          {entry.headword_summary}
-        </p>
-      </header>
+          </>
+        }
+        meta={
+          <>
+            {pronunciations.map((pronunciation, index) => (
+              <span key={`pron-${index}`} className="font-mono text-sm text-muted-foreground">
+                {pronunciation.tags.length > 0 && (
+                  <span className="mr-1.5 text-[0.65rem] uppercase tracking-wider">
+                    {pronunciation.tags.join(" ")}
+                  </span>
+                )}
+                {pronunciation.ipa ?? pronunciation.text}
+              </span>
+            ))}
+            {entryTypeLabel && (
+              <span className="text-[0.65rem] uppercase tracking-[0.15em] text-muted-foreground">
+                {entryTypeLabel}
+              </span>
+            )}
+            {source === "user" && (
+              <span className="text-[0.65rem] uppercase tracking-[0.15em] text-muted-foreground">
+                {t("main.word_summary.ai_generated")}
+              </span>
+            )}
+          </>
+        }
+      />
 
       {entry.memory_hook?.trim() && (
         <Row divider rail={<RailLabel>{t("main.word_summary.memory_hook")}</RailLabel>}>
