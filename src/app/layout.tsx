@@ -30,7 +30,7 @@ export function AppLayout() {
   const { t } = useTranslation();
   const { settings } = useSettings();
   const navigate = useNavigate();
-  const { search, isSearching, result } = useDictionarySearch();
+  const { search, result } = useDictionarySearch();
 
   // Searching from any tab jumps back to the dictionary view.
   const handleSearch = (word: string) => {
@@ -138,7 +138,6 @@ export function AppLayout() {
           <div className="w-full max-w-sm">
             <SearchForm
               onSearch={handleSearch}
-              isSearching={isSearching}
               initialValue={result?.entry.headword}
             />
           </div>

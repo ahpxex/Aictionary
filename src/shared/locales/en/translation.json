@@ -100,6 +100,15 @@
       "present": "present",
       "singular": "singular",
       "third-person": "third-person"
+    },
+    "nonsense": {
+      "lines": [
+        "Not a word I can find — and I would rather not invent one.",
+        "Drew a blank on this one. Nothing was made up, and nothing was saved.",
+        "This does not look like a word. No entry was fabricated for it.",
+        "Came up empty. Inventing a definition would only be convincing, not correct."
+      ],
+      "hint": "Check the spelling, or try another word."
     }
   },
   "statistics": {

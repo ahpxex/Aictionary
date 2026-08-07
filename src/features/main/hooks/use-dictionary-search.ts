@@ -8,6 +8,8 @@ import {
   isGeneratingFromLlmAtom,
   generatingModelAtom,
   generationPreviewAtom,
+  generationSummaryAtom,
+  nonsenseQueryAtom,
   generatingWordAtom,
   queryHistoryAtom,
   setCurrentResultAtom,
@@ -22,7 +24,7 @@ import {
   writeDictionaryEntry,
 } from "@/shared/services/dictionary-service";
 import {
-  streamDefinitionFromLlm,
+  generateEntry,
   hasLlmCredentials,
   LlmServiceError,
 } from "@/shared/services/llm-service";
@@ -34,6 +36,8 @@ export function useDictionarySearch() {
   const [generatingModel, setGeneratingModel] = useAtom(generatingModelAtom);
   const [generationPreview, setGenerationPreview] = useAtom(generationPreviewAtom);
   const [generatingWord, setGeneratingWord] = useAtom(generatingWordAtom);
+  const [generationSummary, setGenerationSummary] = useAtom(generationSummaryAtom);
+  const [nonsenseQuery, setNonsenseQuery] = useAtom(nonsenseQueryAtom);
   const [history] = useAtom(queryHistoryAtom);
   const [result] = useAtom(currentResultAtom);
   const setResult = useSetAtom(setCurrentResultAtom);
@@ -75,14 +79,25 @@ export function useDictionarySearch() {
           setGeneratingModel(llm.model);
           setGeneratingWord(normalized);
           setGenerationPreview(null);
+          setGenerationSummary(null);
+          setNonsenseQuery(null);
           setIsGeneratingFromLlm(true);
 
           try {
-            const aiEntry = await streamDefinitionFromLlm(
-              normalized,
-              llm,
-              setGenerationPreview
-            );
+            const outcome = await generateEntry(normalized, llm, {
+              onSummary: setGenerationSummary,
+              onPreview: setGenerationPreview,
+            });
+
+            // Not a word: say so playfully and cache nothing. Forcing an
+            // entry for a typo would only fill the user dictionary with
+            // confident nonsense.
+            if (outcome.kind === "not-a-word") {
+              setNonsenseQuery(normalized);
+              return;
+            }
+
+            const aiEntry = outcome.entry;
             setResult({
               result: { source: "user", entry: aiEntry },
               word: normalized,
@@ -110,6 +125,7 @@ export function useDictionarySearch() {
           } finally {
             setIsGeneratingFromLlm(false);
             setGenerationPreview(null);
+            setGenerationSummary(null);
             setGeneratingModel(null);
             setGeneratingWord(null);
           }
@@ -133,6 +149,8 @@ export function useDictionarySearch() {
       setGeneratingModel,
       setGeneratingWord,
       setGenerationPreview,
+      setGenerationSummary,
+      setNonsenseQuery,
       settings.dictionary.cachePath,
       settings.llm,
       t,
@@ -141,7 +159,8 @@ export function useDictionarySearch() {
 
   const clear = useCallback(() => {
     setResult({ result: null });
-  }, [setResult]);
+    setNonsenseQuery(null);
+  }, [setNonsenseQuery, setResult]);
 
   return {
     isSearching,
@@ -149,6 +168,8 @@ export function useDictionarySearch() {
     generatingModel,
     generatingWord,
     generationPreview,
+    generationSummary,
+    nonsenseQuery,
     history,
     result,
     search,

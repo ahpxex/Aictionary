@@ -9,6 +9,10 @@ export const isGeneratingFromLlmAtom = atom(false);
 export const generatingModelAtom = atom<string | null>(null);
 /** The word being generated, shown before the model echoes it back. */
 export const generatingWordAtom = atom<string | null>(null);
+/** The one-line summary from the fast first pass. */
+export const generationSummaryAtom = atom<string | null>(null);
+/** Set when the query turned out not to be a word worth an entry. */
+export const nonsenseQueryAtom = atom<string | null>(null);
 /** The entry taking shape while the model streams it back. */
 export const generationPreviewAtom = atom<GenerationPreview | null>(null);
 

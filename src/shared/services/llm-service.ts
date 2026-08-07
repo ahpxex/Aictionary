@@ -50,8 +50,6 @@ export class LlmServiceError extends Error {
  * empty strings are dropped when the entry is assembled instead.
  */
 const RESPONSE_SCHEMA = z.object({
-  headword: z.string(),
-  headword_summary: z.string(),
   memory_hook: z.string(),
   study_notes: z.array(z.string()),
   etymology_note: z.string().nullable(),
@@ -100,6 +98,29 @@ const RESPONSE_SCHEMA = z.object({
   ),
 });
 
+/**
+ * The opening call, deliberately tiny.
+ *
+ * A large strict schema costs the provider tens of seconds before its first
+ * token, so the one line worth showing immediately is asked for on its own
+ * - it comes back in a second or two. It doubles as the sanity check on the
+ * query, since deciding "is this even a word" needs no more context than
+ * writing the summary does.
+ */
+const PREFLIGHT_SCHEMA = z.object({
+  is_meaningful: z.boolean(),
+  headword_summary: z.string(),
+});
+
+const PREFLIGHT_PROMPT = `
+你在为一部英汉词典做词条预检。用户给你一个查询词，你判断它是否值得收录，并写一句话概括。
+
+- is_meaningful：该查询是否是一个真实存在、值得收录的英语单词、短语、缩写或专有名词。明显的拼写错误、随机字符、无意义的键盘乱敲、以及纯粹不存在的造词，都返回 false。是否常用不影响判断——生僻词、专业术语、俚语都算 true。
+- headword_summary：如果 is_meaningful 为 true，用一句中文概括这个词的核心含义与主要用法；如果为 false，返回空字符串。
+
+只做这两件事，不要输出其他内容。
+`.trim();
+
 type ParsedGeneration = z.infer<typeof RESPONSE_SCHEMA>;
 type PartialGeneration = DeepPartial<ParsedGeneration>;
 
@@ -112,10 +133,10 @@ type SanitizedConfig = {
 const SYSTEM_PROMPT = `
 你是一位严谨的双语词典编纂专家，为中文母语的英语学习者编写词条。用户输入一个英语单词，你输出一个严格遵循给定 JSON Schema 的词条对象。
 
+词条的标题词和一句话概括已经确定，会在用户消息中给出，你不需要重复产出，但后续所有内容都必须与之保持一致。
+
 字段编写规则：
 
-- headword：规范化后的目标单词本身。
-- headword_summary：一句话概括这个词的核心含义与主要用法（中文）。
 - memory_hook：一段帮助记忆的联想线索（中文），把这个词的多个含义串成一个可视化的画面或意象，而不是简单重复释义。
 - study_notes：2 到 4 条学习要点（中文），聚焦易错点、常见搭配、近义辨析或语域提示。
 - etymology_note：一句话的词源说明（中文），解释词根意象如何衍生出现代含义；如果没有把握则设为 null，不要编造。
@@ -243,9 +264,14 @@ function normalizeLlmError(error: unknown, fallback = "LLM request failed") {
  */
 function assembleUserEntry(
   parsed: ParsedGeneration,
-  fallbackWord: string
+  queryWord: string,
+  headwordSummary: string
 ): DictionaryEntry {
-  const headword = parsed.headword.trim() || fallbackWord;
+  // The headword is the user's query, never the model's idea of it. Letting
+  // the model choose meant it could silently answer about a different word -
+  // correcting a spelling, expanding an abbreviation - and the entry would
+  // then be cached under a headword nobody searched for.
+  const headword = queryWord.trim();
   const normalized = headword.toLowerCase();
 
   const entry: DictionaryEntry = {
@@ -256,7 +282,7 @@ function assembleUserEntry(
     headword_language: { code: "en", name: "English" },
     definition_language: { code: "zh-Hans", name: "Chinese (Simplified)" },
     entry_type: "standard",
-    headword_summary: parsed.headword_summary.trim(),
+    headword_summary: headwordSummary.trim(),
     memory_hook: parsed.memory_hook.trim(),
     study_notes: parsed.study_notes
       .map((note) => note.trim())
@@ -379,8 +405,6 @@ export async function testLlmConnection(config: LlmProvider) {
  * because any field may still be mid-flight.
  */
 export type GenerationPreview = {
-  headword?: string;
-  headwordSummary?: string;
   memoryHook?: string;
   studyNotes: string[];
   posGroups: {
@@ -392,8 +416,6 @@ export type GenerationPreview = {
 
 function toPreview(partial: PartialGeneration): GenerationPreview {
   return {
-    headword: partial?.headword,
-    headwordSummary: partial?.headword_summary,
     memoryHook: partial?.memory_hook,
     studyNotes: (partial?.study_notes ?? []).filter(
       (note): note is string => Boolean(note)
@@ -432,58 +454,53 @@ const GENERATION_REQUEST = {
   repairText,
 } as const;
 
-export async function generateDefinitionFromLlm(
-  word: string,
-  config: LlmProvider
-): Promise<DictionaryEntry> {
-  const trimmed = word.trim();
-  if (!trimmed) {
-    throw new LlmServiceError("Word is required.");
-  }
+/**
+ * What a generation attempt produced.
+ *
+ * A query that is not a word is a legitimate outcome, not a failure: the UI
+ * has something to say about it and nothing should be cached.
+ */
+export type GenerationOutcome =
+  | { kind: "entry"; entry: DictionaryEntry }
+  | { kind: "not-a-word" };
 
-  const models = createModels(config);
+export type GenerationCallbacks = {
+  /** The one-line summary, available seconds before the rest. */
+  onSummary: (summary: string) => void;
+  /** Every partial of the full entry as it streams in. */
+  onPreview: (preview: GenerationPreview) => void;
+};
 
+/** Run a request against the Responses API, falling back to chat completions. */
+async function withEndpointFallback<T>(
+  models: ReturnType<typeof createModels>,
+  run: (model: LanguageModel) => Promise<T>
+): Promise<T> {
   try {
-    let result;
-    try {
-      result = await generateObject({
-        ...GENERATION_REQUEST,
-        model: models.responses,
-        prompt: trimmed,
-      });
-    } catch (error) {
-      if (!isMissingEndpoint(error)) {
-        throw error;
-      }
-      result = await generateObject({
-        ...GENERATION_REQUEST,
-        model: models.chat,
-        prompt: trimmed,
-      });
-    }
-
-    return assembleUserEntry(result.object, trimmed);
+    return await run(models.responses);
   } catch (error) {
-    throw normalizeLlmError(
-      error,
-      "Unable to generate a definition with the configured model."
-    );
+    if (!isMissingEndpoint(error)) {
+      throw error;
+    }
+    return await run(models.chat);
   }
 }
 
 /**
- * Same as generateDefinitionFromLlm, but reports the entry as it builds up.
+ * Generate an entry in two passes.
  *
- * `onPreview` fires for every partial the provider emits; the resolved value
- * is the finished, validated entry. If the provider has no Responses
- * endpoint the whole stream is restarted against chat completions - safe
- * because that failure happens before any partial is emitted.
+ * The full schema is strict and large, and providers stall on it for tens of
+ * seconds before emitting anything. A tiny opening call answers in a second
+ * or two with the summary - which goes on screen immediately - and with a
+ * verdict on whether the query is a word at all. Its summary is then handed
+ * to the second pass, so the long generation neither repeats that work nor
+ * contradicts what the user is already reading.
  */
-export async function streamDefinitionFromLlm(
+export async function generateEntry(
   word: string,
   config: LlmProvider,
-  onPreview: (preview: GenerationPreview) => void
-): Promise<DictionaryEntry> {
+  callbacks: GenerationCallbacks
+): Promise<GenerationOutcome> {
   const trimmed = word.trim();
   if (!trimmed) {
     throw new LlmServiceError("Word is required.");
@@ -491,29 +508,47 @@ export async function streamDefinitionFromLlm(
 
   const models = createModels(config);
 
-  const run = async (model: LanguageModel) => {
-    const { partialObjectStream, object } = streamObject({
-      ...GENERATION_REQUEST,
-      model,
-      prompt: trimmed,
+  try {
+    const preflight = await withEndpointFallback(models, (model) =>
+      generateObject({
+        model,
+        schema: PREFLIGHT_SCHEMA,
+        schemaName: "headword_preflight",
+        temperature: 0,
+        system: PREFLIGHT_PROMPT,
+        prompt: trimmed,
+        repairText,
+      }).then((result) => result.object)
+    );
+
+    if (!preflight.is_meaningful) {
+      return { kind: "not-a-word" };
+    }
+
+    const summary = preflight.headword_summary.trim();
+    callbacks.onSummary(summary);
+
+    // The second pass is told what has already been settled so it stays
+    // consistent with the summary on screen.
+    const prompt = summary
+      ? `${trimmed}\n\n已确定的一句话概括：${summary}`
+      : trimmed;
+
+    const entry = await withEndpointFallback(models, async (model) => {
+      const { partialObjectStream, object } = streamObject({
+        ...GENERATION_REQUEST,
+        model,
+        prompt,
+      });
+
+      for await (const partial of partialObjectStream) {
+        callbacks.onPreview(toPreview(partial));
+      }
+
+      return assembleUserEntry(await object, trimmed, summary);
     });
 
-    for await (const partial of partialObjectStream) {
-      onPreview(toPreview(partial));
-    }
-
-    return assembleUserEntry(await object, trimmed);
-  };
-
-  try {
-    try {
-      return await run(models.responses);
-    } catch (error) {
-      if (!isMissingEndpoint(error)) {
-        throw error;
-      }
-      return await run(models.chat);
-    }
+    return { kind: "entry", entry };
   } catch (error) {
     throw normalizeLlmError(
       error,
@@ -521,4 +556,3 @@ export async function streamDefinitionFromLlm(
     );
   }
 }
-
