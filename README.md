@@ -216,6 +216,24 @@ GitHub Actions 会在 CI 中对 macOS / Windows / Linux 分别执行构建，并
 
 ---
 
+## 致谢
+
+- **[open-dictionary](https://github.com/ahpxex/open-dictionary)** —— 词库数据的来源；再往上是 **[Wiktionary](https://www.wiktionary.org/)** 的贡献者们，没有他们的持续编纂就没有这部词典的底子。
+
+- **[linux.do](https://linux.do/)** —— 项目在社区发过帖，收到了大量真实使用中的反馈和功能建议，很多改进就是从那些帖子里的讨论来的。
+
+- **代码贡献者**
+
+  | | |
+  | :--- | :--- |
+  | [@linull24](https://github.com/linull24) | Linux 支持与 GitHub Actions 自动构建 |
+  | [@Lancelotmay](https://github.com/Lancelotmay) | 修复 Ubuntu 打包 |
+  | [@jinzhongjia](https://github.com/jinzhongjia) | Windows scoop 安装文档 |
+
+- 以及 [Tauri](https://tauri.app/)、[shadcn/ui](https://ui.shadcn.com/)、[Vercel AI SDK](https://ai-sdk.dev/) 等项目——应用的骨架建立在它们之上。
+
+---
+
 ## License
 
 本项目代码为 MIT，见 [`LICENSE`](./LICENSE)。
