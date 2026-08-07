@@ -26,10 +26,10 @@ type ScrollRegionProps = {
  * The platform bar cannot be made to fit this design: WebKit ignores the
  * ::-webkit-scrollbar pseudo-elements here, and the standard scrollbar-width /
  * scrollbar-color properties stop at "thin" with rounded caps that fatten under
- * the pointer. So the native bar is hidden and the mark is drawn instead - two
- * square pixels riding the container's edge, the same width at rest and under
- * the cursor. At that size it reads as a rule rather than a control, so it
- * takes no pointer events and scrolling stays entirely native.
+ * the pointer. So the native bar is hidden and the mark is drawn instead - a
+ * square three-pixel rule riding the container's edge, the same width at rest
+ * and under the cursor. At that size it reads as a rule rather than a control,
+ * so it takes no pointer events and scrolling stays entirely native.
  */
 export function ScrollRegion({ className, children }: ScrollRegionProps) {
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -92,7 +92,7 @@ export function ScrollRegion({ className, children }: ScrollRegionProps) {
       {thumb && (
         <div
           aria-hidden
-          className="pointer-events-none absolute right-0 top-0 w-0.5 bg-foreground/25"
+          className="pointer-events-none absolute right-0 top-0 w-[3px] bg-foreground/25"
           style={{
             height: `${thumb.height}px`,
             transform: `translateY(${thumb.offset}px)`,
