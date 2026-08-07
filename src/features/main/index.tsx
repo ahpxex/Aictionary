@@ -13,7 +13,7 @@ export function MainPage() {
         {!result && (
           <div className="flex flex-1 flex-col items-center justify-center gap-2 py-24">
             <p className="text-2xl font-bold tracking-tight text-muted-foreground/40">
-              aictionary
+              Aictionary
             </p>
             <p className="text-sm text-muted-foreground">{t("main.empty_state")}</p>
           </div>

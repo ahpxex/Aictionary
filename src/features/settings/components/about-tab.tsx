@@ -16,7 +16,7 @@ export function AboutTab() {
   // The bundle is the only source of the version; there is no local copy to
   // fall back to, so this stays empty until Tauri answers.
   const [appVersion, setAppVersion] = useState("");
-  const [appName, setAppName] = useState("AIctionary");
+  const [appName, setAppName] = useState("Aictionary");
   const update = useUpdateCheck();
 
   useEffect(() => {
@@ -25,7 +25,7 @@ export function AboutTab() {
       .catch(() => setAppVersion(""));
     getName()
       .then(setAppName)
-      .catch(() => setAppName("AIctionary"));
+      .catch(() => setAppName("Aictionary"));
   }, []);
 
   return (
