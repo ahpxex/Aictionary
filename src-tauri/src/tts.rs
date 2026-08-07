@@ -242,7 +242,14 @@ pub async fn start_tts_stream(app: AppHandle, args: TtsStreamArgs) -> Result<(),
     } = args;
 
     let resolved_api_key = api_key.trim().to_string();
-    let provider_kind = provider.as_deref().unwrap_or("fish");
+    // Edge is the zero-configuration default, so an unspecified provider must
+    // land there. Falling back to Fish would demand an API key the caller was
+    // never asked for and read as "go configure something in Settings".
+    let provider_kind = provider
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .unwrap_or("edge");
 
     // Fish Audio and ElevenLabs always need a key; Edge is keyless and
     // OpenAI-compatible wrappers often run locally without authentication.
