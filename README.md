@@ -2,7 +2,7 @@
 
 快速且异常好用的词典 App，基于 **Tauri 2 + React**，提供本地离线词库和可选大模型释义，专注于「查词体验」这件小事。
 
-<img width="800" height="600" alt="image" src="https://github.com/user-attachments/assets/47b0208f-7f4b-45c6-9215-446b53755500" />
+<img width="1100" alt="Aictionary 查询 light 的词条界面" src="docs/screenshot.png" />
 
 
 ## 功能特性
