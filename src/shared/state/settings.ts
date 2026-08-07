@@ -56,7 +56,7 @@ export const defaultSettings: AppSettings = {
     enabled: true,
   },
   about: {
-    version: "0.1.0",
+    version: "3.0.0",
     build: "dev",
   },
   system: {

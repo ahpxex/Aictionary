@@ -1,6 +1,6 @@
 [package]
 name = "aictionary-re"
-version = "0.1.0"
+version = "3.0.0"
 description = "A Tauri App"
 authors = ["you"]
 edition = "2021"
