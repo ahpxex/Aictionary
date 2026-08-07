@@ -336,7 +336,7 @@ function buildBackContent(entry: DictionaryEntry, theme: AnkiCardTheme) {
 
   const footer = `
     <div class="aic-footer">
-      Crafted with AIctionary · ${new Date().toLocaleDateString()}
+      Crafted with Aictionary · ${new Date().toLocaleDateString()}
     </div>
   `;
 

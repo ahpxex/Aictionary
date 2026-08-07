@@ -9,7 +9,7 @@ import {
 /**
  * The original quick query default. A global hotkey outranks the focused
  * application, so binding Command/Ctrl+Enter took that chord away from every
- * other app while AIctionary ran. Installs still carrying the old default
+ * other app while Aictionary ran. Installs still carrying the old default
  * move to the new one; anything the user picked themselves is left alone.
  */
 const LEGACY_QUICK_QUERY_DEFAULT = "Mod+Enter";

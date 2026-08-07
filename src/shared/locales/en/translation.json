@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "AIctionary",
+    "name": "Aictionary",
     "loading": "Loading…"
   },
   "nav": {
@@ -160,7 +160,7 @@
       },
       "desktop": {
         "title": "Desktop integration",
-        "description": "Control the tray icon, dock icon, and whether AIctionary starts automatically.",
+        "description": "Control the tray icon, dock icon, and whether Aictionary starts automatically.",
         "tray_label": "Show tray icon",
         "startup_label": "Start AIictionary at login",
         "dock_label": "Show dock/taskbar icon"
@@ -357,7 +357,7 @@
       },
       "toast": {
         "reset": "Keyboard shortcuts restored.",
-        "copy_permission": "AIctionary needs permission to copy the selected text. Grant it under Privacy & Security → Automation, then try again.",
+        "copy_permission": "Aictionary needs permission to copy the selected text. Grant it under Privacy & Security → Automation, then try again.",
         "copy_unavailable": "Could not copy the selected text from the active app.",
         "copy_empty": "Nothing was selected, and the clipboard is empty.",
         "open_settings": "Open settings",

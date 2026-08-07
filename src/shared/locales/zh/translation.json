@@ -162,7 +162,7 @@
         "title": "桌面集成",
         "description": "控制托盘图标、Dock 图标以及应用是否随系统启动。",
         "tray_label": "显示托盘图标",
-        "startup_label": "开机后自动启动 AIctionary",
+        "startup_label": "开机后自动启动 Aictionary",
         "dock_label": "显示 Dock / 任务栏图标"
       }
     },
@@ -357,7 +357,7 @@
       },
       "toast": {
         "reset": "键盘快捷键已恢复。",
-        "copy_permission": "AIctionary 需要授权才能复制选中的文本。请在「隐私与安全性 → 自动化」中授权后重试。",
+        "copy_permission": "Aictionary 需要授权才能复制选中的文本。请在「隐私与安全性 → 自动化」中授权后重试。",
         "copy_unavailable": "无法从当前应用复制选中的文本。",
         "copy_empty": "没有选中内容，剪贴板也是空的。",
         "open_settings": "打开设置",
