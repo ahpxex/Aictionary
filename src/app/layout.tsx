@@ -61,9 +61,12 @@ export function AppLayout() {
     };
   }, [navigate]);
 
+  // The shell is pinned to the viewport and never scrolls itself; each page
+  // owns its own scroll region (and the gutter around it), so a page can
+  // decide which part of it moves under the fixed header.
   return (
-    <div className="bg-background text-foreground flex min-h-screen flex-col">
-      <header className="sticky top-0 z-40 border-b bg-background">
+    <div className="bg-background text-foreground flex h-screen flex-col overflow-hidden">
+      <header className="z-40 shrink-0 border-b bg-background">
         <div className="flex h-12 w-full items-center gap-6 px-6">
           <div className="w-full max-w-sm">
             <SearchForm
@@ -93,7 +96,7 @@ export function AppLayout() {
           </div>
         </div>
       </header>
-      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-6 py-8">
+      <main className="flex min-h-0 flex-1 flex-col">
         <Outlet />
       </main>
     </div>
