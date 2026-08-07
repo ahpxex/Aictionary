@@ -4,6 +4,12 @@ export type ThemePreference = {
 
 export type LanguagePreference = "en" | "zh";
 
+export type LlmProvider = {
+  baseUrl: string;
+  apiKey: string;
+  model: string;
+};
+
 export type TtsProviderKind = "edge" | "fish" | "openai" | "elevenlabs";
 
 /**
@@ -82,6 +88,7 @@ export type SystemSettings = {
 export type AppSettings = {
   theme: ThemePreference;
   language: LanguagePreference;
+  llm: LlmProvider;
   audio: AudioSettings;
   anki: AnkiSettings;
   dictionary: DictionarySettings;

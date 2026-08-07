@@ -24,6 +24,7 @@ export function useSettings() {
       ...defaultSettings,
       ...current,
       theme: { ...defaultSettings.theme, ...(current.theme ?? {}) },
+      llm: { ...defaultSettings.llm, ...(current.llm ?? {}) },
       audio: normalizeAudioSettings(current.audio),
       anki: {
         ...defaultSettings.anki,
@@ -55,6 +56,21 @@ export function useSettings() {
       updateSettings((current) => ({
         ...current,
         theme: { ...current.theme, ...changes },
+      }));
+    },
+    [updateSettings]
+  );
+
+  const updateLlm = useCallback(
+    (
+      changes: Partial<AppSettings["llm"]> | ((prev: AppSettings["llm"]) => AppSettings["llm"])
+    ) => {
+      updateSettings((current) => ({
+        ...current,
+        llm:
+          typeof changes === "function"
+            ? changes(current.llm)
+            : { ...current.llm, ...changes },
       }));
     },
     [updateSettings]
@@ -159,6 +175,7 @@ export function useSettings() {
     settings,
     updateSettings,
     updateTheme,
+    updateLlm,
     updateAudio,
     updateAnki,
     updateDictionary,

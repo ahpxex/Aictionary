@@ -395,10 +395,11 @@ export function EntryView({
     settings.anki.apiUrl.trim() && settings.anki.deckName.trim()
   );
 
-  const { entry } = result;
+  const { entry, source } = result;
   const hasWord = Boolean(entry.headword?.trim());
   const uniformPronunciations = pronunciationsAreUniform(entry);
   const pronunciations = uniformPronunciations ? collectPronunciations(entry) : [];
+  const comparisons = entry.comparisons ?? [];
 
   const stopPlayback = useCallback(async () => {
     if (!playerRef.current) {
@@ -599,6 +600,11 @@ export function EntryView({
               {entryTypeLabel}
             </span>
           )}
+          {source === "user" && (
+            <span className="text-[0.65rem] uppercase tracking-[0.15em] text-muted-foreground">
+              {t("main.word_summary.ai_generated")}
+            </span>
+          )}
         </div>
 
         <p className="max-w-prose leading-relaxed text-foreground/90">
@@ -641,6 +647,21 @@ export function EntryView({
           onSearchWord={onSearchWord}
         />
       ))}
+
+      {comparisons.length > 0 && (
+        <Row divider rail={<RailLabel>{t("main.comparison.title")}</RailLabel>}>
+          <div className="flex flex-col gap-4">
+            {comparisons.map((comparison, index) => (
+              <div key={`comparison-${index}`} className="flex flex-col gap-1">
+                <h3 className="font-semibold">{comparison.word}</h3>
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  {comparison.analysis}
+                </p>
+              </div>
+            ))}
+          </div>
+        </Row>
+      )}
 
       {/* Closing hairline so the spine terminates on a full-width rule. */}
       <div className="border-t border-border" />

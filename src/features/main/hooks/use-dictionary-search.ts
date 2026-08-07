@@ -5,6 +5,8 @@ import { toast } from "sonner";
 import {
   currentResultAtom,
   isSearchingAtom,
+  isGeneratingFromLlmAtom,
+  generatingModelAtom,
   queryHistoryAtom,
   setCurrentResultAtom,
 } from "@/shared/state/dictionary";
@@ -12,11 +14,19 @@ import { settingsAtom } from "@/shared/state/settings";
 import {
   queryDictionary,
   DictionaryQueryError,
+  writeDictionaryEntry,
 } from "@/shared/services/dictionary-service";
+import {
+  generateDefinitionFromLlm,
+  hasLlmCredentials,
+  LlmServiceError,
+} from "@/shared/services/llm-service";
 
 export function useDictionarySearch() {
   const { t } = useTranslation();
   const [isSearching, setIsSearching] = useAtom(isSearchingAtom);
+  const [isGeneratingFromLlm, setIsGeneratingFromLlm] = useAtom(isGeneratingFromLlmAtom);
+  const [generatingModel, setGeneratingModel] = useAtom(generatingModelAtom);
   const [history] = useAtom(queryHistoryAtom);
   const [result] = useAtom(currentResultAtom);
   const setResult = useSetAtom(setCurrentResultAtom);
@@ -38,13 +48,58 @@ export function useDictionarySearch() {
         );
         setResult({ result: definition, word: normalized });
       } catch (error) {
-        // The distributed dictionary is the only source of entries, so a miss
-        // is final: report it and leave the previous result alone.
         if (
           error instanceof DictionaryQueryError &&
           error.code === "NOT_FOUND"
         ) {
-          toast.error(t("main.search.not_found", { word: normalized }));
+          if (!settings.dictionary.cachePath.trim()) {
+            toast.error(t("main.llm.missing_cache_path"));
+            return;
+          }
+
+          if (!hasLlmCredentials(settings.llm)) {
+            toast.error(t("main.llm.missing_config"));
+            return;
+          }
+
+          // Clear existing result and show LLM generating state
+          setResult({ result: null });
+          setGeneratingModel(settings.llm.model);
+          setIsGeneratingFromLlm(true);
+
+          try {
+            const aiEntry = await generateDefinitionFromLlm(
+              normalized,
+              settings.llm
+            );
+            setResult({
+              result: { source: "user", entry: aiEntry },
+              word: normalized,
+            });
+            toast.success(
+              t("main.llm.success", { model: settings.llm.model })
+            );
+            try {
+              await writeDictionaryEntry(
+                aiEntry,
+                settings.dictionary.cachePath
+              );
+            } catch (persistError) {
+              console.error(persistError);
+              toast.warning(t("main.llm.cache_error"));
+            }
+            return;
+          } catch (llmError) {
+            console.error(llmError);
+            const message =
+              llmError instanceof LlmServiceError
+                ? llmError.message
+                : t("main.llm.error");
+            toast.error(message);
+          } finally {
+            setIsGeneratingFromLlm(false);
+            setGeneratingModel(null);
+          }
           return;
         }
 
@@ -58,7 +113,15 @@ export function useDictionarySearch() {
         setIsSearching(false);
       }
     },
-    [setResult, setIsSearching, settings.dictionary.cachePath, t]
+    [
+      setResult,
+      setIsSearching,
+      setIsGeneratingFromLlm,
+      setGeneratingModel,
+      settings.dictionary.cachePath,
+      settings.llm,
+      t,
+    ]
   );
 
   const clear = useCallback(() => {
@@ -67,6 +130,8 @@ export function useDictionarySearch() {
 
   return {
     isSearching,
+    isGeneratingFromLlm,
+    generatingModel,
     history,
     result,
     search,
