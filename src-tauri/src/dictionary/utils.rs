@@ -5,11 +5,6 @@ use std::path::PathBuf;
 /// ahpxex/open-dictionary after decompression.
 pub const DISTRIBUTION_DB_FILE: &str = "distribution.sqlite";
 
-/// File name of the local database holding user-generated entries. Kept
-/// separate from the distributed artifact so re-downloading the dictionary
-/// never touches user data.
-pub const USER_DB_FILE: &str = "user_dictionary.sqlite";
-
 /// Resolves a cache directory path to an absolute PathBuf.
 /// If the path is already absolute, returns it as-is.
 /// If relative, resolves it against the current working directory.

@@ -209,12 +209,6 @@ export function DictionaryTab() {
                       {metadata.entry_count?.toLocaleString() ?? "-"}
                     </span>
                   </span>
-                  <span>
-                    {t("settings.dictionary.metadata.user_entries")}{" "}
-                    <span className="font-medium text-foreground">
-                      {metadata.user_entry_count?.toLocaleString() ?? 0}
-                    </span>
-                  </span>
                 </div>
                 <div className="flex flex-wrap gap-x-6 gap-y-1">
                   <span>

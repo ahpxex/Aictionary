@@ -21,7 +21,8 @@
       "placeholder": "Search a word…",
       "searching": "Searching…",
       "button": "Search",
-      "empty_error": "Please enter a word to search."
+      "empty_error": "Please enter a word to search.",
+      "not_found": "“{{word}}” is not in the dictionary."
     },
     "history": {
       "title": "Recent queries"
@@ -37,19 +38,6 @@
       },
       "button": "Go"
     },
-    "comparison": {
-      "title": "Compare with",
-      "description": "Understand nuances between related words."
-    },
-    "llm": {
-      "missing_config": "The word isn't cached locally and no AI provider is configured yet.",
-      "missing_cache_path": "Set a dictionary cache path before asking the AI to help.",
-      "generating": "Generating a definition via {{model}}…",
-      "generating_status": "Generating definition via {{model}}…",
-      "success": "Definition saved locally using {{model}}.",
-      "error": "The AI provider couldn't produce a definition. Please try again later.",
-      "cache_error": "Definition shown, but writing to the cache failed. Check the directory permissions."
-    },
     "errors": {
       "dictionary": "Unable to query the dictionary. Please try again later."
     },
@@ -62,7 +50,6 @@
       "anki_success": "Card saved to Anki.",
       "anki_error": "Couldn't add this word to Anki. Please try again.",
       "anki_not_configured": "Set your AnkiConnect address and deck in Settings → Anki first.",
-      "ai_generated": "AI generated",
       "memory_hook": "Memory hook",
       "study_notes": "Study notes",
       "etymology": "Etymology",
@@ -156,7 +143,6 @@
     "tabs": {
       "appearance": "Appearance",
       "language": "Language",
-      "llm": "LLM Providers",
       "audio": "Audio",
       "anki": "Anki",
       "dictionary": "Dictionary",
@@ -187,45 +173,6 @@
       "options": {
         "en": "English",
         "zh": "简体中文"
-      }
-    },
-    "llm": {
-      "title": "Provider connection",
-      "description": "Configure the base URL and authentication for your LLM endpoint.",
-      "models": {
-        "load": "Load models",
-        "loading": "Loading models…",
-        "helper": "Load models from the configured endpoint after entering the base URL and API key.",
-        "empty": "No models were returned. Double-check the provider settings.",
-        "missing_credentials": "Enter the API key before loading models."
-      },
-      "base_url": {
-        "label": "Base URL",
-        "placeholder": "https://api.example.com"
-      },
-      "api_key": {
-        "label": "API key",
-        "placeholder": "sk-..."
-      },
-      "model": {
-        "label": "Model",
-        "placeholder": "Select model",
-        "custom": "Custom: {{model}}"
-      },
-      "test_connection": "Test connection",
-      "testing": "Testing…",
-      "tips": {
-        "title": "Usage tips",
-        "description": "These settings control how AI is used for semantic explanations and comparisons.",
-        "tip1": "Keep the base URL pointed to a gateway that is accessible from your machine.",
-        "tip2": "The API key is stored locally only. Rotate it regularly for security.",
-        "tip3": "Pick a model that balances accuracy and latency for your workflow."
-      },
-      "toast": {
-        "success": "Provider settings look good!",
-        "error": "Failed to reach the provider. Double-check the base URL and API key.",
-        "models_success": "Loaded {{count}} model(s).",
-        "models_error": "Unable to load the models list. Check your credentials."
       }
     },
     "audio": {
@@ -380,7 +327,6 @@
       },
       "metadata": {
         "entries": "Entries:",
-        "user_entries": "My AI entries:",
         "schema": "Schema:",
         "definition_language": "Definitions:"
       }

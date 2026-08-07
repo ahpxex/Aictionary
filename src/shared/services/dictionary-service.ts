@@ -1,6 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
 import type {
-  DictionaryEntry,
   DictionaryLookupResult,
   DictionaryMetadata,
 } from "@/shared/types/dictionary";
@@ -73,24 +72,6 @@ export async function queryDictionary(
     const message = parseErrorMessage(error);
     throw new DictionaryQueryError(message, determineErrorCode(message), { cause: error });
   }
-}
-
-/** Persist a user-generated entry into the local user dictionary. */
-export async function writeDictionaryEntry(
-  entry: DictionaryEntry,
-  cachePath: string
-) {
-  const trimmedCachePath = cachePath.trim();
-  if (!trimmedCachePath) {
-    throw new DictionaryQueryError("Dictionary cache path is missing", "MISSING_CACHE_PATH");
-  }
-
-  await invoke("upsert_dictionary_entry", {
-    args: {
-      cachePath: trimmedCachePath,
-      entry,
-    },
-  });
 }
 
 /** Read the metadata embedded in the installed dictionary artifact. */

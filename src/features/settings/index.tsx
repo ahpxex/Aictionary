@@ -5,7 +5,6 @@ import { cn } from "@/lib/utils";
 import { ScrollRegion } from "@/shared/components/scroll-region";
 import { AppearanceTab } from "@/features/settings/components/appearance-tab";
 import { AudioTab } from "@/features/settings/components/audio-tab";
-import { LlmProvidersTab } from "@/features/settings/components/llm-tab";
 import { DictionaryTab } from "@/features/settings/components/dictionary-tab";
 import { KeyboardTab } from "@/features/settings/components/keyboard-tab";
 import { AboutTab } from "@/features/settings/components/about-tab";
@@ -13,7 +12,6 @@ import { AnkiTab } from "@/features/settings/components/anki-tab";
 
 const tabs = [
   { value: "appearance", labelKey: "settings.tabs.appearance" },
-  { value: "llm", labelKey: "settings.tabs.llm" },
   { value: "audio", labelKey: "settings.tabs.audio" },
   { value: "anki", labelKey: "settings.tabs.anki" },
   { value: "dictionary", labelKey: "settings.tabs.dictionary" },
@@ -25,7 +23,6 @@ type SettingsTabValue = (typeof tabs)[number]["value"];
 
 const TAB_COMPONENTS: Record<SettingsTabValue, ComponentType> = {
   appearance: AppearanceTab,
-  llm: LlmProvidersTab,
   audio: AudioTab,
   anki: AnkiTab,
   dictionary: DictionaryTab,

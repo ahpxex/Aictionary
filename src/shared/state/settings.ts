@@ -7,11 +7,6 @@ export const defaultSettings: AppSettings = {
     mode: "system",
   },
   language: "en",
-  llm: {
-    baseUrl: "",
-    apiKey: "",
-    model: "gpt-4o-mini",
-  },
   audio: {
     provider: "edge",
     edge: {
