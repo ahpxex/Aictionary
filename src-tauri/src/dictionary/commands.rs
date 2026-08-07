@@ -4,8 +4,10 @@ use std::fs;
 use std::path::Path;
 use tauri::{AppHandle, Manager};
 
-use super::types::DictionaryLookupResult;
-use super::utils::{normalize_headword, resolve_cache_dir, DISTRIBUTION_DB_FILE};
+use super::types::{DictionaryLookupResult, LookupSource, UpsertDictionaryEntryArgs};
+use super::utils::{
+    normalize_headword, resolve_cache_dir, DISTRIBUTION_DB_FILE, USER_DB_FILE,
+};
 
 fn open_read_only(path: &Path) -> Result<Connection, String> {
     Connection::open_with_flags(
@@ -65,8 +67,52 @@ fn query_distribution(cache_dir: &Path, normalized: &str) -> Result<Option<Value
     Ok(None)
 }
 
-/// Query the dictionary for a word in {cache_path}/distribution.sqlite, the
-/// only place entries come from.
+fn query_user(cache_dir: &Path, normalized: &str) -> Result<Option<Value>, String> {
+    let db_path = cache_dir.join(USER_DB_FILE);
+    if !db_path.is_file() {
+        return Ok(None);
+    }
+
+    let conn = open_read_only(&db_path)?;
+    let raw: Option<String> = conn
+        .query_row(
+            "SELECT document_json FROM user_entries WHERE normalized_headword = ?1",
+            [normalized],
+            |row| row.get(0),
+        )
+        .optional()
+        .map_err(|err| format!("Failed to query user dictionary: {err}"))?;
+
+    match raw {
+        Some(raw) => Ok(Some(parse_document(&raw)?)),
+        None => Ok(None),
+    }
+}
+
+fn open_user_db_rw(cache_dir: &Path) -> Result<Connection, String> {
+    fs::create_dir_all(cache_dir)
+        .map_err(|err| format!("Failed to prepare cache directory: {err}"))?;
+
+    let conn = Connection::open(cache_dir.join(USER_DB_FILE))
+        .map_err(|err| format!("Failed to open user dictionary: {err}"))?;
+
+    conn.execute_batch(
+        "CREATE TABLE IF NOT EXISTS user_entries (
+            normalized_headword TEXT PRIMARY KEY,
+            headword TEXT NOT NULL,
+            document_json TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        );",
+    )
+    .map_err(|err| format!("Failed to initialize user dictionary: {err}"))?;
+
+    Ok(conn)
+}
+
+/// Query the dictionary for a word.
+/// Looks in {cache_path}/distribution.sqlite first, then in the user's own
+/// generated entries at {cache_path}/user_dictionary.sqlite.
 #[tauri::command]
 pub fn dictionary_query(word: String, cache_path: String) -> Result<DictionaryLookupResult, String> {
     let word = word.trim();
@@ -83,10 +129,62 @@ pub fn dictionary_query(word: String, cache_path: String) -> Result<DictionaryLo
     let cache_dir = resolve_cache_dir(cache_path)?;
     let normalized = normalize_headword(word);
 
-    match query_distribution(&cache_dir, &normalized)? {
-        Some(entry) => Ok(DictionaryLookupResult { entry }),
-        None => Err(format!("Word '{}' not found in dictionary", word)),
+    if let Some(entry) = query_distribution(&cache_dir, &normalized)? {
+        return Ok(DictionaryLookupResult {
+            source: LookupSource::Dictionary,
+            entry,
+        });
     }
+
+    if let Some(entry) = query_user(&cache_dir, &normalized)? {
+        return Ok(DictionaryLookupResult {
+            source: LookupSource::User,
+            entry,
+        });
+    }
+
+    Err(format!("Word '{}' not found in dictionary", word))
+}
+
+/// Insert or update a user-generated dictionary entry.
+/// Writes to {cache_path}/user_dictionary.sqlite, never to the distributed
+/// artifact.
+#[tauri::command]
+pub fn upsert_dictionary_entry(args: UpsertDictionaryEntryArgs) -> Result<(), String> {
+    let UpsertDictionaryEntryArgs { cache_path, entry } = args;
+    let cache_path = cache_path.trim();
+    if cache_path.is_empty() {
+        return Err("Dictionary cache path is not configured".into());
+    }
+
+    let headword = entry
+        .get("headword")
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .unwrap_or_default()
+        .to_string();
+    if headword.is_empty() {
+        return Err("Entry is missing a headword".into());
+    }
+
+    let document = serde_json::to_string(&entry)
+        .map_err(|err| format!("Failed to serialize dictionary entry: {err}"))?;
+
+    let cache_dir = resolve_cache_dir(cache_path)?;
+    let conn = open_user_db_rw(&cache_dir)?;
+
+    conn.execute(
+        "INSERT INTO user_entries (normalized_headword, headword, document_json, created_at, updated_at)
+         VALUES (?1, ?2, ?3, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+         ON CONFLICT(normalized_headword) DO UPDATE SET
+            headword = excluded.headword,
+            document_json = excluded.document_json,
+            updated_at = excluded.updated_at",
+        rusqlite::params![normalize_headword(&headword), headword, document],
+    )
+    .map_err(|err| format!("Failed to write dictionary entry: {err}"))?;
+
+    Ok(())
 }
 
 /// Get the default dictionary cache path.
@@ -197,7 +295,21 @@ pub fn dictionary_metadata(cache_path: String) -> Result<Value, String> {
         metadata.insert(key, value);
     }
 
+    // A missing or unreadable user database just means no entries yet.
+    let user_entry_count = query_user_count(&cache_dir).unwrap_or_default();
+    metadata.insert("user_entry_count".into(), Value::from(user_entry_count));
+
     Ok(Value::Object(metadata))
+}
+
+fn query_user_count(cache_dir: &Path) -> Result<u64, String> {
+    let db_path = cache_dir.join(USER_DB_FILE);
+    if !db_path.is_file() {
+        return Ok(0);
+    }
+    let conn = open_read_only(&db_path)?;
+    conn.query_row("SELECT count(*) FROM user_entries", [], |row| row.get(0))
+        .map_err(|err| format!("Failed to count user entries: {err}"))
 }
 
 #[cfg(test)]
@@ -274,6 +386,7 @@ mod tests {
         create_distribution_fixture(dir.path());
 
         let result = dictionary_query("CHINA".into(), cache_path(&dir)).unwrap();
+        assert!(matches!(result.source, LookupSource::Dictionary));
         assert_eq!(result.entry["headword"], "China");
     }
 
@@ -284,6 +397,61 @@ mod tests {
 
         let error = dictionary_query("nonexistent".into(), cache_path(&dir)).unwrap_err();
         assert!(error.contains("not found"));
+    }
+
+    #[test]
+    fn upsert_then_query_returns_user_entry() {
+        let dir = tempfile::tempdir().unwrap();
+        create_distribution_fixture(dir.path());
+
+        let entry = json!({
+            "schema_version": "distribution_entry_v5",
+            "entry_id": "user-serendipity",
+            "headword": "Serendipity",
+            "normalized_headword": "serendipity",
+            "pos_groups": [],
+        });
+        upsert_dictionary_entry(UpsertDictionaryEntryArgs {
+            cache_path: cache_path(&dir),
+            entry: entry.clone(),
+        })
+        .unwrap();
+
+        let result = dictionary_query("serendipity".into(), cache_path(&dir)).unwrap();
+        assert!(matches!(result.source, LookupSource::User));
+        assert_eq!(result.entry["headword"], "Serendipity");
+
+        // Distribution entries win over user entries for the same headword.
+        let distribution = dictionary_query("resolve".into(), cache_path(&dir)).unwrap();
+        assert!(matches!(distribution.source, LookupSource::Dictionary));
+    }
+
+    #[test]
+    fn upsert_replaces_existing_user_entry() {
+        let dir = tempfile::tempdir().unwrap();
+
+        for summary in ["first", "second"] {
+            upsert_dictionary_entry(UpsertDictionaryEntryArgs {
+                cache_path: cache_path(&dir),
+                entry: json!({ "headword": "widget", "headword_summary": summary }),
+            })
+            .unwrap();
+        }
+
+        let result = dictionary_query("widget".into(), cache_path(&dir)).unwrap();
+        assert_eq!(result.entry["headword_summary"], "second");
+        assert_eq!(query_user_count(dir.path()).unwrap(), 1);
+    }
+
+    #[test]
+    fn upsert_rejects_entry_without_headword() {
+        let dir = tempfile::tempdir().unwrap();
+        let error = upsert_dictionary_entry(UpsertDictionaryEntryArgs {
+            cache_path: cache_path(&dir),
+            entry: json!({ "headword_summary": "no headword" }),
+        })
+        .unwrap_err();
+        assert!(error.contains("headword"));
     }
 
     #[test]
@@ -309,6 +477,7 @@ mod tests {
             .expect("AICTIONARY_DICT_DIR must point at a directory with distribution.sqlite");
 
         let result = dictionary_query("Resolve".into(), dir.clone()).unwrap();
+        assert!(matches!(result.source, LookupSource::Dictionary));
         assert_eq!(result.entry["headword"], "resolve");
         assert_eq!(result.entry["schema_version"], "distribution_entry_v5");
         assert!(result.entry["pos_groups"].as_array().is_some_and(|g| !g.is_empty()));
@@ -321,12 +490,19 @@ mod tests {
     }
 
     #[test]
-    fn metadata_includes_artifact_keys() {
+    fn metadata_includes_artifact_keys_and_user_entry_count() {
         let dir = tempfile::tempdir().unwrap();
         create_distribution_fixture(dir.path());
+
+        upsert_dictionary_entry(UpsertDictionaryEntryArgs {
+            cache_path: cache_path(&dir),
+            entry: json!({ "headword": "widget" }),
+        })
+        .unwrap();
 
         let metadata = dictionary_metadata(cache_path(&dir)).unwrap();
         assert_eq!(metadata["entry_count"], 2);
         assert_eq!(metadata["distribution_schema_version"], "distribution_entry_v5");
+        assert_eq!(metadata["user_entry_count"], 1);
     }
 }

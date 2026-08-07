@@ -5,18 +5,39 @@ import { toast } from "sonner";
 import {
   currentResultAtom,
   isSearchingAtom,
+  isGeneratingFromLlmAtom,
+  generatingModelAtom,
+  generationPreviewAtom,
+  generationSummaryAtom,
+  nonsenseQueryAtom,
+  generatingWordAtom,
   queryHistoryAtom,
   setCurrentResultAtom,
 } from "@/shared/state/dictionary";
-import { settingsAtom } from "@/shared/state/settings";
+import {
+  resolveActiveLlmProvider,
+  settingsAtom,
+} from "@/shared/state/settings";
 import {
   queryDictionary,
   DictionaryQueryError,
+  writeDictionaryEntry,
 } from "@/shared/services/dictionary-service";
+import {
+  generateEntry,
+  hasLlmCredentials,
+  LlmServiceError,
+} from "@/shared/services/llm-service";
 
 export function useDictionarySearch() {
   const { t } = useTranslation();
   const [isSearching, setIsSearching] = useAtom(isSearchingAtom);
+  const [isGeneratingFromLlm, setIsGeneratingFromLlm] = useAtom(isGeneratingFromLlmAtom);
+  const [generatingModel, setGeneratingModel] = useAtom(generatingModelAtom);
+  const [generationPreview, setGenerationPreview] = useAtom(generationPreviewAtom);
+  const [generatingWord, setGeneratingWord] = useAtom(generatingWordAtom);
+  const [generationSummary, setGenerationSummary] = useAtom(generationSummaryAtom);
+  const [nonsenseQuery, setNonsenseQuery] = useAtom(nonsenseQueryAtom);
   const [history] = useAtom(queryHistoryAtom);
   const [result] = useAtom(currentResultAtom);
   const setResult = useSetAtom(setCurrentResultAtom);
@@ -30,6 +51,10 @@ export function useDictionarySearch() {
         return;
       }
 
+      // Clear the previous verdict up front. Only the generation branch used
+      // to reset it, so a nonsense query's easter egg outlived every later
+      // search that resolved from the dictionary and sat on top of it.
+      setNonsenseQuery(null);
       setIsSearching(true);
       try {
         const definition = await queryDictionary(
@@ -38,13 +63,76 @@ export function useDictionarySearch() {
         );
         setResult({ result: definition, word: normalized });
       } catch (error) {
-        // The distributed dictionary is the only source of entries, so a miss
-        // is final: report it and leave the previous result alone.
         if (
           error instanceof DictionaryQueryError &&
           error.code === "NOT_FOUND"
         ) {
-          toast.error(t("main.search.not_found", { word: normalized }));
+          if (!settings.dictionary.cachePath.trim()) {
+            toast.error(t("main.llm.missing_cache_path"));
+            return;
+          }
+
+          const llm = resolveActiveLlmProvider(settings.llm);
+          if (!hasLlmCredentials(llm)) {
+            toast.error(t("main.llm.missing_config"));
+            return;
+          }
+
+          // Clear existing result and show LLM generating state
+          setResult({ result: null });
+          setGeneratingModel(llm.model);
+          setGeneratingWord(normalized);
+          setGenerationPreview(null);
+          setGenerationSummary(null);
+          setNonsenseQuery(null);
+          setIsGeneratingFromLlm(true);
+
+          try {
+            const outcome = await generateEntry(normalized, llm, {
+              onSummary: setGenerationSummary,
+              onPreview: setGenerationPreview,
+            });
+
+            // Not a word: say so playfully and cache nothing. Forcing an
+            // entry for a typo would only fill the user dictionary with
+            // confident nonsense.
+            if (outcome.kind === "not-a-word") {
+              setNonsenseQuery(normalized);
+              return;
+            }
+
+            const aiEntry = outcome.entry;
+            setResult({
+              result: { source: "user", entry: aiEntry },
+              word: normalized,
+            });
+            toast.success(
+              t("main.llm.success", { model: llm.model })
+            );
+            try {
+              await writeDictionaryEntry(
+                aiEntry,
+                settings.dictionary.cachePath
+              );
+            } catch (persistError) {
+              console.error(persistError);
+              toast.warning(t("main.llm.cache_error"));
+            }
+            return;
+          } catch (llmError) {
+            console.error(llmError);
+            const message =
+              llmError instanceof LlmServiceError
+                ? llmError.message
+                : t("main.llm.error");
+            toast.error(message);
+          } finally {
+            setIsGeneratingFromLlm(false);
+            setGenerationPreview(null);
+            setGenerationSummary(null);
+            setGeneratingModel(null);
+            setGeneratingWord(null);
+          }
           return;
         }
 
@@ -58,15 +146,34 @@ export function useDictionarySearch() {
         setIsSearching(false);
       }
     },
-    [setResult, setIsSearching, settings.dictionary.cachePath, t]
+    [
+      setResult,
+      setIsSearching,
+      setIsGeneratingFromLlm,
+      setGeneratingModel,
+      setGeneratingWord,
+      setGenerationPreview,
+      setGenerationSummary,
+      setNonsenseQuery,
+      settings.dictionary.cachePath,
+      settings.llm,
+      t,
+    ]
   );
 
   const clear = useCallback(() => {
     setResult({ result: null });
-  }, [setResult]);
+    setNonsenseQuery(null);
+  }, [setNonsenseQuery, setResult]);
 
   return {
     isSearching,
+    isGeneratingFromLlm,
+    generatingModel,
+    generatingWord,
+    generationPreview,
+    generationSummary,
+    nonsenseQuery,
     history,
     result,
     search,

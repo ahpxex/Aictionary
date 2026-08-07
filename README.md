@@ -2,7 +2,7 @@
 
 快速且异常好用的词典 App，基于 **Tauri 2 + React**，提供本地离线词库和可选大模型释义，专注于「查词体验」这件小事。
 
-<img width="800" height="600" alt="image" src="https://github.com/user-attachments/assets/47b0208f-7f4b-45c6-9215-446b53755500" />
+<img width="1100" alt="Aictionary 查询 light 的词条界面" src="docs/screenshot.png" />
 
 
 ## 功能特性
@@ -26,6 +26,23 @@
   - 支持键盘快捷键快速打开 / 关闭、查询当前剪贴板内容等；
   - 查询记录自动缓存，可随时刷新词条以获取最新释义；
   - 主题、语言、LLM 提供商、快捷键等都可在设置里集中配置。
+
+---
+
+## 词库来源
+
+词条数据来自上游项目 **[ahpxex/open-dictionary](https://github.com/ahpxex/open-dictionary)** —— 一部以 Wiktionary/Wiktextract 快照为基础、再用大模型补写学习者向解释的开源英汉词典。当前发行版收录 **84,212 个词条**。
+
+Aictionary 只是它的一个桌面端消费者：应用消费其 `distribution_entry_v5` 契约，从 GitHub Release 下载 `distribution.sqlite.gz` 到本地，所有查询都在本机完成。词库的构建管线、选词规则和释义质量都由上游负责，相关问题请到上游仓库反馈。
+
+许可上二者是分开的：
+
+| | 许可 |
+| :--- | :--- |
+| 上游词典**数据** | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)，Wiktionary 内容的衍生作品 |
+| 上游与本项目**代码** | MIT |
+
+数据依 ShareAlike 条款分发，再分发或二次加工时须以相同许可发布，并署名 Wiktionary 贡献者。
 
 ---
 
@@ -201,7 +218,9 @@ GitHub Actions 会在 CI 中对 macOS / Windows / Linux 分别执行构建，并
 
 ## License
 
-MIT. See [`LICENSE`](./LICENSE).
+本项目代码为 MIT，见 [`LICENSE`](./LICENSE)。
+
+内置词库并非本项目作品：它来自 [ahpxex/open-dictionary](https://github.com/ahpxex/open-dictionary)，以 **CC BY-SA 4.0** 发布，是 Wiktionary 内容的衍生作品，署名归 Wiktionary 贡献者。分发或二次加工该数据时须遵守 ShareAlike 条款。
 
 ---
 

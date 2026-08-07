@@ -77,9 +77,23 @@ export type DictionaryEntry = {
   etymology_note: string | null;
   etymologies: DictionaryEtymology[];
   pos_groups: DictionaryPosGroup[];
+  /**
+   * App-level extension, only present on user-generated entries: near-synonym
+   * comparisons produced by the LLM. Never present in distributed entries.
+   */
+  comparisons?: DictionaryComparison[];
 };
 
+export type DictionaryComparison = {
+  word: string;
+  analysis: string;
+};
+
+/** Where a lookup result came from. */
+export type LookupSource = "dictionary" | "user";
+
 export type DictionaryLookupResult = {
+  source: LookupSource;
   entry: DictionaryEntry;
 };
 
@@ -90,6 +104,7 @@ export type DictionaryMetadata = {
   entry_count?: number;
   definition_language?: LanguageRef;
   skipped_entries_without_meanings?: number;
+  user_entry_count?: number;
   [key: string]: unknown;
 };
 

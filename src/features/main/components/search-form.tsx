@@ -1,10 +1,9 @@
 import { FormEvent, forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Loader2, Search } from "lucide-react";
+import { Search } from "lucide-react";
 
 type SearchFormProps = {
   onSearch: (word: string) => void;
-  isSearching: boolean;
   initialValue?: string;
 };
 
@@ -18,13 +17,18 @@ export interface SearchFormRef {
  * the way to ask for the next one. Enter submits; there is no button.
  */
 export const SearchForm = forwardRef<SearchFormRef, SearchFormProps>(
-  ({ onSearch, isSearching, initialValue = "" }, ref) => {
+  ({ onSearch, initialValue = "" }, ref) => {
     const { t } = useTranslation();
     const [value, setValue] = useState(initialValue);
     const inputRef = useRef<HTMLInputElement>(null);
 
+    // Only follow a real result. During generation the current result is
+    // cleared, and syncing that through would wipe the word the user just
+    // typed out from under them.
     useEffect(() => {
-      setValue(initialValue);
+      if (initialValue) {
+        setValue(initialValue);
+      }
     }, [initialValue]);
 
     useImperativeHandle(ref, () => ({
@@ -58,11 +62,9 @@ export const SearchForm = forwardRef<SearchFormRef, SearchFormProps>(
         onSubmit={handleSubmit}
         className="flex h-8 min-w-0 flex-1 items-center gap-2 px-2 transition-colors hover:bg-muted/40 focus-within:bg-muted/60"
       >
-        {isSearching ? (
-          <Loader2 className="size-3.5 shrink-0 animate-spin text-muted-foreground" />
-        ) : (
-          <Search className="size-3.5 shrink-0 text-muted-foreground" />
-        )}
+        {/* The icon stays put while a lookup runs: the query bar is chrome,
+            and progress belongs in the page, not in the field's affordance. */}
+        <Search className="size-3.5 shrink-0 text-muted-foreground" />
         <input
           ref={inputRef}
           value={value}

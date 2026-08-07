@@ -4,6 +4,7 @@ import {
   defaultSettings,
   normalizeAudioSettings,
   normalizeKeyboardSettings,
+  normalizeLlmSettings,
   settingsAtom,
 } from "@/shared/state/settings";
 import {
@@ -32,6 +33,7 @@ export function useSettings() {
       },
       dictionary: { ...defaultSettings.dictionary, ...(current.dictionary ?? {}) },
       keyboard: normalizeKeyboardSettings(current.keyboard),
+      llm: normalizeLlmSettings(current.llm),
       about: { ...defaultSettings.about, ...(current.about ?? {}) },
       system: { ...defaultSettings.system, ...(current.system ?? {}) },
     }),
@@ -55,6 +57,21 @@ export function useSettings() {
       updateSettings((current) => ({
         ...current,
         theme: { ...current.theme, ...changes },
+      }));
+    },
+    [updateSettings]
+  );
+
+  const updateLlm = useCallback(
+    (
+      changes: Partial<AppSettings["llm"]> | ((prev: AppSettings["llm"]) => AppSettings["llm"])
+    ) => {
+      updateSettings((current) => ({
+        ...current,
+        llm:
+          typeof changes === "function"
+            ? changes(current.llm)
+            : { ...current.llm, ...changes },
       }));
     },
     [updateSettings]
@@ -159,6 +176,7 @@ export function useSettings() {
     settings,
     updateSettings,
     updateTheme,
+    updateLlm,
     updateAudio,
     updateAnki,
     updateDictionary,

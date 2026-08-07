@@ -140,11 +140,17 @@ function buildCardStyles() {
       gap: 10px;
     }
 
-    .aic-definition-card {
+    .aic-definition-card,
+    .aic-comparison-card {
       border: 1px solid var(--aic-border);
       border-radius: 12px;
       padding: 12px 14px;
       background: var(--aic-panel);
+    }
+
+    .aic-comparison-card {
+      background: var(--aic-panel-strong);
+      font-size: 0.92rem;
     }
 
     .aic-muted {
@@ -152,7 +158,8 @@ function buildCardStyles() {
       font-size: 0.92rem;
     }
 
-    .aic-definition-card strong {
+    .aic-definition-card strong,
+    .aic-comparison-card strong {
       display: block;
       font-size: 0.78rem;
       text-transform: uppercase;
@@ -325,6 +332,33 @@ function buildStudySection(entry: DictionaryEntry) {
   `;
 }
 
+function buildComparisonSection(entry: DictionaryEntry) {
+  const comparisons = entry.comparisons ?? [];
+  const blocks = comparisons
+    .filter((comparison) => comparison.word.trim() && comparison.analysis.trim())
+    .map(
+      (comparison) => `
+        <div class="aic-comparison-card">
+          <strong>${escapeHtml(comparison.word)}</strong>
+          <div>${formatMultiline(comparison.analysis)}</div>
+        </div>
+      `
+    );
+
+  if (!blocks.length) {
+    return "";
+  }
+
+  return `
+    <div class="aic-section">
+      <div class="aic-section-title">Comparisons</div>
+      <div class="aic-stack">
+        ${blocks.join("\n")}
+      </div>
+    </div>
+  `;
+}
+
 function buildBackContent(entry: DictionaryEntry, theme: AnkiCardTheme) {
   const styles = buildCardStyles();
   const themeAttr = resolveCardTheme(theme);
@@ -332,6 +366,7 @@ function buildBackContent(entry: DictionaryEntry, theme: AnkiCardTheme) {
     buildMeaningsSection(entry),
     buildFormsSection(entry),
     buildStudySection(entry),
+    buildComparisonSection(entry),
   ].filter(Boolean);
 
   const footer = `

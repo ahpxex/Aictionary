@@ -61,7 +61,7 @@ src/
 ### Tauri Integration
 
 - Frontend communicates with Rust backend via `@tauri-apps/api`
-- Example: LLM provider testing uses `invoke("test_llm_provider", { ... })`
+- Example: persisting a generated entry uses `invoke("upsert_dictionary_entry", { ... })`
 - Backend code in `src-tauri/src/`
 
 ### Dictionary Data Contract
@@ -89,6 +89,11 @@ The dictionary consumes the `distribution_entry_v5` contract of
   explanatory fields; the full v5 envelope is assembled deterministically in
   code. User entries may carry an app-level `comparisons` extension field
   that distributed entries never have.
+- Generation runs through the Vercel AI SDK (`ai` + `@ai-sdk/openai`) with
+  `generateObject` and a zod schema, against whatever OpenAI-compatible
+  endpoint the user configures. The schema deliberately avoids string
+  `.min()`, because the resulting `minLength` is rejected by OpenAI's strict
+  structured outputs; blank values are filtered out during assembly instead.
 
 ### GitHub Service
 

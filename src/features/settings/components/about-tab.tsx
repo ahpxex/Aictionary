@@ -118,6 +118,47 @@ export function AboutTab() {
         </div>
       </Section>
 
+      {/* The dictionary is someone else's work under a share-alike licence,
+          so the attribution belongs in the app, not only in the README. */}
+      <Section
+        title={t("settings.about.data.title")}
+        contentClassName="grid gap-3"
+      >
+        <p className="text-muted-foreground text-sm leading-relaxed">
+          {t("settings.about.data.body")}
+        </p>
+        <Table>
+          <TableBody>
+            <TableRow>
+              <TableCell className="font-medium">
+                {t("settings.about.data.data_license")}
+              </TableCell>
+              <TableCell>
+                <Button
+                  variant="link"
+                  className="h-auto p-0"
+                  onClick={() => {
+                    void openUrl(
+                      "https://creativecommons.org/licenses/by-sa/4.0/"
+                    ).catch((error) => {
+                      console.warn("Failed to open the licence:", error);
+                    });
+                  }}
+                >
+                  CC BY-SA 4.0
+                </Button>
+              </TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell className="font-medium">
+                {t("settings.about.data.code_license")}
+              </TableCell>
+              <TableCell>MIT</TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </Section>
+
       <Section
         title={t("settings.about.resources.title")}
         contentClassName="grid gap-3"
