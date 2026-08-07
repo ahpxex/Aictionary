@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- The quick query shortcut presses Command+C in whatever app is in
+	     front so it can look up the current selection. Sending that keystroke
+	     goes through System Events, which macOS gates behind Automation
+	     consent - without this key the request is denied outright and the
+	     user is never even asked. -->
+	<key>NSAppleEventsUsageDescription</key>
+	<string>AIctionary copies the text you have selected in other apps so it can look it up when you press the quick query shortcut.</string>
+</dict>
+</plist>

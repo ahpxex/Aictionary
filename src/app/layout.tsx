@@ -1,7 +1,14 @@
 import { Outlet, NavLink, useNavigate } from "react-router";
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import { formatShortcut, isMacPlatform } from "@/shared/lib/shortcuts";
+import type {
+  QuickQueryPayload,
+  ShortcutSetupReport,
+} from "@/shared/hooks/use-global-shortcuts";
 import { cn } from "@/lib/utils";
 import { useSettings } from "@/features/settings/hooks/use-settings";
 import { useDictionarySearch } from "@/features/main/hooks/use-dictionary-search";
@@ -31,23 +38,83 @@ export function AppLayout() {
     search(word);
   };
 
+  const focusQueryBar = useCallback(() => {
+    // Switch to the dictionary tab first, then ask the query bar in the
+    // header to take the caret via a window-level custom event.
+    navigate("/");
+    window.dispatchEvent(new CustomEvent("focus-search-input"));
+  }, [navigate]);
+
+  // The window is raised even when nothing could be copied, so the shortcut
+  // always does something visible; this explains why no lookup ran.
+  const handleQuickQuery = useCallback(
+    (payload: QuickQueryPayload) => {
+      if (payload.text) {
+        navigate("/");
+        search(payload.text);
+        return;
+      }
+
+      focusQueryBar();
+
+      if (payload.copyError === "permission_denied") {
+        toast.error(t("settings.keyboard.toast.copy_permission"), {
+          action: isMacPlatform()
+            ? {
+                label: t("settings.keyboard.toast.open_settings"),
+                onClick: () => {
+                  void invoke("open_shortcut_permission_settings").catch(
+                    (error) => {
+                      console.warn(
+                        "Failed to open permission settings:",
+                        error
+                      );
+                    }
+                  );
+                },
+              }
+            : undefined,
+        });
+      } else if (payload.copyError === "unavailable") {
+        toast.error(t("settings.keyboard.toast.copy_unavailable"));
+      } else {
+        toast.info(t("settings.keyboard.toast.copy_empty"));
+      }
+    },
+    [focusQueryBar, navigate, search, t]
+  );
+
+  // A shortcut the OS refused to register would otherwise look bound in
+  // settings while doing nothing at all.
+  const handleSetupReport = useCallback(
+    (report: ShortcutSetupReport) => {
+      if (report.quickQueryError) {
+        toast.error(
+          t("settings.keyboard.toast.register_failed", {
+            shortcut: formatShortcut(settings.keyboard.quickQuery).join(" "),
+          })
+        );
+      }
+      if (report.newQueryError) {
+        toast.error(
+          t("settings.keyboard.toast.register_failed", {
+            shortcut: formatShortcut(settings.keyboard.newQuery).join(" "),
+          })
+        );
+      }
+    },
+    [settings.keyboard.newQuery, settings.keyboard.quickQuery, t]
+  );
+
   // Global keyboard shortcuts are wired here so they work regardless of
   // which main tab (dictionary/statistics/settings) is currently active.
   useGlobalShortcuts({
     quickQuery: settings.keyboard.quickQuery,
     newQuery: settings.keyboard.newQuery,
     enabled: settings.keyboard.enabled,
-    onQuickQuery: (text) => {
-      // Ensure we're on the dictionary tab, then run the search.
-      navigate("/");
-      search(text);
-    },
-    onNewQuery: () => {
-      // Switch to the dictionary tab first, then ask the main page
-      // to focus the search input via a window-level custom event.
-      navigate("/");
-      window.dispatchEvent(new CustomEvent("focus-search-input"));
-    },
+    onQuickQuery: handleQuickQuery,
+    onNewQuery: focusQueryBar,
+    onSetupReport: handleSetupReport,
   });
 
   // React to tray menu "About" clicks by navigating to Settings → About.
