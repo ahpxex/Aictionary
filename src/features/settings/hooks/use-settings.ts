@@ -3,6 +3,7 @@ import { useCallback, useMemo } from "react";
 import {
   defaultSettings,
   normalizeAudioSettings,
+  normalizeKeyboardSettings,
   settingsAtom,
 } from "@/shared/state/settings";
 import {
@@ -30,7 +31,7 @@ export function useSettings() {
         cardTheme: normalizeCardTheme(current.anki?.cardTheme),
       },
       dictionary: { ...defaultSettings.dictionary, ...(current.dictionary ?? {}) },
-      keyboard: { ...defaultSettings.keyboard, ...(current.keyboard ?? {}) },
+      keyboard: normalizeKeyboardSettings(current.keyboard),
       about: { ...defaultSettings.about, ...(current.about ?? {}) },
       system: { ...defaultSettings.system, ...(current.system ?? {}) },
     }),

@@ -1,6 +1,18 @@
 import { atom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
-import { AppSettings, AudioSettings } from "@/shared/types/settings";
+import {
+  AppSettings,
+  AudioSettings,
+  KeyboardShortcutSettings,
+} from "@/shared/types/settings";
+
+/**
+ * The original quick query default. A global hotkey outranks the focused
+ * application, so binding Command/Ctrl+Enter took that chord away from every
+ * other app while AIctionary ran. Installs still carrying the old default
+ * move to the new one; anything the user picked themselves is left alone.
+ */
+const LEGACY_QUICK_QUERY_DEFAULT = "Mod+Enter";
 
 export const defaultSettings: AppSettings = {
   theme: {
@@ -39,7 +51,7 @@ export const defaultSettings: AppSettings = {
     lastUpdated: null,
   },
   keyboard: {
-    quickQuery: "Mod+Enter",
+    quickQuery: "Mod+Shift+D",
     newQuery: "Mod+Shift+K",
     enabled: true,
   },
@@ -65,6 +77,21 @@ export const updateSettingsAtom = atom(
     set(settingsAtom, { ...get(settingsAtom), ...update });
   }
 );
+
+/** Retire the old quick query default without touching custom bindings. */
+export function normalizeKeyboardSettings(
+  value: Partial<KeyboardShortcutSettings> | undefined
+): KeyboardShortcutSettings {
+  const merged = { ...defaultSettings.keyboard, ...(value ?? {}) };
+
+  return {
+    ...merged,
+    quickQuery:
+      merged.quickQuery === LEGACY_QUICK_QUERY_DEFAULT
+        ? defaultSettings.keyboard.quickQuery
+        : merged.quickQuery,
+  };
+}
 
 /**
  * Bring stored audio settings up to the current per-provider shape. Older
