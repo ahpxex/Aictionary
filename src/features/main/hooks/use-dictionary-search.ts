@@ -51,6 +51,10 @@ export function useDictionarySearch() {
         return;
       }
 
+      // Clear the previous verdict up front. Only the generation branch used
+      // to reset it, so a nonsense query's easter egg outlived every later
+      // search that resolved from the dictionary and sat on top of it.
+      setNonsenseQuery(null);
       setIsSearching(true);
       try {
         const definition = await queryDictionary(
