@@ -2,6 +2,7 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 import { Kbd, KbdGroup } from "@/components/ui/kbd"
+import { formatShortcut, shortcutFromEvent } from "@/shared/lib/shortcuts"
 
 interface KbdInputProps extends Omit<React.ComponentProps<"input">, "onKeyDown" | "onChange"> {
   value?: string
@@ -15,38 +16,10 @@ function KbdInput({ className, value = "", onChange, onKeyDown, ...props }: KbdI
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     event.preventDefault()
 
-    const keys: string[] = []
-
-    // Add modifiers
-    if (event.ctrlKey || event.metaKey) {
-      keys.push("Mod")
-    }
-    if (event.shiftKey && event.key !== "Shift") {
-      keys.push("Shift")
-    }
-    if (event.altKey && event.key !== "Alt") {
-      keys.push("Alt")
-    }
-
-    // Add the main key (if it's not a modifier)
-    const key = event.key
-    if (!["Control", "Meta", "Shift", "Alt"].includes(key)) {
-      // Format the key name
-      let formattedKey = key
-      if (key === " ") {
-        formattedKey = "Space"
-      } else if (key.length === 1) {
-        formattedKey = key.toUpperCase()
-      } else {
-        // Capitalize first letter for keys like "Enter", "Escape", etc.
-        formattedKey = key.charAt(0).toUpperCase() + key.slice(1)
-      }
-      keys.push(formattedKey)
-    }
-
-    // Only update if we have a complete shortcut
-    if (keys.length > 0 && !["Shift", "Alt", "Mod"].includes(keys[keys.length - 1])) {
-      const shortcut = keys.join("+")
+    // Null while only modifiers are held, so a half-typed chord never
+    // overwrites the existing binding.
+    const shortcut = shortcutFromEvent(event)
+    if (shortcut) {
       onChange?.(shortcut)
     }
 
@@ -54,17 +27,18 @@ function KbdInput({ className, value = "", onChange, onKeyDown, ...props }: KbdI
     onKeyDown?.(event)
   }
 
-  // Parse the value and render as kbd elements
+  // Parse the value and render as kbd elements. The stored form is portable
+  // ("Mod+Shift+K"); what is shown is what this platform actually presses.
   const renderKbds = () => {
-    if (!value || value.trim() === "") {
+    const keys = formatShortcut(value)
+    if (keys.length === 0) {
       return null
     }
 
-    const keys = value.split("+")
     return (
       <KbdGroup className="gap-1">
         {keys.map((key, index) => (
-          <Kbd key={index}>{key === " " || key === "" ? "Space" : key}</Kbd>
+          <Kbd key={index}>{key}</Kbd>
         ))}
       </KbdGroup>
     )

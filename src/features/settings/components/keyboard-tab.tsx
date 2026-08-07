@@ -4,6 +4,8 @@ import { KbdInput } from "@/components/ui/kbd-input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useSettings } from "@/features/settings/hooks/use-settings";
+import { defaultSettings } from "@/shared/state/settings";
+import { formatShortcut } from "@/shared/lib/shortcuts";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
@@ -13,11 +15,14 @@ export function KeyboardTab() {
 
   const handleReset = () => {
     updateKeyboard({
-      quickQuery: "Mod+Enter",
-      newQuery: "Mod+Shift+K",
+      quickQuery: defaultSettings.keyboard.quickQuery,
+      newQuery: defaultSettings.keyboard.newQuery,
     });
     toast.success(t("settings.keyboard.toast.reset"));
   };
+
+  // Placeholders spell the defaults the way this platform presses them.
+  const placeholder = (value: string) => formatShortcut(value).join(" ");
 
   return (
     <div className="flex flex-col">
@@ -48,7 +53,7 @@ export function KeyboardTab() {
               id="shortcut-quick"
               value={settings.keyboard.quickQuery}
               onChange={(value) => updateKeyboard({ quickQuery: value })}
-              placeholder="Mod+Enter"
+              placeholder={placeholder(defaultSettings.keyboard.quickQuery)}
             />
           </div>
           <div className="grid gap-2">
@@ -57,7 +62,7 @@ export function KeyboardTab() {
               id="shortcut-new"
               value={settings.keyboard.newQuery}
               onChange={(value) => updateKeyboard({ newQuery: value })}
-              placeholder="Mod+Shift+K"
+              placeholder={placeholder(defaultSettings.keyboard.newQuery)}
             />
           </div>
           <Button variant="outline" onClick={handleReset}>
