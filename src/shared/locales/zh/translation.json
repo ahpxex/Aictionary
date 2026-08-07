@@ -194,11 +194,15 @@
       "title": "提供商连接",
       "description": "配置您的大语言模型端点的基础 URL 和身份验证。",
       "models": {
-        "load": "加载模型列表",
         "loading": "正在加载模型…",
-        "helper": "填写基础 URL 和 API 密钥后，从提供商加载可用模型。",
+        "helper": "填好服务商和 API key 后会自动加载模型列表。",
         "empty": "提供商未返回模型，请检查设置。",
-        "missing_credentials": "请输入 API 密钥后再加载模型。"
+        "missing_credentials": "请输入 API 密钥后再加载模型。",
+        "refresh": "刷新模型"
+      },
+      "provider": {
+        "label": "服务商",
+        "custom": "自定义端点…"
       },
       "base_url": {
         "label": "基础 URL",
@@ -210,7 +214,7 @@
       },
       "model": {
         "label": "模型",
-        "placeholder": "选择模型",
+        "placeholder": "请先加载模型列表",
         "custom": "自定义：{{model}}"
       },
       "test_connection": "测试连接",

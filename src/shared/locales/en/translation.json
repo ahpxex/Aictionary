@@ -194,11 +194,15 @@
       "title": "Provider connection",
       "description": "Configure the base URL and authentication for your LLM endpoint.",
       "models": {
-        "load": "Load models",
         "loading": "Loading models…",
-        "helper": "Load models from the configured endpoint after entering the base URL and API key.",
+        "helper": "Models load automatically once the provider and API key are set.",
         "empty": "No models were returned. Double-check the provider settings.",
-        "missing_credentials": "Enter the API key before loading models."
+        "missing_credentials": "Enter the API key before loading models.",
+        "refresh": "Refresh models"
+      },
+      "provider": {
+        "label": "Provider",
+        "custom": "Custom endpoint…"
       },
       "base_url": {
         "label": "Base URL",
@@ -210,7 +214,7 @@
       },
       "model": {
         "label": "Model",
-        "placeholder": "Select model",
+        "placeholder": "Load the model list first",
         "custom": "Custom: {{model}}"
       },
       "test_connection": "Test connection",

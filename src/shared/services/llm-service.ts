@@ -136,20 +136,34 @@ const SYSTEM_PROMPT = `
 整体要求：内容准确、克制，不确定的信息宁可省略；所有中文内容使用简体中文；引号使用中文引号。
 `.trim();
 
-function sanitizeConfig(config: LlmProvider): SanitizedConfig {
+/**
+ * Validate only what it takes to reach the provider.
+ *
+ * Listing models must not require a model to be chosen already - that is
+ * the request whose whole purpose is to find one.
+ */
+function sanitizeCredentials(config: LlmProvider) {
   const apiKey = config.apiKey.trim();
   if (!apiKey) {
     throw new LlmServiceError("LLM API key is missing.");
   }
+
+  // An empty base URL means plain OpenAI; anything else is an
+  // OpenAI-compatible endpoint the user pointed us at.
+  const baseURL =
+    (config.baseUrl || "").trim().replace(/\/+$/, "") || DEFAULT_BASE_URL;
+
+  return { apiKey, baseURL };
+}
+
+function sanitizeConfig(config: LlmProvider): SanitizedConfig {
+  const { apiKey, baseURL } = sanitizeCredentials(config);
 
   const model = config.model.trim();
   if (!model) {
     throw new LlmServiceError("LLM model is missing.");
   }
 
-  // An empty base URL means plain OpenAI; anything else is an
-  // OpenAI-compatible endpoint the user pointed us at.
-  const baseURL = (config.baseUrl || "").trim().replace(/\/+$/, "") || DEFAULT_BASE_URL;
   return { apiKey, baseURL, model };
 }
 
@@ -324,7 +338,7 @@ export function hasLlmCredentials(config: LlmProvider) {
 export async function fetchAvailableModels(
   config: LlmProvider
 ): Promise<LlmModelSummary[]> {
-  const { apiKey, baseURL } = sanitizeConfig(config);
+  const { apiKey, baseURL } = sanitizeCredentials(config);
 
   try {
     const response = await fetch(`${baseURL}/models`, {

@@ -4,6 +4,7 @@ import {
   defaultSettings,
   normalizeAudioSettings,
   normalizeKeyboardSettings,
+  normalizeLlmSettings,
   settingsAtom,
 } from "@/shared/state/settings";
 import {
@@ -24,7 +25,6 @@ export function useSettings() {
       ...defaultSettings,
       ...current,
       theme: { ...defaultSettings.theme, ...(current.theme ?? {}) },
-      llm: { ...defaultSettings.llm, ...(current.llm ?? {}) },
       audio: normalizeAudioSettings(current.audio),
       anki: {
         ...defaultSettings.anki,
@@ -33,6 +33,7 @@ export function useSettings() {
       },
       dictionary: { ...defaultSettings.dictionary, ...(current.dictionary ?? {}) },
       keyboard: normalizeKeyboardSettings(current.keyboard),
+      llm: normalizeLlmSettings(current.llm),
       about: { ...defaultSettings.about, ...(current.about ?? {}) },
       system: { ...defaultSettings.system, ...(current.system ?? {}) },
     }),

@@ -14,6 +14,11 @@ import {
 } from "@/components/ui/select";
 import { useSettings } from "@/features/settings/hooks/use-settings";
 import {
+  CUSTOM_PROVIDER_ID,
+  LLM_PROVIDER_PRESETS,
+  presetIdForBaseUrl,
+} from "@/shared/lib/llm-providers";
+import {
   fetchAvailableModels,
   LlmModelSummary,
   LlmServiceError,
@@ -33,22 +38,64 @@ export function LlmProvidersTab() {
     [settings.llm.baseUrl, settings.llm.apiKey]
   );
 
+  const canReachProvider = Boolean(settings.llm.apiKey.trim());
+
+  // Picking a provider should just show its models. The fingerprint covers
+  // both halves of the credentials, and the delay keeps a key being typed
+  // character by character from firing a request per keystroke.
   useEffect(() => {
     setModels([]);
     setHasLoadedModels(false);
-  }, [credentialFingerprint]);
 
-  const canReachProvider = Boolean(settings.llm.apiKey.trim());
-
-  const handleLoadModels = async () => {
-    if (!canReachProvider) {
-      toast.error(t("settings.llm.models.missing_credentials"));
+    if (!settings.llm.apiKey.trim()) {
       return;
     }
+
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      void loadModels({ silent: true, isCancelled: () => cancelled });
+    }, 600);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+    // loadModels reads the same credentials this effect keys on.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [credentialFingerprint]);
+  // Derived rather than stored: the base URL stays the single source of
+  // truth, so a hand-typed URL that matches a preset still selects it.
+  const presetId = presetIdForBaseUrl(settings.llm.baseUrl);
+  const selectedProviderLabel =
+    LLM_PROVIDER_PRESETS.find((preset) => preset.id === presetId)?.label ??
+    t("settings.llm.provider.custom");
+
+  const handlePresetChange = (value: string) => {
+    if (value === CUSTOM_PROVIDER_ID) {
+      updateLlm({ baseUrl: "" });
+      return;
+    }
+    const preset = LLM_PROVIDER_PRESETS.find((item) => item.id === value);
+    if (preset) {
+      // The model list belongs to the old provider; drop it so the picker
+      // cannot offer a model the new endpoint has never heard of.
+      updateLlm({ baseUrl: preset.baseUrl, model: "" });
+    }
+  };
+
+  const loadModels = async (options?: {
+    /** The automatic refresh reports failures quietly; the button does not. */
+    silent?: boolean;
+    isCancelled?: () => boolean;
+  }) => {
+    const cancelled = () => options?.isCancelled?.() ?? false;
 
     setIsLoadingModels(true);
     try {
       const list = await fetchAvailableModels(settings.llm);
+      if (cancelled()) {
+        return;
+      }
       setModels(list);
       setHasLoadedModels(true);
 
@@ -59,10 +106,19 @@ export function LlmProvidersTab() {
         updateLlm({ model: list[0].id });
       }
 
-      toast.success(
-        t("settings.llm.toast.models_success", { count: list.length })
-      );
+      if (!options?.silent) {
+        toast.success(
+          t("settings.llm.toast.models_success", { count: list.length })
+        );
+      }
     } catch (error) {
+      if (cancelled()) {
+        return;
+      }
+      if (options?.silent) {
+        console.warn("Failed to refresh models:", error);
+        return;
+      }
       const message =
         error instanceof LlmServiceError
           ? error.message
@@ -127,16 +183,43 @@ export function LlmProvidersTab() {
         contentClassName="grid gap-4"
       >
           <div className="grid gap-2">
-            <Label htmlFor="llm-base-url">{t("settings.llm.base_url.label")}</Label>
-            <Input
-              id="llm-base-url"
-              placeholder={t("settings.llm.base_url.placeholder")}
-              value={settings.llm.baseUrl}
-              onChange={(event) =>
-                updateLlm({ baseUrl: event.target.value.trim() })
-              }
-            />
+            <Label htmlFor="llm-provider">{t("settings.llm.provider.label")}</Label>
+            <Select value={presetId} onValueChange={handlePresetChange}>
+              <SelectTrigger id="llm-provider" className="w-full">
+                <SelectValue>{selectedProviderLabel}</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {LLM_PROVIDER_PRESETS.map((preset) => (
+                  <SelectItem key={preset.id} value={preset.id}>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="font-medium">{preset.label}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {preset.baseUrl}
+                      </span>
+                    </div>
+                  </SelectItem>
+                ))}
+                <SelectItem value={CUSTOM_PROVIDER_ID}>
+                  {t("settings.llm.provider.custom")}
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
+          {presetId === CUSTOM_PROVIDER_ID && (
+            <div className="grid gap-2">
+              <Label htmlFor="llm-base-url">
+                {t("settings.llm.base_url.label")}
+              </Label>
+              <Input
+                id="llm-base-url"
+                placeholder={t("settings.llm.base_url.placeholder")}
+                value={settings.llm.baseUrl}
+                onChange={(event) =>
+                  updateLlm({ baseUrl: event.target.value.trim() })
+                }
+              />
+            </div>
+          )}
           <div className="grid gap-2">
             <Label htmlFor="llm-api-key">{t("settings.llm.api_key.label")}</Label>
             <Input
@@ -154,10 +237,10 @@ export function LlmProvidersTab() {
               onValueChange={(value) => updateLlm({ model: value })}
               disabled={models.length === 0 && !settings.llm.model}
             >
-              <SelectTrigger id="llm-model">
-                <SelectValue
-                  placeholder={t("settings.llm.model.placeholder")}
-                />
+              <SelectTrigger id="llm-model" className="w-full">
+                <SelectValue placeholder={t("settings.llm.model.placeholder")}>
+                  {settings.llm.model}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>{renderModelItems()}</SelectContent>
             </Select>
@@ -167,12 +250,12 @@ export function LlmProvidersTab() {
             <div className="flex flex-wrap gap-2">
               <Button
                 variant="outline"
-                onClick={handleLoadModels}
+                onClick={() => void loadModels()}
                 disabled={!canReachProvider || isLoadingModels}
               >
                 {isLoadingModels
                   ? t("settings.llm.models.loading")
-                  : t("settings.llm.models.load")}
+                  : t("settings.llm.models.refresh")}
               </Button>
               <Button
                 onClick={handleTestConnection}

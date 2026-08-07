@@ -4,6 +4,7 @@ import {
   AppSettings,
   AudioSettings,
   KeyboardShortcutSettings,
+  LlmProvider,
 } from "@/shared/types/settings";
 
 /**
@@ -20,9 +21,12 @@ export const defaultSettings: AppSettings = {
   },
   language: "en",
   llm: {
+    // No provider is assumed and no model is guessed: a hardcoded model id
+    // goes stale the moment the provider retires it, and it would be wrong
+    // for every provider but one. The settings tab loads the real list.
     baseUrl: "",
     apiKey: "",
-    model: "gpt-4o-mini",
+    model: "",
   },
   audio: {
     provider: "edge",
@@ -82,6 +86,28 @@ export const updateSettingsAtom = atom(
     set(settingsAtom, { ...get(settingsAtom), ...update });
   }
 );
+
+/**
+ * The model id that used to ship as the default. It was wrong for every
+ * provider but OpenAI and goes stale on its own, so an install that still
+ * carries it *and* was never configured gets it cleared - the settings tab
+ * loads the real list instead. A configured install is left alone, since
+ * there the value may well be a deliberate choice.
+ */
+const LEGACY_DEFAULT_MODEL = "gpt-4o-mini";
+
+export function normalizeLlmSettings(
+  value: Partial<LlmProvider> | undefined
+): LlmProvider {
+  const merged = { ...defaultSettings.llm, ...(value ?? {}) };
+  const untouched = !merged.apiKey.trim() && !merged.baseUrl.trim();
+
+  return {
+    ...merged,
+    model:
+      untouched && merged.model === LEGACY_DEFAULT_MODEL ? "" : merged.model,
+  };
+}
 
 /** Retire the old quick query default without touching custom bindings. */
 export function normalizeKeyboardSettings(
