@@ -356,7 +356,12 @@
         ]
       },
       "toast": {
-        "reset": "Keyboard shortcuts restored."
+        "reset": "Keyboard shortcuts restored.",
+        "copy_permission": "AIctionary needs permission to copy the selected text. Grant it under Privacy & Security → Automation, then try again.",
+        "copy_unavailable": "Could not copy the selected text from the active app.",
+        "copy_empty": "Nothing was selected, and the clipboard is empty.",
+        "open_settings": "Open settings",
+        "register_failed": "The system refused to register {{shortcut}} — it is probably already taken. Pick another one."
       }
     },
     "about": {

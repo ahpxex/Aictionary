@@ -103,6 +103,7 @@ pub fn run() {
             tts::list_edge_voices,
             // Shortcuts commands
             shortcuts::setup_shortcuts,
+            shortcuts::open_shortcut_permission_settings,
             // Tray commands
             set_tray_visibility,
         ])
