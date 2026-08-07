@@ -1,5 +1,13 @@
 import { createOpenAI } from "@ai-sdk/openai";
-import { APICallError, generateObject, NoObjectGeneratedError } from "ai";
+import {
+  APICallError,
+  generateObject,
+  NoObjectGeneratedError,
+  streamObject,
+  type DeepPartial,
+  type RepairTextFunction,
+  type LanguageModel,
+} from "ai";
 import { z } from "zod";
 import { DictionaryEntry } from "@/shared/types/dictionary";
 import { LlmProvider } from "@/shared/types/settings";
@@ -93,6 +101,7 @@ const RESPONSE_SCHEMA = z.object({
 });
 
 type ParsedGeneration = z.infer<typeof RESPONSE_SCHEMA>;
+type PartialGeneration = DeepPartial<ParsedGeneration>;
 
 type SanitizedConfig = {
   apiKey: string;
@@ -144,15 +153,44 @@ function sanitizeConfig(config: LlmProvider): SanitizedConfig {
   return { apiKey, baseURL, model };
 }
 
-/** Resolve the configured provider into a language model to call. */
-function createModel(config: LlmProvider) {
+/**
+ * Resolve the configured provider into the two candidate models.
+ *
+ * The AI SDK defaults to the Responses API (`/responses`), which is what
+ * OpenAI and DeepSeek both want: DeepSeek's `/chat/completions` rejects a
+ * json_schema response format outright ("This response_format type is
+ * unavailable now"). Plenty of other OpenAI-compatible servers implement
+ * only `/chat/completions`, though, so that stays available as a fallback
+ * for when `/responses` is not there at all.
+ */
+function createModels(config: LlmProvider) {
   const sanitized = sanitizeConfig(config);
   const provider = createOpenAI({
     apiKey: sanitized.apiKey,
     baseURL: sanitized.baseURL,
   });
 
-  return { model: provider(sanitized.model), modelId: sanitized.model };
+  return {
+    responses: provider(sanitized.model),
+    chat: provider.chat(sanitized.model),
+    modelId: sanitized.model,
+  };
+}
+
+/**
+ * Whether the provider simply does not serve the endpoint we tried, as
+ * opposed to rejecting the request on its merits. Only the former is worth
+ * retrying against the other API shape.
+ */
+function isMissingEndpoint(error: unknown): boolean {
+  if (!APICallError.isInstance(error)) {
+    return false;
+  }
+  if (error.statusCode === 404 || error.statusCode === 405) {
+    return true;
+  }
+  const message = error.message.toLowerCase();
+  return message.includes("not found") || message.includes("unknown endpoint");
 }
 
 function normalizeLlmError(error: unknown, fallback = "LLM request failed") {
@@ -318,6 +356,68 @@ export async function testLlmConnection(config: LlmProvider) {
   await fetchAvailableModels(config);
 }
 
+/**
+ * A dictionary entry taking shape, as it arrives.
+ *
+ * Generation runs long enough - tens of seconds - that showing nothing but a
+ * spinner is its own problem, so the wire-level partial is mapped into this
+ * lean shape for the UI to render progressively. Everything is optional
+ * because any field may still be mid-flight.
+ */
+export type GenerationPreview = {
+  headword?: string;
+  headwordSummary?: string;
+  memoryHook?: string;
+  studyNotes: string[];
+  posGroups: {
+    pos?: string;
+    summary?: string;
+    meanings: { shortGloss?: string; learnerExplanation?: string }[];
+  }[];
+};
+
+function toPreview(partial: PartialGeneration): GenerationPreview {
+  return {
+    headword: partial?.headword,
+    headwordSummary: partial?.headword_summary,
+    memoryHook: partial?.memory_hook,
+    studyNotes: (partial?.study_notes ?? []).filter(
+      (note): note is string => Boolean(note)
+    ),
+    posGroups: (partial?.pos_groups ?? []).map((group) => ({
+      pos: group?.pos,
+      summary: group?.summary,
+      meanings: (group?.meanings ?? []).map((meaning) => ({
+        shortGloss: meaning?.short_gloss,
+        learnerExplanation: meaning?.learner_explanation,
+      })),
+    })),
+  };
+}
+
+/**
+ * Rescue a response that arrived wrapped in a markdown fence.
+ *
+ * Providers that honour the JSON schema most of the time still drop out of
+ * structured mode occasionally - DeepSeek does this on this schema roughly
+ * one run in three - and answer with ```json … ``` instead. The payload
+ * inside is valid, so unwrap it rather than failing the whole generation.
+ * Returning null hands the original error back unchanged.
+ */
+const repairText: RepairTextFunction = async ({ text }) => {
+  const fenced = /^\s*```(?:json)?\s*\n([\s\S]*?)\n?\s*```\s*$/.exec(text);
+  return fenced ? fenced[1] : null;
+};
+
+const GENERATION_REQUEST = {
+  schema: RESPONSE_SCHEMA,
+  schemaName: "dictionary_entry",
+  schemaDescription: "A bilingual dictionary entry for one English headword.",
+  temperature: 0.1,
+  system: SYSTEM_PROMPT,
+  repairText,
+} as const;
+
 export async function generateDefinitionFromLlm(
   word: string,
   config: LlmProvider
@@ -327,20 +427,28 @@ export async function generateDefinitionFromLlm(
     throw new LlmServiceError("Word is required.");
   }
 
-  try {
-    const { model } = createModel(config);
-    const { object } = await generateObject({
-      model,
-      schema: RESPONSE_SCHEMA,
-      schemaName: "dictionary_entry",
-      schemaDescription:
-        "A bilingual dictionary entry for one English headword.",
-      temperature: 0.1,
-      system: SYSTEM_PROMPT,
-      prompt: trimmed,
-    });
+  const models = createModels(config);
 
-    return assembleUserEntry(object, trimmed);
+  try {
+    let result;
+    try {
+      result = await generateObject({
+        ...GENERATION_REQUEST,
+        model: models.responses,
+        prompt: trimmed,
+      });
+    } catch (error) {
+      if (!isMissingEndpoint(error)) {
+        throw error;
+      }
+      result = await generateObject({
+        ...GENERATION_REQUEST,
+        model: models.chat,
+        prompt: trimmed,
+      });
+    }
+
+    return assembleUserEntry(result.object, trimmed);
   } catch (error) {
     throw normalizeLlmError(
       error,
@@ -348,3 +456,55 @@ export async function generateDefinitionFromLlm(
     );
   }
 }
+
+/**
+ * Same as generateDefinitionFromLlm, but reports the entry as it builds up.
+ *
+ * `onPreview` fires for every partial the provider emits; the resolved value
+ * is the finished, validated entry. If the provider has no Responses
+ * endpoint the whole stream is restarted against chat completions - safe
+ * because that failure happens before any partial is emitted.
+ */
+export async function streamDefinitionFromLlm(
+  word: string,
+  config: LlmProvider,
+  onPreview: (preview: GenerationPreview) => void
+): Promise<DictionaryEntry> {
+  const trimmed = word.trim();
+  if (!trimmed) {
+    throw new LlmServiceError("Word is required.");
+  }
+
+  const models = createModels(config);
+
+  const run = async (model: LanguageModel) => {
+    const { partialObjectStream, object } = streamObject({
+      ...GENERATION_REQUEST,
+      model,
+      prompt: trimmed,
+    });
+
+    for await (const partial of partialObjectStream) {
+      onPreview(toPreview(partial));
+    }
+
+    return assembleUserEntry(await object, trimmed);
+  };
+
+  try {
+    try {
+      return await run(models.responses);
+    } catch (error) {
+      if (!isMissingEndpoint(error)) {
+        throw error;
+      }
+      return await run(models.chat);
+    }
+  } catch (error) {
+    throw normalizeLlmError(
+      error,
+      "Unable to generate a definition with the configured model."
+    );
+  }
+}
+

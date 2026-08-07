@@ -2,10 +2,18 @@ import { useTranslation } from "react-i18next";
 import { useDictionarySearch } from "@/features/main/hooks/use-dictionary-search";
 import { EntryView } from "@/features/main/components/entry-view";
 import { ScrollRegion } from "@/shared/components/scroll-region";
+import { GenerationPreviewPanel } from "@/features/main/components/generation-preview";
 
 export function MainPage() {
   const { t } = useTranslation();
-  const { isGeneratingFromLlm, generatingModel, result, search } = useDictionarySearch();
+  const {
+    isGeneratingFromLlm,
+    generatingModel,
+    generatingWord,
+    generationPreview,
+    result,
+    search,
+  } = useDictionarySearch();
 
   return (
     <ScrollRegion className="min-h-0 flex-1">
@@ -20,12 +28,11 @@ export function MainPage() {
         )}
 
         {isGeneratingFromLlm && (
-          <div className="flex flex-col items-center justify-center gap-4 py-12">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-            <p className="text-muted-foreground text-sm">
-              {t("main.llm.generating_status", { model: generatingModel })}
-            </p>
-          </div>
+          <GenerationPreviewPanel
+            word={generatingWord ?? ""}
+            model={generatingModel}
+            preview={generationPreview}
+          />
         )}
 
         {result && !isGeneratingFromLlm && (

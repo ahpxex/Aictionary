@@ -7,6 +7,8 @@ import {
   isSearchingAtom,
   isGeneratingFromLlmAtom,
   generatingModelAtom,
+  generationPreviewAtom,
+  generatingWordAtom,
   queryHistoryAtom,
   setCurrentResultAtom,
 } from "@/shared/state/dictionary";
@@ -17,7 +19,7 @@ import {
   writeDictionaryEntry,
 } from "@/shared/services/dictionary-service";
 import {
-  generateDefinitionFromLlm,
+  streamDefinitionFromLlm,
   hasLlmCredentials,
   LlmServiceError,
 } from "@/shared/services/llm-service";
@@ -27,6 +29,8 @@ export function useDictionarySearch() {
   const [isSearching, setIsSearching] = useAtom(isSearchingAtom);
   const [isGeneratingFromLlm, setIsGeneratingFromLlm] = useAtom(isGeneratingFromLlmAtom);
   const [generatingModel, setGeneratingModel] = useAtom(generatingModelAtom);
+  const [generationPreview, setGenerationPreview] = useAtom(generationPreviewAtom);
+  const [generatingWord, setGeneratingWord] = useAtom(generatingWordAtom);
   const [history] = useAtom(queryHistoryAtom);
   const [result] = useAtom(currentResultAtom);
   const setResult = useSetAtom(setCurrentResultAtom);
@@ -65,12 +69,15 @@ export function useDictionarySearch() {
           // Clear existing result and show LLM generating state
           setResult({ result: null });
           setGeneratingModel(settings.llm.model);
+          setGeneratingWord(normalized);
+          setGenerationPreview(null);
           setIsGeneratingFromLlm(true);
 
           try {
-            const aiEntry = await generateDefinitionFromLlm(
+            const aiEntry = await streamDefinitionFromLlm(
               normalized,
-              settings.llm
+              settings.llm,
+              setGenerationPreview
             );
             setResult({
               result: { source: "user", entry: aiEntry },
@@ -98,7 +105,9 @@ export function useDictionarySearch() {
             toast.error(message);
           } finally {
             setIsGeneratingFromLlm(false);
+            setGenerationPreview(null);
             setGeneratingModel(null);
+            setGeneratingWord(null);
           }
           return;
         }
@@ -118,6 +127,8 @@ export function useDictionarySearch() {
       setIsSearching,
       setIsGeneratingFromLlm,
       setGeneratingModel,
+      setGeneratingWord,
+      setGenerationPreview,
       settings.dictionary.cachePath,
       settings.llm,
       t,
@@ -132,6 +143,8 @@ export function useDictionarySearch() {
     isSearching,
     isGeneratingFromLlm,
     generatingModel,
+    generatingWord,
+    generationPreview,
     history,
     result,
     search,

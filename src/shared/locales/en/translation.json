@@ -48,7 +48,8 @@
       "generating_status": "Generating definition via {{model}}…",
       "success": "Definition saved locally using {{model}}.",
       "error": "The AI provider couldn't produce a definition. Please try again later.",
-      "cache_error": "Definition shown, but writing to the cache failed. Check the directory permissions."
+      "cache_error": "Definition shown, but writing to the cache failed. Check the directory permissions.",
+      "generating_progress": "{{count}} meanings so far…"
     },
     "errors": {
       "dictionary": "Unable to query the dictionary. Please try again later."
