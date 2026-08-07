@@ -65,7 +65,6 @@ export type KeyboardShortcutSettings = {
 };
 
 export type AboutMetadata = {
-  version: string;
   build: string;
 };
 
@@ -76,6 +75,8 @@ export type SystemSettings = {
   launchOnSystemStart: boolean;
   /** Whether the app's dock / taskbar icon should be shown when the tray is enabled. */
   dockOrTaskbarVisible: boolean;
+  /** Whether to ask GitHub for a newer release when the app starts. */
+  checkUpdatesOnStart: boolean;
 };
 
 export type AppSettings = {

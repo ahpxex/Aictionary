@@ -56,13 +56,13 @@ export const defaultSettings: AppSettings = {
     enabled: true,
   },
   about: {
-    version: "3.0.0",
     build: "dev",
   },
   system: {
     trayIconEnabled: true,
     launchOnSystemStart: false,
     dockOrTaskbarVisible: true,
+    checkUpdatesOnStart: true,
   },
 };
 
