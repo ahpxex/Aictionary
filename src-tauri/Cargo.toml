@@ -1,8 +1,10 @@
 [package]
 name = "aictionary-re"
 version = "3.0.0"
-description = "A Tauri App"
-authors = ["you"]
+description = "A desktop dictionary with offline lookups and audio pronunciation"
+authors = ["ahpxex <AHpx@yandex.com>"]
+license = "MIT"
+repository = "https://github.com/ahpxex/Aictionary"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
