@@ -91,6 +91,9 @@ export function DictionaryTab() {
             count,
           })
         );
+      } else if (count === 0 && !lastUpdated) {
+        // Nothing was ever downloaded – that is not a damaged cache.
+        toast.info(t("settings.dictionary.toast.check_missing"));
       } else {
         toast.warning(
           t("settings.dictionary.toast.check_incomplete", {
