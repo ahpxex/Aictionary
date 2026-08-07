@@ -222,13 +222,7 @@ GitHub Actions 会在 CI 中对 macOS / Windows / Linux 分别执行构建，并
 
 - **[linux.do](https://linux.do/)** —— 项目在社区发过帖，收到了大量真实使用中的反馈和功能建议，很多改进就是从那些帖子里的讨论来的。
 
-- **代码贡献者**
-
-  | | |
-  | :--- | :--- |
-  | [@linull24](https://github.com/linull24) | Linux 支持与 GitHub Actions 自动构建 |
-  | [@Lancelotmay](https://github.com/Lancelotmay) | 修复 Ubuntu 打包 |
-  | [@jinzhongjia](https://github.com/jinzhongjia) | Windows scoop 安装文档 |
+- **每一位提过 [issue](https://github.com/ahpxex/Aictionary/issues) 和 [PR](https://github.com/ahpxex/Aictionary/pulls) 的人** —— Linux 支持、打包修复、安装文档，以及那些只是认真描述清楚了一个 bug 的反馈。
 
 - 以及 [Tauri](https://tauri.app/)、[shadcn/ui](https://ui.shadcn.com/)、[Vercel AI SDK](https://ai-sdk.dev/) 等项目——应用的骨架建立在它们之上。
 
