@@ -6,6 +6,7 @@ import { AppearanceSync } from "@/app/appearance-sync";
 import { AudioSync } from "@/app/audio-sync";
 import { DictionaryCacheSync } from "@/app/dictionary-cache-sync";
 import { SystemSync } from "@/app/system-sync";
+import { UpdateCheckSync } from "@/app/update-check-sync";
 import { AnkiSync } from "@/app/anki-sync";
 
 export function AppProviders({ children }: PropsWithChildren) {
@@ -22,6 +23,7 @@ export function AppProviders({ children }: PropsWithChildren) {
         <AnkiSync />
         <DictionaryCacheSync />
         <SystemSync />
+        <UpdateCheckSync />
         {children}
         <Toaster position="bottom-center" />
       </NextThemeProvider>

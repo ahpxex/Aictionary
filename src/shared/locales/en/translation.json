@@ -374,6 +374,17 @@
           "environment": "Environment"
         }
       },
+      "updates": {
+        "title": "Updates",
+        "description": "Check GitHub for a newer release. Nothing is downloaded or installed automatically.",
+        "auto_label": "Check for updates on start",
+        "auto_helper": "When disabled, the app only looks for a new release when you ask it to.",
+        "check_now": "Check now",
+        "up_to_date": "You are on the latest release.",
+        "failed": "Could not reach GitHub.",
+        "available": "{{version}} is available",
+        "view": "View release"
+      },
       "resources": {
         "title": "Resources",
         "tauri": "Tauri documentation",

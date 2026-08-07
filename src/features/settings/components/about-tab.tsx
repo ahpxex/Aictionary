@@ -1,25 +1,32 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { openUrl } from "@tauri-apps/plugin-opener";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Section } from "@/shared/components/section";
+import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { useSettings } from "@/features/settings/hooks/use-settings";
+import { useUpdateCheck } from "@/shared/hooks/use-update-check";
 import { getName, getVersion } from "@tauri-apps/api/app";
 
 export function AboutTab() {
   const { t } = useTranslation();
-  const { settings } = useSettings();
-  const [appVersion, setAppVersion] = useState(settings.about.version);
+  const { settings, updateSystem } = useSettings();
+  // The bundle is the only source of the version; there is no local copy to
+  // fall back to, so this stays empty until Tauri answers.
+  const [appVersion, setAppVersion] = useState("");
   const [appName, setAppName] = useState("AIctionary");
+  const update = useUpdateCheck();
 
   useEffect(() => {
     getVersion()
       .then(setAppVersion)
-      .catch(() => setAppVersion(settings.about.version));
+      .catch(() => setAppVersion(""));
     getName()
       .then(setAppName)
       .catch(() => setAppName("AIctionary"));
-  }, [settings.about.version]);
+  }, []);
 
   return (
     <div className="flex flex-col">
@@ -35,7 +42,7 @@ export function AboutTab() {
               </TableRow>
               <TableRow>
                 <TableCell className="font-medium">{t("settings.about.info.table.version")}</TableCell>
-                <TableCell>{appVersion}</TableCell>
+                <TableCell>{appVersion || "—"}</TableCell>
               </TableRow>
               <TableRow>
                 <TableCell className="font-medium">{t("settings.about.info.table.build")}</TableCell>
@@ -48,6 +55,68 @@ export function AboutTab() {
             </TableBody>
           </Table>
         </Section>
+
+      <Section
+        title={t("settings.about.updates.title")}
+        description={t("settings.about.updates.description")}
+        contentClassName="grid gap-4"
+      >
+        <div className="flex items-center justify-between gap-4 rounded-lg border bg-muted/40 px-4 py-3">
+          <div className="space-y-1">
+            <p className="text-sm font-medium">
+              {t("settings.about.updates.auto_label")}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {t("settings.about.updates.auto_helper")}
+            </p>
+          </div>
+          <Switch
+            checked={settings.system.checkUpdatesOnStart}
+            onCheckedChange={(checked) =>
+              updateSystem({ checkUpdatesOnStart: checked })
+            }
+          />
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            variant="outline"
+            onClick={() => void update.check()}
+            disabled={update.status === "checking"}
+          >
+            {update.status === "checking" && (
+              <Loader2 className="size-4 animate-spin" />
+            )}
+            {t("settings.about.updates.check_now")}
+          </Button>
+
+          {update.status === "current" && (
+            <p className="text-muted-foreground text-sm">
+              {t("settings.about.updates.up_to_date")}
+            </p>
+          )}
+          {update.status === "error" && (
+            <p className="text-destructive text-sm">
+              {t("settings.about.updates.failed")}
+            </p>
+          )}
+          {update.status === "available" && update.latest && (
+            <Button
+              variant="link"
+              className="h-auto p-0"
+              onClick={() => {
+                void openUrl(update.latest!.htmlUrl).catch((error) => {
+                  console.warn("Failed to open the release page:", error);
+                });
+              }}
+            >
+              {t("settings.about.updates.available", {
+                version: update.latest.tag,
+              })}
+            </Button>
+          )}
+        </div>
+      </Section>
 
       <Section
         title={t("settings.about.resources.title")}

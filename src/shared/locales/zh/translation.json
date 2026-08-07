@@ -374,6 +374,17 @@
           "environment": "环境"
         }
       },
+      "updates": {
+        "title": "更新",
+        "description": "从 GitHub 检查是否有新版本。不会自动下载或安装任何内容。",
+        "auto_label": "启动时检查更新",
+        "auto_helper": "关闭后，只有你手动点击时才会检查新版本。",
+        "check_now": "立即检查",
+        "up_to_date": "已经是最新版本。",
+        "failed": "无法连接到 GitHub。",
+        "available": "有新版本 {{version}}",
+        "view": "查看版本"
+      },
       "resources": {
         "title": "资源",
         "tauri": "Tauri 文档",

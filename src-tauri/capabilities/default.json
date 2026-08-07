@@ -12,6 +12,7 @@
     "dialog:allow-open",
     "dialog:allow-save",
     "opener:allow-open-path",
+    "opener:allow-open-url",
     "opener:allow-reveal-item-in-dir",
     "autostart:default",
     "mcp-bridge:default",

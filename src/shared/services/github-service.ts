@@ -8,6 +8,7 @@ interface GitHubRelease {
   tag_name: string;
   name: string;
   published_at: string;
+  html_url: string;
   assets: GitHubAsset[];
 }
 
@@ -24,6 +25,45 @@ export interface DictionaryReleaseInfo {
 
 const GITHUB_REPO_OWNER = "ahpxex";
 const GITHUB_REPO_NAME = "open-dictionary";
+/** The app's own repository, where its releases are published. */
+const APP_REPO_NAME = "Aictionary";
+
+export interface AppReleaseInfo {
+  /** The tag verbatim, e.g. "v3.1.0". */
+  tag: string;
+  /** Human-readable release title. */
+  name: string;
+  publishedAt: string;
+  /** The release page, for sending the user somewhere they can download it. */
+  htmlUrl: string;
+}
+
+/**
+ * Fetch the latest published release of the app itself.
+ *
+ * This only reports what is available; nothing is downloaded or installed.
+ * GitHub's "latest" endpoint already skips drafts and pre-releases.
+ */
+export async function getLatestAppRelease(): Promise<AppReleaseInfo> {
+  const response = await fetch(
+    `https://api.github.com/repos/${GITHUB_REPO_OWNER}/${APP_REPO_NAME}/releases/latest`
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to fetch latest app release: ${response.status} ${response.statusText}`
+    );
+  }
+
+  const release: GitHubRelease = await response.json();
+
+  return {
+    tag: release.tag_name,
+    name: release.name || release.tag_name,
+    publishedAt: release.published_at,
+    htmlUrl: release.html_url,
+  };
+}
 
 /**
  * Release asset names of the open-dictionary v2.0 distribution contract.
