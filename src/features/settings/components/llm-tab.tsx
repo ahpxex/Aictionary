@@ -16,8 +16,11 @@ import { useSettings } from "@/features/settings/hooks/use-settings";
 import {
   CUSTOM_PROVIDER_ID,
   LLM_PROVIDER_PRESETS,
-  presetIdForBaseUrl,
 } from "@/shared/lib/llm-providers";
+import {
+  credentialsForProvider,
+  resolveActiveLlmProvider,
+} from "@/shared/state/settings";
 import {
   fetchAvailableModels,
   LlmModelSummary,
@@ -33,21 +36,40 @@ export function LlmProvidersTab() {
   const [models, setModels] = useState<LlmModelSummary[]>([]);
   const [hasLoadedModels, setHasLoadedModels] = useState(false);
 
+  // The selected provider and the credentials filed under it. Switching
+  // providers swaps both, so a key is never sent to the wrong endpoint.
+  const presetId = settings.llm.providerId;
+  const credentials = credentialsForProvider(settings.llm, presetId);
+  const activeProvider = resolveActiveLlmProvider(settings.llm);
+
+  const selectedProviderLabel =
+    LLM_PROVIDER_PRESETS.find((preset) => preset.id === presetId)?.label ??
+    t("settings.llm.provider.custom");
+
   const credentialFingerprint = useMemo(
-    () => `${settings.llm.baseUrl}::${settings.llm.apiKey}`,
-    [settings.llm.baseUrl, settings.llm.apiKey]
+    () => `${activeProvider.baseUrl}::${activeProvider.apiKey}`,
+    [activeProvider.baseUrl, activeProvider.apiKey]
   );
 
-  const canReachProvider = Boolean(settings.llm.apiKey.trim());
+  const canReachProvider = Boolean(credentials.apiKey.trim());
 
-  // Picking a provider should just show its models. The fingerprint covers
-  // both halves of the credentials, and the delay keeps a key being typed
-  // character by character from firing a request per keystroke.
+  const updateCredentials = (changes: Partial<typeof credentials>) => {
+    updateLlm((prev) => ({
+      ...prev,
+      credentials: {
+        ...prev.credentials,
+        [presetId]: { ...credentialsForProvider(prev, presetId), ...changes },
+      },
+    }));
+  };
+
+  // Picking a provider should just show its models. The delay keeps a key
+  // being typed character by character from firing a request per keystroke.
   useEffect(() => {
     setModels([]);
     setHasLoadedModels(false);
 
-    if (!settings.llm.apiKey.trim()) {
+    if (!activeProvider.apiKey.trim()) {
       return;
     }
 
@@ -63,24 +85,11 @@ export function LlmProvidersTab() {
     // loadModels reads the same credentials this effect keys on.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [credentialFingerprint]);
-  // Derived rather than stored: the base URL stays the single source of
-  // truth, so a hand-typed URL that matches a preset still selects it.
-  const presetId = presetIdForBaseUrl(settings.llm.baseUrl);
-  const selectedProviderLabel =
-    LLM_PROVIDER_PRESETS.find((preset) => preset.id === presetId)?.label ??
-    t("settings.llm.provider.custom");
 
   const handlePresetChange = (value: string) => {
-    if (value === CUSTOM_PROVIDER_ID) {
-      updateLlm({ baseUrl: "" });
-      return;
-    }
-    const preset = LLM_PROVIDER_PRESETS.find((item) => item.id === value);
-    if (preset) {
-      // The model list belongs to the old provider; drop it so the picker
-      // cannot offer a model the new endpoint has never heard of.
-      updateLlm({ baseUrl: preset.baseUrl, model: "" });
-    }
+    // Only the selection moves: each provider keeps its own key and model,
+    // so switching back finds them still there.
+    updateLlm((prev) => ({ ...prev, providerId: value }));
   };
 
   const loadModels = async (options?: {
@@ -92,7 +101,7 @@ export function LlmProvidersTab() {
 
     setIsLoadingModels(true);
     try {
-      const list = await fetchAvailableModels(settings.llm);
+      const list = await fetchAvailableModels(activeProvider);
       if (cancelled()) {
         return;
       }
@@ -101,9 +110,9 @@ export function LlmProvidersTab() {
 
       if (
         list.length > 0 &&
-        !list.some((model) => model.id === settings.llm.model.trim())
+        !list.some((model) => model.id === credentials.model.trim())
       ) {
-        updateLlm({ model: list[0].id });
+        updateCredentials({ model: list[0].id });
       }
 
       if (!options?.silent) {
@@ -137,7 +146,7 @@ export function LlmProvidersTab() {
 
     setIsTesting(true);
     try {
-      await testLlmConnection(settings.llm);
+      await testLlmConnection(activeProvider);
       toast.success(t("settings.llm.toast.success"));
     } catch (error) {
       console.warn(error);
@@ -162,12 +171,12 @@ export function LlmProvidersTab() {
     ));
 
     if (
-      settings.llm.model &&
-      !models.some((model) => model.id === settings.llm.model)
+      credentials.model &&
+      !models.some((model) => model.id === credentials.model)
     ) {
       items.push(
-        <SelectItem key="custom-model" value={settings.llm.model}>
-          {t("settings.llm.model.custom", { model: settings.llm.model })}
+        <SelectItem key="custom-model" value={credentials.model}>
+          {t("settings.llm.model.custom", { model: credentials.model })}
         </SelectItem>
       );
     }
@@ -213,9 +222,12 @@ export function LlmProvidersTab() {
               <Input
                 id="llm-base-url"
                 placeholder={t("settings.llm.base_url.placeholder")}
-                value={settings.llm.baseUrl}
+                value={settings.llm.customBaseUrl}
                 onChange={(event) =>
-                  updateLlm({ baseUrl: event.target.value.trim() })
+                  updateLlm((prev) => ({
+                    ...prev,
+                    customBaseUrl: event.target.value.trim(),
+                  }))
                 }
               />
             </div>
@@ -226,20 +238,20 @@ export function LlmProvidersTab() {
               id="llm-api-key"
               type="password"
               placeholder={t("settings.llm.api_key.placeholder")}
-              value={settings.llm.apiKey}
-              onChange={(event) => updateLlm({ apiKey: event.target.value })}
+              value={credentials.apiKey}
+              onChange={(event) => updateCredentials({ apiKey: event.target.value })}
             />
           </div>
           <div className="grid gap-2">
             <Label htmlFor="llm-model">{t("settings.llm.model.label")}</Label>
             <Select
-              value={settings.llm.model}
-              onValueChange={(value) => updateLlm({ model: value })}
-              disabled={models.length === 0 && !settings.llm.model}
+              value={credentials.model}
+              onValueChange={(value) => updateCredentials({ model: value })}
+              disabled={models.length === 0 && !credentials.model}
             >
               <SelectTrigger id="llm-model" className="w-full">
                 <SelectValue placeholder={t("settings.llm.model.placeholder")}>
-                  {settings.llm.model}
+                  {credentials.model}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>{renderModelItems()}</SelectContent>

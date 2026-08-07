@@ -24,9 +24,25 @@ export function GenerationPreviewPanel({
 }: GenerationPreviewProps) {
   const { t } = useTranslation();
 
-  const headword = preview?.headword?.trim() || word;
+  const headword = preview?.headword?.trim() ?? "";
   const meaningCount =
     preview?.posGroups.reduce((total, group) => total + group.meanings.length, 0) ?? 0;
+
+  // Nothing has come back yet. Showing the headword now would plant a
+  // finished-looking title above an empty page for the twenty-odd seconds
+  // the provider spends before its first token, so hold the whole thing as
+  // one centred waiting state until there is something to put under it.
+  if (!headword && !preview?.headwordSummary) {
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center gap-3 py-24">
+        <Loader2 className="size-5 animate-spin text-muted-foreground" />
+        <p className="text-sm text-muted-foreground">
+          {t("main.llm.generating_status", { model: model ?? "" })}
+        </p>
+        <p className="text-xs text-muted-foreground/70">{word}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6 py-8">
@@ -38,7 +54,7 @@ export function GenerationPreviewPanel({
       </div>
 
       <div className="space-y-2">
-        <p className="text-4xl font-bold tracking-tight">{headword}</p>
+        <p className="text-4xl font-bold tracking-tight">{headword || word}</p>
         {preview?.headwordSummary && (
           <p className="text-muted-foreground text-base">
             {preview.headwordSummary}

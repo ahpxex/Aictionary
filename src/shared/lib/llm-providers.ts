@@ -57,3 +57,15 @@ export function presetIdForBaseUrl(baseUrl: string): string {
   );
   return match ? match.id : CUSTOM_PROVIDER_ID;
 }
+
+/** Base URL for a provider id, given the custom endpoint the user typed. */
+export function baseUrlForProvider(
+  providerId: string,
+  customBaseUrl: string
+): string {
+  if (providerId === CUSTOM_PROVIDER_ID) {
+    return customBaseUrl.trim();
+  }
+  const preset = LLM_PROVIDER_PRESETS.find((item) => item.id === providerId);
+  return preset ? preset.baseUrl : customBaseUrl.trim();
+}

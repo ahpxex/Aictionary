@@ -12,7 +12,10 @@ import {
   queryHistoryAtom,
   setCurrentResultAtom,
 } from "@/shared/state/dictionary";
-import { settingsAtom } from "@/shared/state/settings";
+import {
+  resolveActiveLlmProvider,
+  settingsAtom,
+} from "@/shared/state/settings";
 import {
   queryDictionary,
   DictionaryQueryError,
@@ -61,14 +64,15 @@ export function useDictionarySearch() {
             return;
           }
 
-          if (!hasLlmCredentials(settings.llm)) {
+          const llm = resolveActiveLlmProvider(settings.llm);
+          if (!hasLlmCredentials(llm)) {
             toast.error(t("main.llm.missing_config"));
             return;
           }
 
           // Clear existing result and show LLM generating state
           setResult({ result: null });
-          setGeneratingModel(settings.llm.model);
+          setGeneratingModel(llm.model);
           setGeneratingWord(normalized);
           setGenerationPreview(null);
           setIsGeneratingFromLlm(true);
@@ -76,7 +80,7 @@ export function useDictionarySearch() {
           try {
             const aiEntry = await streamDefinitionFromLlm(
               normalized,
-              settings.llm,
+              llm,
               setGenerationPreview
             );
             setResult({
@@ -84,7 +88,7 @@ export function useDictionarySearch() {
               word: normalized,
             });
             toast.success(
-              t("main.llm.success", { model: settings.llm.model })
+              t("main.llm.success", { model: llm.model })
             );
             try {
               await writeDictionaryEntry(

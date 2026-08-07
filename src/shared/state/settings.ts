@@ -5,7 +5,13 @@ import {
   AudioSettings,
   KeyboardShortcutSettings,
   LlmProvider,
+  LlmProviderCredentials,
+  LlmSettings,
 } from "@/shared/types/settings";
+import {
+  baseUrlForProvider,
+  presetIdForBaseUrl,
+} from "@/shared/lib/llm-providers";
 
 /**
  * The original quick query default. A global hotkey outranks the focused
@@ -24,9 +30,9 @@ export const defaultSettings: AppSettings = {
     // No provider is assumed and no model is guessed: a hardcoded model id
     // goes stale the moment the provider retires it, and it would be wrong
     // for every provider but one. The settings tab loads the real list.
-    baseUrl: "",
-    apiKey: "",
-    model: "",
+    providerId: "openai",
+    customBaseUrl: "",
+    credentials: {},
   },
   audio: {
     provider: "edge",
@@ -90,22 +96,73 @@ export const updateSettingsAtom = atom(
 /**
  * The model id that used to ship as the default. It was wrong for every
  * provider but OpenAI and goes stale on its own, so an install that still
- * carries it *and* was never configured gets it cleared - the settings tab
- * loads the real list instead. A configured install is left alone, since
- * there the value may well be a deliberate choice.
+ * carries it is treated as never configured.
  */
 const LEGACY_DEFAULT_MODEL = "gpt-4o-mini";
 
+/** The shape credentials were stored in before they were per-provider. */
+type LegacyLlmSettings = {
+  baseUrl?: string;
+  apiKey?: string;
+  model?: string;
+};
+
+/**
+ * Move a single shared credential set onto the provider it belonged to.
+ *
+ * One key for every provider was always wrong - they are different accounts
+ * at different companies - so the stored pair is filed under whichever
+ * provider the old base URL pointed at, and the rest start empty.
+ */
 export function normalizeLlmSettings(
-  value: Partial<LlmProvider> | undefined
-): LlmProvider {
-  const merged = { ...defaultSettings.llm, ...(value ?? {}) };
-  const untouched = !merged.apiKey.trim() && !merged.baseUrl.trim();
+  value: (Partial<LlmSettings> & LegacyLlmSettings) | undefined
+): LlmSettings {
+  const defaults = defaultSettings.llm;
+  if (!value || typeof value !== "object") {
+    return { ...defaults, credentials: {} };
+  }
+
+  if (!("credentials" in value) || !value.credentials) {
+    const apiKey = typeof value.apiKey === "string" ? value.apiKey : "";
+    const baseUrl = typeof value.baseUrl === "string" ? value.baseUrl : "";
+    const rawModel = typeof value.model === "string" ? value.model : "";
+    const model = rawModel === LEGACY_DEFAULT_MODEL ? "" : rawModel;
+    const providerId = baseUrl.trim()
+      ? presetIdForBaseUrl(baseUrl)
+      : defaults.providerId;
+
+    return {
+      providerId,
+      customBaseUrl: providerId === "custom" ? baseUrl : "",
+      credentials: apiKey || model ? { [providerId]: { apiKey, model } } : {},
+    };
+  }
 
   return {
-    ...merged,
-    model:
-      untouched && merged.model === LEGACY_DEFAULT_MODEL ? "" : merged.model,
+    providerId: value.providerId || defaults.providerId,
+    customBaseUrl: value.customBaseUrl ?? "",
+    credentials: value.credentials,
+  };
+}
+
+/** The credentials stored for one provider, defaulting to empty. */
+export function credentialsForProvider(
+  llm: LlmSettings,
+  providerId: string
+): LlmProviderCredentials {
+  return llm.credentials[providerId] ?? { apiKey: "", model: "" };
+}
+
+/**
+ * Flatten the stored settings into the single provider config the LLM
+ * service calls: the selected provider's URL plus its own credentials.
+ */
+export function resolveActiveLlmProvider(llm: LlmSettings): LlmProvider {
+  const credentials = credentialsForProvider(llm, llm.providerId);
+  return {
+    baseUrl: baseUrlForProvider(llm.providerId, llm.customBaseUrl),
+    apiKey: credentials.apiKey,
+    model: credentials.model,
   };
 }
 

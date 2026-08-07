@@ -4,10 +4,26 @@ export type ThemePreference = {
 
 export type LanguagePreference = "en" | "zh";
 
+/** The flattened config the LLM service actually calls a provider with. */
 export type LlmProvider = {
   baseUrl: string;
   apiKey: string;
   model: string;
+};
+
+/** What is remembered per provider. Keys are never shared between them. */
+export type LlmProviderCredentials = {
+  apiKey: string;
+  model: string;
+};
+
+export type LlmSettings = {
+  /** Preset id from `llm-providers.ts`, or "custom". */
+  providerId: string;
+  /** Endpoint for the custom provider; presets carry their own. */
+  customBaseUrl: string;
+  /** Credentials per provider id, so switching never loses a key. */
+  credentials: Record<string, LlmProviderCredentials>;
 };
 
 export type TtsProviderKind = "edge" | "fish" | "openai" | "elevenlabs";
@@ -88,7 +104,7 @@ export type SystemSettings = {
 export type AppSettings = {
   theme: ThemePreference;
   language: LanguagePreference;
-  llm: LlmProvider;
+  llm: LlmSettings;
   audio: AudioSettings;
   anki: AnkiSettings;
   dictionary: DictionarySettings;
