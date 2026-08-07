@@ -136,3 +136,15 @@
     overscroll-behavior: none;
   }
 }
+
+@layer components {
+  /* The platform bar is suppressed here; ScrollRegion draws the mark instead.
+     Both declarations are needed - engines that honour the standard property
+     ignore the pseudo-element, and the older ones do the reverse. */
+  .scroll-region {
+    scrollbar-width: none;
+  }
+  .scroll-region::-webkit-scrollbar {
+    display: none;
+  }
+}

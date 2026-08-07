@@ -2,9 +2,9 @@ import { ComponentType } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router";
 import { cn } from "@/lib/utils";
+import { ScrollRegion } from "@/shared/components/scroll-region";
 import { AppearanceTab } from "@/features/settings/components/appearance-tab";
 import { AudioTab } from "@/features/settings/components/audio-tab";
-import { LlmProvidersTab } from "@/features/settings/components/llm-tab";
 import { DictionaryTab } from "@/features/settings/components/dictionary-tab";
 import { KeyboardTab } from "@/features/settings/components/keyboard-tab";
 import { AboutTab } from "@/features/settings/components/about-tab";
@@ -12,7 +12,6 @@ import { AnkiTab } from "@/features/settings/components/anki-tab";
 
 const tabs = [
   { value: "appearance", labelKey: "settings.tabs.appearance" },
-  { value: "llm", labelKey: "settings.tabs.llm" },
   { value: "audio", labelKey: "settings.tabs.audio" },
   { value: "anki", labelKey: "settings.tabs.anki" },
   { value: "dictionary", labelKey: "settings.tabs.dictionary" },
@@ -24,7 +23,6 @@ type SettingsTabValue = (typeof tabs)[number]["value"];
 
 const TAB_COMPONENTS: Record<SettingsTabValue, ComponentType> = {
   appearance: AppearanceTab,
-  llm: LlmProvidersTab,
   audio: AudioTab,
   anki: AnkiTab,
   dictionary: DictionaryTab,
@@ -51,11 +49,15 @@ export function SettingsPage() {
 
   const ActiveTab = TAB_COMPONENTS[currentTab];
 
+  // The directory and the spine stay put for the full height of the window;
+  // only the panel to the right of the spine scrolls. That panel runs all the
+  // way to the window edge so its scrollbar rides the edge like every other
+  // page's, with the panel's own gutter carried by the content inside it.
   return (
-    <div className="grid flex-1 grid-cols-[10rem_1fr] items-start">
+    <div className="grid min-h-0 flex-1 grid-cols-[10rem_1fr] grid-rows-[1fr] pl-6">
       {/* Section directory: right-aligned labels against the spine, the
           active entry marked by a tick crossing it. */}
-      <nav className="sticky top-8 flex flex-col py-1" aria-label={t("nav.settings")}>
+      <nav className="flex flex-col py-8" aria-label={t("nav.settings")}>
         {tabs.map((tab) => {
           const isActive = tab.value === currentTab;
           return (
@@ -81,9 +83,11 @@ export function SettingsPage() {
           );
         })}
       </nav>
-      <div className="min-h-[60vh] border-l border-border py-1 pl-8">
-        <ActiveTab />
-      </div>
+      <ScrollRegion className="min-h-0 border-l border-border">
+        <div className="max-w-4xl py-8 pl-8 pr-6">
+          <ActiveTab />
+        </div>
+      </ScrollRegion>
     </div>
   );
 }

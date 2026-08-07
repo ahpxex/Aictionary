@@ -15,6 +15,7 @@
     "opener:allow-reveal-item-in-dir",
     "autostart:default",
     "mcp-bridge:default",
-    "core:window:allow-set-background-color"
+    "core:window:allow-set-background-color",
+    "core:window:allow-set-theme"
   ]
 }

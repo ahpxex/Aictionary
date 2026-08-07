@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { AggregatedMetrics } from "@/features/statistics/components/aggregated-metrics";
 import { TopWordsTable } from "@/features/statistics/components/top-words-table";
 import { useStatistics } from "@/features/statistics/hooks/use-statistics";
+import { ScrollRegion } from "@/shared/components/scroll-region";
 
 export function StatisticsPage() {
   const { t } = useTranslation();
@@ -50,42 +51,44 @@ export function StatisticsPage() {
   ];
 
   return (
-    <div className="flex flex-1 flex-col gap-10">
-      {/* Overview: three oversized figures separated by hairlines. */}
-      <div className="grid grid-cols-3 border-y border-border">
-        {overview.map((item, index) => (
-          <div
-            key={item.id}
-            className={`flex flex-col gap-2 py-6 ${
-              index > 0 ? "border-l border-border pl-6" : ""
-            } ${index < overview.length - 1 ? "pr-6" : ""}`}
-          >
-            <span className="text-[0.65rem] font-medium uppercase tracking-[0.15em] text-muted-foreground">
-              {item.label}
-            </span>
-            <span className="break-words text-5xl font-bold leading-none tracking-tighter tabular-nums">
-              {item.value}
-            </span>
-            <span className="text-sm text-muted-foreground">{item.hint}</span>
-          </div>
-        ))}
-      </div>
+    <ScrollRegion className="min-h-0 flex-1">
+      <div className="mx-auto flex min-h-full w-full max-w-6xl flex-col gap-10 px-6 py-8">
+        {/* Overview: three oversized figures separated by hairlines. */}
+        <div className="grid grid-cols-3 border-y border-border">
+          {overview.map((item, index) => (
+            <div
+              key={item.id}
+              className={`flex flex-col gap-2 py-6 ${
+                index > 0 ? "border-l border-border pl-6" : ""
+              } ${index < overview.length - 1 ? "pr-6" : ""}`}
+            >
+              <span className="text-[0.65rem] font-medium uppercase tracking-[0.15em] text-muted-foreground">
+                {item.label}
+              </span>
+              <span className="break-words text-5xl font-bold leading-none tracking-tighter tabular-nums">
+                {item.value}
+              </span>
+              <span className="text-sm text-muted-foreground">{item.hint}</span>
+            </div>
+          ))}
+        </div>
 
-      <div className="flex flex-wrap justify-end gap-3">
-        <Button onClick={exportLearnedWords}>
-          <Download className="mr-2 size-4" />
-          {t("statistics.export.learned_words")}
-        </Button>
-        <Button variant="outline" onClick={exportQueryMetrics}>
-          <FileText className="mr-2 size-4" />
-          {t("statistics.export.query_counts")}
-        </Button>
-      </div>
+        <div className="flex flex-wrap justify-end gap-3">
+          <Button onClick={exportLearnedWords}>
+            <Download className="mr-2 size-4" />
+            {t("statistics.export.learned_words")}
+          </Button>
+          <Button variant="outline" onClick={exportQueryMetrics}>
+            <FileText className="mr-2 size-4" />
+            {t("statistics.export.query_counts")}
+          </Button>
+        </div>
 
-      <div className="grid items-start gap-10 lg:grid-cols-[2fr_1fr]">
-        <AggregatedMetrics aggregates={snapshot.aggregates} onRemoveWord={removeWord} />
-        <TopWordsTable metrics={snapshot.queryMetrics} onRemoveWord={removeWord} />
+        <div className="grid items-start gap-10 lg:grid-cols-[2fr_1fr]">
+          <AggregatedMetrics aggregates={snapshot.aggregates} onRemoveWord={removeWord} />
+          <TopWordsTable metrics={snapshot.queryMetrics} onRemoveWord={removeWord} />
+        </div>
       </div>
-    </div>
+    </ScrollRegion>
   );
 }

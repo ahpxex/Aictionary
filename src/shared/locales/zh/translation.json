@@ -21,7 +21,8 @@
       "placeholder": "搜索单词…",
       "searching": "搜索中…",
       "button": "搜索",
-      "empty_error": "请输入要查询的单词。"
+      "empty_error": "请输入要查询的单词。",
+      "not_found": "词典中没有收录“{{word}}”。"
     },
     "history": {
       "title": "最近查询"
@@ -37,19 +38,6 @@
       },
       "button": "前往"
     },
-    "comparison": {
-      "title": "对比词汇",
-      "description": "了解相关单词之间的细微差别。"
-    },
-    "llm": {
-      "missing_config": "该单词不在本地缓存中，且尚未配置 AI 提供商。",
-      "missing_cache_path": "使用 AI 补齐前请先设置词典缓存路径。",
-      "generating": "正在通过 {{model}} 生成释义…",
-      "generating_status": "正在通过 {{model}} 生成释义…",
-      "success": "已使用 {{model}} 生成释义并写入本地缓存。",
-      "error": "AI 提供商暂时无法生成释义，请稍后重试。",
-      "cache_error": "释义已显示，但写入缓存失败。请检查目录权限。"
-    },
     "errors": {
       "dictionary": "无法查询词典，请稍后再试。"
     },
@@ -62,7 +50,6 @@
       "anki_success": "已保存卡片到 Anki。",
       "anki_error": "无法添加到 Anki，请稍后再试。",
       "anki_not_configured": "请先在 设置 → Anki 中配置 AnkiConnect 地址和牌组。",
-      "ai_generated": "AI 生成",
       "memory_hook": "记忆钩子",
       "study_notes": "学习要点",
       "etymology": "词源",
@@ -156,7 +143,6 @@
     "tabs": {
       "appearance": "外观",
       "language": "语言",
-      "llm": "大语言模型",
       "audio": "音频",
       "anki": "Anki",
       "dictionary": "词典",
@@ -187,45 +173,6 @@
       "options": {
         "en": "English",
         "zh": "简体中文"
-      }
-    },
-    "llm": {
-      "title": "提供商连接",
-      "description": "配置您的大语言模型端点的基础 URL 和身份验证。",
-      "models": {
-        "load": "加载模型列表",
-        "loading": "正在加载模型…",
-        "helper": "填写基础 URL 和 API 密钥后，从提供商加载可用模型。",
-        "empty": "提供商未返回模型，请检查设置。",
-        "missing_credentials": "请输入 API 密钥后再加载模型。"
-      },
-      "base_url": {
-        "label": "基础 URL",
-        "placeholder": "https://api.example.com"
-      },
-      "api_key": {
-        "label": "API 密钥",
-        "placeholder": "sk-..."
-      },
-      "model": {
-        "label": "模型",
-        "placeholder": "选择模型",
-        "custom": "自定义：{{model}}"
-      },
-      "test_connection": "测试连接",
-      "testing": "测试中…",
-      "tips": {
-        "title": "使用提示",
-        "description": "这些设置控制如何使用 AI 进行语义解释和比较。",
-        "tip1": "确保基础 URL 指向可从您的设备访问的网关。",
-        "tip2": "API 密钥仅存储在本地。定期轮换以确保安全。",
-        "tip3": "选择一个平衡准确性和延迟的模型以适应您的工作流程。"
-      },
-      "toast": {
-        "success": "提供商设置看起来不错！",
-        "error": "无法连接到提供商。请仔细检查基础 URL 和 API 密钥。",
-        "models_success": "已加载 {{count}} 个模型。",
-        "models_error": "无法获取模型列表，请检查凭据。"
       }
     },
     "audio": {
@@ -387,7 +334,6 @@
       },
       "metadata": {
         "entries": "词条数：",
-        "user_entries": "我的 AI 词条：",
         "schema": "数据契约：",
         "definition_language": "释义语言："
       }
