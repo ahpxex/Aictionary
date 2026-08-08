@@ -7,15 +7,11 @@
   ],
   "permissions": [
     "core:default",
-    "core:app:allow-set-dock-visibility",
-    "core:window:allow-set-skip-taskbar",
     "dialog:allow-open",
     "dialog:allow-save",
     "opener:allow-open-path",
     "opener:allow-open-url",
     "opener:allow-reveal-item-in-dir",
-    "autostart:default",
-    "mcp-bridge:default",
     "core:window:allow-set-background-color",
     "core:window:allow-set-theme"
   ]

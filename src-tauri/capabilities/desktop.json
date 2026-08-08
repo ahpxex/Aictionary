@@ -1,5 +1,7 @@
 {
+  "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "desktop-capability",
+  "description": "Permissions backed by plugins and window features that only exist on desktop",
   "platforms": [
     "macOS",
     "windows",
@@ -9,6 +11,9 @@
     "main"
   ],
   "permissions": [
-    "autostart:default"
+    "autostart:default",
+    "mcp-bridge:default",
+    "core:app:allow-set-dock-visibility",
+    "core:window:allow-set-skip-taskbar"
   ]
 }
