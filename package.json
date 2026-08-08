@@ -10,7 +10,7 @@
     "tauri": "tauri"
   },
   "dependencies": {
-    "@ai-sdk/openai": "^4.0.34",
+    "@ai-sdk/openai": "^4.0.36",
     "@hookform/resolvers": "^5.7.1",
     "@radix-ui/react-accordion": "^1.2.20",
     "@radix-ui/react-alert-dialog": "^1.1.23",
@@ -45,7 +45,7 @@
     "@tauri-apps/plugin-dialog": "^2.7.2",
     "@tauri-apps/plugin-global-shortcut": "^2.3.2",
     "@tauri-apps/plugin-opener": "^2.5.4",
-    "ai": "^7.0.56",
+    "ai": "^7.0.58",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
@@ -59,7 +59,7 @@
     "react": "^19.2.8",
     "react-day-picker": "^9.14.0",
     "react-dom": "^19.2.8",
-    "react-hook-form": "^7.84.0",
+    "react-hook-form": "^7.85.0",
     "react-i18next": "^16.6.6",
     "react-resizable-panels": "^3.0.6",
     "react-router": "^7.18.2",
