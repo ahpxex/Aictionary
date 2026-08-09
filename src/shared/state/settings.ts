@@ -73,6 +73,10 @@ export const defaultSettings: AppSettings = {
   about: {
     build: "dev",
   },
+  network: {
+    proxyMode: "auto",
+    proxyUrl: "",
+  },
   system: {
     trayIconEnabled: true,
     launchOnSystemStart: false,

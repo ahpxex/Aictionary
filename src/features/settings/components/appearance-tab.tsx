@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { isMobileHost } from "@/shared/lib/platform";
 import { Section } from "@/shared/components/section";
 import {
   Select,
@@ -84,6 +85,10 @@ export function AppearanceTab() {
           </div>
         </Section>
 
+      {/* A tray icon, a login item and a dock entry are things only a desktop
+          has. On Android the switches would toggle settings that no code can
+          act on, so the section is not offered there at all. */}
+      {!isMobileHost() && (
       <Section
         title={t("settings.appearance.desktop.title")}
         description={t("settings.appearance.desktop.description")}
@@ -129,6 +134,7 @@ export function AppearanceTab() {
             />
           </div>
         </Section>
+      )}
     </div>
   );
 }

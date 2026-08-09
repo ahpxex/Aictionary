@@ -20,9 +20,9 @@ export function MainPage() {
 
   return (
     <ScrollRegion className="min-h-0 flex-1">
-      <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col px-6 py-8">
+      <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col px-4 py-6 md:px-6 md:py-8">
         {!result && !isGeneratingFromLlm && !nonsenseQuery && (
-          <div className="flex flex-1 flex-col items-center justify-center gap-2 py-24">
+          <div className="flex flex-1 flex-col items-center justify-center gap-2 py-16 text-center md:py-24">
             <p className="text-2xl font-bold tracking-tight text-muted-foreground/40">
               Aictionary
             </p>

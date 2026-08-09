@@ -1,5 +1,8 @@
 use serde::Serialize;
-use tauri::{AppHandle, Emitter, Manager, Runtime};
+use tauri::{AppHandle, Runtime};
+#[cfg(desktop)]
+use tauri::{Emitter, Manager};
+#[cfg(desktop)]
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
 /// Map one stored modifier token onto what the hotkey parser expects.
@@ -7,6 +10,7 @@ use tauri_plugin_clipboard_manager::ClipboardExt;
 /// Settings persist portable tokens so a config stays meaningful across
 /// platforms: `Mod` is the platform's primary accelerator (Command on macOS,
 /// Control elsewhere), while `Ctrl` and `Super` always mean the literal keys.
+#[cfg(desktop)]
 fn normalize_token(token: &str) -> String {
     match token.to_ascii_lowercase().as_str() {
         "mod" => if cfg!(target_os = "macos") { "Command" } else { "Control" }.to_string(),
@@ -24,6 +28,7 @@ fn normalize_token(token: &str) -> String {
 
 /// Normalize a stored accelerator such as `Mod+Shift+K` into the
 /// platform-specific form the global shortcut plugin can parse.
+#[cfg(desktop)]
 fn normalize_shortcut(shortcut: &str) -> String {
     shortcut
         .split('+')
@@ -38,6 +43,7 @@ fn normalize_shortcut(shortcut: &str) -> String {
 /// before it lets us press Command+C inside another app. The two denials are
 /// indistinguishable from the outside, so both map to `PermissionDenied` and
 /// the UI points at the one settings pane that fixes either.
+#[cfg(desktop)]
 #[derive(Debug, Clone, Copy, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum CopyFailure {
@@ -48,6 +54,7 @@ pub enum CopyFailure {
 /// Best-effort simulation of a copy shortcut (`Cmd+C` / `Ctrl+C`) in the
 /// currently active application so that the user's selection is placed
 /// on the clipboard before we read it.
+#[cfg(desktop)]
 fn simulate_copy_shortcut() -> Result<(), CopyFailure> {
     // macOS: use AppleScript to send Command+C to the frontmost app.
     #[cfg(target_os = "macos")]
@@ -127,6 +134,7 @@ fn simulate_copy_shortcut() -> Result<(), CopyFailure> {
 ///
 /// The window is raised either way; the payload only decides whether a
 /// lookup runs or the user gets told why nothing was picked up.
+#[cfg(desktop)]
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct QuickQueryPayload {
@@ -151,6 +159,7 @@ pub struct ShortcutSetupReport {
 /// `unminimize` has to come before `set_focus`: focusing a still-minimised
 /// window is a no-op, which used to leave the window restored but unfocused
 /// so the query bar never received the caret.
+#[cfg(desktop)]
 fn focus_main_window<R: Runtime>(app: &AppHandle<R>) {
     if let Some(window) = app.get_webview_window("main") {
         let _ = window.unminimize();
@@ -159,6 +168,7 @@ fn focus_main_window<R: Runtime>(app: &AppHandle<R>) {
     }
 }
 
+#[cfg(desktop)]
 #[tauri::command]
 pub async fn setup_shortcuts<R: Runtime>(
     app: AppHandle<R>,
@@ -253,6 +263,20 @@ pub async fn setup_shortcuts<R: Runtime>(
     Ok(report)
 }
 
+/// Mobile has no system-wide hotkey registry, so there is nothing to bind.
+/// The command still exists — the settings screen calls it unconditionally —
+/// and reports success with an empty error report.
+#[cfg(mobile)]
+#[tauri::command]
+pub async fn setup_shortcuts<R: Runtime>(
+    _app: AppHandle<R>,
+    _quick_query: String,
+    _new_query: String,
+    _enabled: bool,
+) -> Result<ShortcutSetupReport, String> {
+    Ok(ShortcutSetupReport::default())
+}
+
 /// Open the OS pane where the user grants the consent the quick query
 /// shortcut needs. Only macOS gates synthetic keystrokes this way.
 #[tauri::command]
@@ -273,7 +297,7 @@ pub fn open_shortcut_permission_settings() -> Result<(), String> {
     Ok(())
 }
 
-#[cfg(test)]
+#[cfg(all(test, desktop))]
 mod tests {
     use super::normalize_shortcut;
 

@@ -1,11 +1,14 @@
 use base64::{engine::general_purpose, Engine as _};
-use futures_util::StreamExt;
+use futures_util::{FutureExt, StreamExt};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::path::PathBuf;
+use std::time::Duration;
 use tauri::{AppHandle, Emitter, Manager};
 
 use crate::audio_cache::AudioCacheWriter;
+use crate::edge_tts;
+use crate::net::{http_client, resolve_proxy, ProxyMode};
 
 const FISH_TTS_URL: &str = "https://api.fish.audio/v1/tts";
 const ELEVENLABS_TTS_URL: &str = "https://api.elevenlabs.io/v1/text-to-speech";
@@ -35,6 +38,13 @@ pub struct TtsStreamArgs {
     pub normalize: Option<bool>,
     #[serde(default)]
     pub api_key: String,
+    /// How to find a proxy. Only Edge strictly needs it - the HTTP providers
+    /// already follow the platform - but honouring it everywhere keeps one
+    /// setting from meaning different things per provider.
+    #[serde(default)]
+    pub proxy_mode: ProxyMode,
+    #[serde(default)]
+    pub proxy_url: Option<String>,
 }
 
 /// Build the synthesis endpoint from a user-supplied base URL. Accepts a
@@ -84,11 +94,17 @@ pub struct EdgeVoice {
 
 /// List the voices offered by Microsoft Edge's read-aloud service so the
 /// settings UI can present a picker instead of free-text entry.
+///
+/// This one goes over plain HTTPS, which is why it keeps working on networks
+/// where synthesis itself cannot connect.
 #[tauri::command]
-pub async fn list_edge_voices() -> Result<Vec<EdgeVoice>, String> {
-    let voices = msedge_tts::voice::tokio_runtime::get_voices_list_async()
-        .await
-        .map_err(|err| format!("Failed to load Edge voices: {err}"))?;
+pub async fn list_edge_voices(
+    proxy_mode: Option<ProxyMode>,
+    proxy_url: Option<String>,
+) -> Result<Vec<EdgeVoice>, String> {
+    let mode = proxy_mode.unwrap_or_default();
+    let client = http_client(mode, proxy_url.as_deref())?;
+    let voices = edge_tts::list_voices(&client).await?;
 
     let mut result: Vec<EdgeVoice> = voices
         .into_iter()
@@ -112,34 +128,48 @@ pub async fn list_edge_voices() -> Result<Vec<EdgeVoice>, String> {
     Ok(result)
 }
 
+/// How long to wait for the Edge websocket before giving up.
+///
+/// A network that drops the upgrade instead of refusing it leaves the connect
+/// hanging forever, which the UI renders as a spinner that never resolves.
+/// Failing out loud is the only honest option.
+const EDGE_CONNECT_TIMEOUT: Duration = Duration::from_secs(15);
+
 /// Synthesize through Microsoft Edge's read-aloud service. Free, keyless,
 /// and therefore the app's zero-configuration default.
-async fn synthesize_edge(voice: &str, text: &str) -> Result<Vec<u8>, String> {
-    use msedge_tts::tts::client::tokio_runtime::connect_async;
-    use msedge_tts::tts::SpeechConfig;
+///
+/// The connection is the fragile part: some networks reset the websocket
+/// upgrade while leaving ordinary HTTPS to the same host alone, which is why
+/// the proxy travels all the way down here.
+async fn synthesize_edge(
+    voice: &str,
+    text: &str,
+    proxy: Option<&str>,
+) -> Result<Vec<u8>, String> {
+    let config = edge_tts::SpeechConfig::new(voice);
+    let connect = edge_tts::synthesize(&config, text, proxy);
 
-    let mut client = connect_async()
-        .await
-        .map_err(|err| format!("Failed to connect to Edge TTS: {err}"))?;
+    // A panic below would otherwise abandon this command's future without ever
+    // resolving it, leaving the caller waiting for an answer that cannot
+    // arrive - a spinner with no end rather than an error.
+    let guarded = std::panic::AssertUnwindSafe(connect).catch_unwind();
 
-    let config = SpeechConfig {
-        voice_name: voice.to_string(),
-        audio_format: "audio-24khz-48kbitrate-mono-mp3".to_string(),
-        pitch: 0,
-        rate: 0,
-        volume: 0,
-    };
-
-    let audio = client
-        .synthesize(text, &config)
-        .await
-        .map_err(|err| format!("Edge TTS synthesis failed: {err}"))?;
-
-    if audio.audio_bytes.is_empty() {
-        return Err("Edge TTS returned no audio.".to_string());
+    match tokio::time::timeout(EDGE_CONNECT_TIMEOUT, guarded).await {
+        Ok(Ok(result)) => result,
+        Ok(Err(panic)) => {
+            let detail = panic
+                .downcast_ref::<&str>()
+                .map(|s| (*s).to_string())
+                .or_else(|| panic.downcast_ref::<String>().cloned())
+                .unwrap_or_else(|| "unknown panic".to_string());
+            Err(format!("Edge TTS crashed: {detail}"))
+        }
+        Err(_) => Err(format!(
+            "Edge TTS did not respond within {}s. The network may be blocking the connection; \
+configure a proxy in Settings or pick another audio provider.",
+            EDGE_CONNECT_TIMEOUT.as_secs()
+        )),
     }
-
-    Ok(audio.audio_bytes)
 }
 
 /// Write a fully synthesized buffer to the cache and replay it through the
@@ -239,9 +269,12 @@ pub async fn start_tts_stream(app: AppHandle, args: TtsStreamArgs) -> Result<(),
         latency,
         normalize,
         api_key,
+        proxy_mode,
+        proxy_url,
     } = args;
 
     let resolved_api_key = api_key.trim().to_string();
+    let proxy = resolve_proxy(proxy_mode, proxy_url.as_deref());
     // Edge is the zero-configuration default, so an unspecified provider must
     // land there. Falling back to Fish would demand an API key the caller was
     // never asked for and read as "go configure something in Settings".
@@ -309,7 +342,7 @@ pub async fn start_tts_stream(app: AppHandle, args: TtsStreamArgs) -> Result<(),
             .filter(|value| !value.is_empty())
             .unwrap_or(DEFAULT_EDGE_VOICE);
 
-        let audio = match synthesize_edge(edge_voice, &normalized_text).await {
+        let audio = match synthesize_edge(edge_voice, &normalized_text, proxy.as_deref()).await {
             Ok(audio) => audio,
             Err(err) => {
                 emit_tts_error(&app, &request_id, &err);
@@ -327,7 +360,13 @@ pub async fn start_tts_stream(app: AppHandle, args: TtsStreamArgs) -> Result<(),
         return Ok(());
     }
 
-    let client = reqwest::Client::new();
+    let client = match http_client(proxy_mode, proxy_url.as_deref()) {
+        Ok(client) => client,
+        Err(err) => {
+            emit_tts_error(&app, &request_id, &err);
+            return Err(err);
+        }
+    };
 
     let request = if provider_kind == "elevenlabs" {
         let voice_id = match voice

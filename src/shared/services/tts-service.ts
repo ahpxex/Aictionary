@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { getRuntimeAudioSettings } from "@/shared/state/audio-runtime";
+import { getRuntimeNetworkSettings } from "@/shared/state/network-runtime";
 import { readAudioCacheFile } from "@/shared/services/audio-cache";
 
 type TtsChunkEvent = {
@@ -139,10 +140,13 @@ export async function startTtsStream(
           });
 
           const audioConfig = resolveAudioConfig();
+          const network = getRuntimeNetworkSettings();
 
           const command = invoke("start_tts_stream", {
             args: {
               text: options.text,
+              proxyMode: network.proxyMode,
+              proxyUrl: network.proxyUrl,
               requestId,
               format: options.format,
               cacheFilePath: options.cacheFilePath,

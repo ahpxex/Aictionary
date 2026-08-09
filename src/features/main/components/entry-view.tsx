@@ -75,10 +75,15 @@ function ExamplePair({
   text: string;
   translation: string;
 }) {
+  // Side by side, the two halves get roughly 140px each on a phone - a couple
+  // of words per line. Below `md` they stack instead, and the border that
+  // separated the columns becomes the one that marks the translation.
   return (
-    <div className="grid grid-cols-2">
-      <p className="pr-4 text-sm leading-relaxed text-foreground/90">{text}</p>
-      <p className="border-l border-border pl-4 text-sm leading-relaxed text-muted-foreground">
+    <div className="grid grid-cols-1 md:grid-cols-2">
+      <p className="text-sm leading-relaxed text-foreground/90 md:pr-4">
+        {text}
+      </p>
+      <p className="border-l border-border pl-3 text-sm leading-relaxed text-muted-foreground md:pl-4">
         {translation}
       </p>
     </div>
@@ -99,6 +104,7 @@ function MeaningRows({
       {meanings.map((meaning, offset) => (
         <Row
           key={meaning.sense_id ?? `meaning-${startIndex + offset}`}
+          variant="marker"
           rail={
             <span className="font-mono text-sm font-semibold leading-6 text-foreground/70">
               {startIndex + offset + 1}
@@ -229,6 +235,7 @@ function PosGroupSection({
       {/* Bilingual runner: English pos in the rail, Chinese label after the spine. */}
       <Row
         divider
+        variant="marker"
         rail={
           <span className="font-mono text-[0.7rem] font-semibold uppercase leading-6 tracking-[0.15em] text-foreground">
             {group.pos}
@@ -298,7 +305,11 @@ function PosGroupSection({
       )}
 
       {primaryRelations.map(([type, words]) => (
-        <Row key={type} rail={<RailLabel>{RELATION_RAIL_LABELS[type] ?? type}</RailLabel>}>
+        <Row
+          key={type}
+          variant="marker"
+          rail={<RailLabel>{RELATION_RAIL_LABELS[type] ?? type}</RailLabel>}
+        >
           <RelationChips words={words} onSearchWord={onSearchWord} />
         </Row>
       ))}
@@ -308,6 +319,7 @@ function PosGroupSection({
           secondaryRelations.map(([type, words]) => (
             <Row
               key={type}
+              variant="marker"
               rail={<RailLabel>{RELATION_RAIL_LABELS[type] ?? type}</RailLabel>}
             >
               <RelationChips words={words} onSearchWord={onSearchWord} />

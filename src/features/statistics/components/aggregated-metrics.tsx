@@ -67,7 +67,7 @@ export function AggregatedMetrics({ aggregates, onRemoveWord }: AggregatedMetric
                       </span>
                     </div>
                     <div className="overflow-x-auto">
-                      <Table className="table-fixed">
+                      <Table className="min-w-[20rem] table-fixed">
                         <TableHeader>
                           <TableRow>
                             <TableHead>{t("statistics.metrics.table.word")}</TableHead>

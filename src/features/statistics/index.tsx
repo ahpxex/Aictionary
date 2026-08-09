@@ -1,5 +1,6 @@
 import { Download, FileText } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { AggregatedMetrics } from "@/features/statistics/components/aggregated-metrics";
 import { TopWordsTable } from "@/features/statistics/components/top-words-table";
@@ -52,20 +53,24 @@ export function StatisticsPage() {
 
   return (
     <ScrollRegion className="min-h-0 flex-1">
-      <div className="mx-auto flex min-h-full w-full max-w-6xl flex-col gap-10 px-6 py-8">
-        {/* Overview: three oversized figures separated by hairlines. */}
-        <div className="grid grid-cols-3 border-y border-border">
+      <div className="mx-auto flex min-h-full w-full max-w-6xl flex-col gap-8 px-4 py-6 md:gap-10 md:px-6 md:py-8">
+        {/* Overview: three oversized figures separated by hairlines. Three
+            columns of 130px cannot carry a 5xl figure, so on a phone the
+            hairlines turn horizontal and the figures stack. */}
+        <div className="grid grid-cols-1 divide-y divide-border border-y border-border md:grid-cols-3 md:divide-y-0">
           {overview.map((item, index) => (
             <div
               key={item.id}
-              className={`flex flex-col gap-2 py-6 ${
-                index > 0 ? "border-l border-border pl-6" : ""
-              } ${index < overview.length - 1 ? "pr-6" : ""}`}
+              className={cn(
+                "flex flex-col gap-2 py-5 md:py-6",
+                index > 0 && "md:border-l md:border-border md:pl-6",
+                index < overview.length - 1 && "md:pr-6"
+              )}
             >
               <span className="text-[0.65rem] font-medium uppercase tracking-[0.15em] text-muted-foreground">
                 {item.label}
               </span>
-              <span className="break-words text-5xl font-bold leading-none tracking-tighter tabular-nums">
+              <span className="break-words text-4xl font-bold leading-none tracking-tighter tabular-nums md:text-5xl">
                 {item.value}
               </span>
               <span className="text-sm text-muted-foreground">{item.hint}</span>
@@ -73,7 +78,7 @@ export function StatisticsPage() {
           ))}
         </div>
 
-        <div className="flex flex-wrap justify-end gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-end">
           <Button onClick={exportLearnedWords}>
             <Download className="mr-2 size-4" />
             {t("statistics.export.learned_words")}
@@ -84,7 +89,7 @@ export function StatisticsPage() {
           </Button>
         </div>
 
-        <div className="grid items-start gap-10 lg:grid-cols-[2fr_1fr]">
+        <div className="grid items-start gap-8 md:gap-10 lg:grid-cols-[2fr_1fr]">
           <AggregatedMetrics aggregates={snapshot.aggregates} onRemoveWord={removeWord} />
           <TopWordsTable metrics={snapshot.queryMetrics} onRemoveWord={removeWord} />
         </div>

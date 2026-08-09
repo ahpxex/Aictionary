@@ -29,9 +29,15 @@ import {
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useSettings } from "@/features/settings/hooks/use-settings";
 import { FISH_AUDIO_MODEL_OPTIONS } from "@/features/settings/constants/audio";
-import type { AudioSettings, TtsProviderKind } from "@/shared/types/settings";
+import type {
+  AudioSettings,
+  NetworkSettings,
+  ProxyMode,
+  TtsProviderKind,
+} from "@/shared/types/settings";
 
 const PROVIDERS: TtsProviderKind[] = ["edge", "fish", "openai", "elevenlabs"];
+const PROXY_MODES: ProxyMode[] = ["auto", "manual", "direct"];
 
 type EdgeVoice = {
   shortName: string;
@@ -47,9 +53,11 @@ type EdgeVoice = {
 function EdgeVoicePicker({
   value,
   onChange,
+  network,
 }: {
   value: string;
   onChange: (voice: string) => void;
+  network: NetworkSettings;
 }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
@@ -62,7 +70,12 @@ function EdgeVoicePicker({
     if (next && voices === null && !isLoading) {
       setIsLoading(true);
       setLoadError(null);
-      invoke<EdgeVoice[]>("list_edge_voices")
+      // The catalog is plain HTTPS, but a user who had to configure a proxy
+      // for synthesis will need it here too.
+      invoke<EdgeVoice[]>("list_edge_voices", {
+        proxyMode: network.proxyMode,
+        proxyUrl: network.proxyUrl,
+      })
         .then(setVoices)
         .catch((error) => {
           setLoadError(typeof error === "string" ? error : String(error));
@@ -157,8 +170,9 @@ function TextField({ id, labelKey, value, onChange, password }: FieldProps) {
 
 export function AudioTab() {
   const { t } = useTranslation();
-  const { settings, updateAudio } = useSettings();
+  const { settings, updateAudio, updateNetwork } = useSettings();
   const audio = settings.audio;
+  const network = settings.network;
 
   const fishModelOptions = useMemo(
     () =>
@@ -195,7 +209,9 @@ export function AudioTab() {
               if (!value) return;
               updateAudio({ provider: value as TtsProviderKind });
             }}
-            className="w-fit bg-transparent"
+            // Four provider names do not fit a phone on one line, and a
+            // clipped toggle hides the option at the far right entirely.
+            className="flex-wrap bg-transparent md:w-fit md:flex-nowrap"
           >
             {PROVIDERS.map((provider) => (
               <ToggleGroupItem key={provider} value={provider}>
@@ -218,6 +234,7 @@ export function AudioTab() {
           <EdgeVoicePicker
             value={audio.edge.voice}
             onChange={(voice) => patchProvider("edge", { voice })}
+            network={network}
           />
         </Section>
       )}
@@ -340,6 +357,50 @@ export function AudioTab() {
           />
         </Section>
       )}
+
+      {/* Lives with the audio settings because Edge is the only subsystem that
+          cannot find a proxy by itself: it opens a raw socket, so the platform's
+          proxy never reaches it. Everything else here already follows the
+          system, and honours this too once it is set. */}
+      <Section
+        title={t("settings.audio.proxy.title")}
+        description={t("settings.audio.proxy.description")}
+        contentClassName="grid gap-4"
+      >
+        <div className="grid gap-2">
+          <Label>{t("settings.audio.proxy.mode.label")}</Label>
+          <ToggleGroup
+            type="single"
+            variant="outline"
+            spacing={0}
+            size="sm"
+            value={network.proxyMode}
+            onValueChange={(value) => {
+              if (!value) return;
+              updateNetwork({ proxyMode: value as ProxyMode });
+            }}
+            className="w-fit bg-transparent"
+          >
+            {PROXY_MODES.map((mode) => (
+              <ToggleGroupItem key={mode} value={mode}>
+                {t(`settings.audio.proxy.mode.${mode}`)}
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
+          <p className="text-xs text-muted-foreground">
+            {t(`settings.audio.proxy.mode.${network.proxyMode}_helper`)}
+          </p>
+        </div>
+
+        {network.proxyMode === "manual" && (
+          <TextField
+            id="proxy-url"
+            labelKey="settings.audio.proxy.url"
+            value={network.proxyUrl}
+            onChange={(value) => updateNetwork({ proxyUrl: value.trim() })}
+          />
+        )}
+      </Section>
     </div>
   );
 }

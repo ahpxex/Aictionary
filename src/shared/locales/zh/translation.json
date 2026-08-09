@@ -330,6 +330,24 @@
           "placeholder": "eleven_multilingual_v2",
           "helper": "模型 ID，如 eleven_multilingual_v2 或 eleven_turbo_v2_5。"
         }
+      },
+      "proxy": {
+        "title": "代理",
+        "description": "Edge TTS 走的是原始 websocket，和其他服务商不同，它读不到系统配置的代理。如果语音合成连不上，在这里指定一个。",
+        "mode": {
+          "label": "代理",
+          "auto": "自动",
+          "manual": "手动",
+          "direct": "直连",
+          "auto_helper": "依次读取代理环境变量和系统网络设置。Android 两者都没有，请在手机上选「手动」。",
+          "manual_helper": "始终使用下面填写的地址，忽略系统设置。",
+          "direct_helper": "即使系统配置了代理也直接连接。"
+        },
+        "url": {
+          "label": "代理地址",
+          "placeholder": "http://127.0.0.1:7890",
+          "helper": "填写协议、主机和端口，支持 http、https、socks5。在 Android 模拟器里，宿主机的地址是 10.0.2.2。"
+        }
       }
     },
     "anki": {

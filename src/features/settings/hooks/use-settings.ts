@@ -155,6 +155,23 @@ export function useSettings() {
     [updateSettings]
   );
 
+  const updateNetwork = useCallback(
+    (
+      changes:
+        | Partial<AppSettings["network"]>
+        | ((prev: AppSettings["network"]) => AppSettings["network"])
+    ) => {
+      updateSettings((current) => ({
+        ...current,
+        network:
+          typeof changes === "function"
+            ? changes(current.network)
+            : { ...current.network, ...changes },
+      }));
+    },
+    [updateSettings]
+  );
+
   const updateAnki = useCallback(
     (
       changes:
@@ -178,6 +195,7 @@ export function useSettings() {
     updateTheme,
     updateLlm,
     updateAudio,
+    updateNetwork,
     updateAnki,
     updateDictionary,
     updateKeyboard,

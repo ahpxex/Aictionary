@@ -1,10 +1,13 @@
+#[cfg(desktop)]
 use tauri::Manager;
 
 // Module declarations
 mod audio_cache;
 mod dictionary;
 mod download;
+mod edge_tts;
 mod export;
+mod net;
 mod shortcuts;
 #[cfg(desktop)]
 mod tray;
@@ -32,35 +35,50 @@ fn set_tray_visibility(_app: tauri::AppHandle, _visible: bool) -> Result<(), Str
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // rustls will not guess a CryptoProvider when the dependency graph offers
+    // more than one, and the failure mode is a panic deep inside whichever
+    // worker first builds a ClientConfig. Naming the provider up front makes
+    // the choice deliberate and survives a dependency adding a second one.
+    // Failure here only means someone else installed one first.
+    let _ = rustls::crypto::ring::default_provider().install_default();
+
     let builder = tauri::Builder::default();
 
     // MCP automation bridge for development tooling only; binds to
     // localhost so nothing is exposed on the network.
-    #[cfg(debug_assertions)]
+    #[cfg(all(debug_assertions, desktop))]
     let builder = builder.plugin(
         tauri_plugin_mcp_bridge::Builder::new()
             .bind_address("127.0.0.1")
             .build(),
     );
 
-    builder
+    let builder = builder
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_clipboard_manager::init());
+
+    // Global shortcuts, autostart and single-instance arbitration are desktop
+    // window-manager concepts; the mobile platforms have no equivalent and the
+    // plugins are not built for them.
+    #[cfg(desktop)]
+    let builder = builder
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
-        .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_autostart::Builder::new().build())
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             if let Some(window) = app.get_webview_window("main") {
                 let _ = window.show();
                 let _ = window.set_focus();
             }
-        }))
-        .setup(|app| {
+        }));
+
+    builder
+        .setup(|_app| {
             #[cfg(desktop)]
             {
                 use tauri::WindowEvent;
 
-                let handle = app.handle();
+                let handle = _app.handle();
 
                 // Initialize tray icon and menu.
                 tray::init_tray(&handle)?;
