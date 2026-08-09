@@ -146,9 +146,104 @@ jobs:
           name: Aictionary-${{ github.ref_name }}_${{ matrix.os_name }}_${{ matrix.arch }}
           path: ${{ env.RENAMED_ARTIFACT }}
 
+  android:
+    name: Build android universal
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "latest"
+
+      # Gradle 8.14.3 does not run on JDK 25; 21 is the newest it accepts.
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install NDK
+        run: |
+          sdkmanager --install "ndk;28.2.13676358"
+          echo "NDK_HOME=$ANDROID_SDK_ROOT/ndk/28.2.13676358" >> "$GITHUB_ENV"
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
+
+      - name: Install frontend dependencies
+        run: bun install --frozen-lockfile
+
+      # The keystore is the app's identity: an APK signed with a different key
+      # cannot be installed over an existing one. Without these secrets the
+      # build would silently produce an unsigned APK that nobody can install,
+      # so fail loudly instead.
+      - name: Configure signing
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [ -z "${KEYSTORE_BASE64:-}" ]; then
+            echo "ANDROID_KEYSTORE_BASE64 is not set; cannot produce an installable APK." >&2
+            exit 1
+          fi
+          KEYSTORE_PATH="$RUNNER_TEMP/android-release.jks"
+          echo "$KEYSTORE_BASE64" | base64 -d > "$KEYSTORE_PATH"
+          cat > src-tauri/gen/android/key.properties <<EOF
+          storeFile=$KEYSTORE_PATH
+          storePassword=$KEYSTORE_PASSWORD
+          keyAlias=$KEY_ALIAS
+          keyPassword=$KEY_PASSWORD
+          EOF
+
+      - name: Build APK
+        run: bun tauri android build --apk
+
+      - name: Collect and rename artifact
+        run: |
+          set -euo pipefail
+          ART=$(find src-tauri/gen/android/app/build/outputs/apk/universal/release \
+            -maxdepth 1 -name '*.apk' ! -name '*unsigned*' | head -n 1 || true)
+
+          if [ -z "${ART:-}" ]; then
+            echo "No signed APK produced" >&2
+            find src-tauri/gen/android/app/build/outputs/apk -type f || true
+            exit 1
+          fi
+
+          mkdir -p release
+          cp "$ART" "release/Aictionary-${GITHUB_REF_NAME}_android_universal.apk"
+
+      # key.properties points at a keystore in the runner temp dir; drop both so
+      # nothing signing-related can be picked up by a later step.
+      - name: Clean up signing material
+        if: always()
+        run: rm -f src-tauri/gen/android/key.properties "$RUNNER_TEMP/android-release.jks"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Aictionary-${{ github.ref_name }}_android_universal
+          path: release/*
+
   release:
     name: Create GitHub Release
-    needs: build
+    needs: [build, android]
     runs-on: ubuntu-latest
     permissions:
       contents: write

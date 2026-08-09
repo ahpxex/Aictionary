@@ -1,6 +1,6 @@
 [package]
 name = "aictionary-re"
-version = "3.0.0"
+version = "3.1.0"
 description = "A desktop dictionary with offline lookups and audio pronunciation"
 authors = ["ahpxex <AHpx@yandex.com>"]
 license = "MIT"
@@ -66,26 +66,26 @@ tauri-plugin-single-instance = { version = "2", features = ["deep-link"] }
 # Dev-only automation bridge; only initialized under cfg(debug_assertions).
 tauri-plugin-mcp-bridge = "0.12"
 
-# `default-features = false` matters here: reqwest's default set includes
-# `default-tls`, which links native-tls against an OpenSSL that does not exist
-# on Android. `system-proxy` is kept because the app relies on it everywhere.
 [target.'cfg(target_os = "macos")'.dependencies]
 # Reading the system proxy pane. Already in the tree via reqwest's
 # macos-system-configuration feature, so this costs no extra build.
 system-configuration = "0.7"
 
+# `default-features = false` matters here: reqwest's default set includes
+# `default-tls`, which links native-tls against an OpenSSL that does not exist
+# on Android. `system-proxy` is kept because the app relies on it everywhere.
+#
+# The `-no-provider` spelling is load-bearing too. The plain `rustls-tls`
+# feature pins a CryptoProvider of its own, and once two of them are linked
+# rustls 0.23 refuses to choose and panics the moment a ClientConfig is built -
+# inside a tokio worker, where it surfaces as a command that never resolves and
+# a spinner that never stops. Leaving it unpinned keeps the single provider the
+# shared `rustls` dependency selects, which run() then installs by name.
 [target.'cfg(any(target_os = "android", target_os = "ios"))'.dependencies]
-# The `-no-provider` spelling is load-bearing. Plain `rustls-tls` pins rustls
-# to ring while msedge-tts's stack pins it to aws-lc-rs; with two providers
-# linked, rustls 0.23 refuses to choose and panics the moment a ClientConfig is
-# built - inside a tokio worker, where the panic surfaces as a Tauri command
-# that never resolves and a spinner that never stops. Leaving the provider
-# unpinned keeps one provider in the graph, and run() installs it explicitly.
 reqwest = { version = "0.12", default-features = false, features = [
     "rustls-tls-webpki-roots-no-provider",
     "system-proxy",
 ] }
-rustls = { version = "0.23", default-features = false, features = ["aws-lc-rs"] }
 
 [dev-dependencies]
 tempfile = "3"
