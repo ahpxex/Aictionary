@@ -330,6 +330,24 @@
           "placeholder": "eleven_multilingual_v2",
           "helper": "Model id, e.g. eleven_multilingual_v2 or eleven_turbo_v2_5."
         }
+      },
+      "proxy": {
+        "title": "Proxy",
+        "description": "Edge TTS opens a raw websocket, so unlike the other providers it never sees the proxy your system is configured with. Point it somewhere if synthesis cannot connect.",
+        "mode": {
+          "label": "Proxy",
+          "auto": "Automatic",
+          "manual": "Manual",
+          "direct": "Direct",
+          "auto_helper": "Follow the proxy environment variables, then the system network settings. Android has neither, so choose Manual there.",
+          "manual_helper": "Always use the address below, whatever the system is set to.",
+          "direct_helper": "Connect straight out, even when the system advertises a proxy."
+        },
+        "url": {
+          "label": "Proxy address",
+          "placeholder": "http://127.0.0.1:7890",
+          "helper": "Scheme, host and port. http, https and socks5 are accepted. From an Android emulator the host machine is 10.0.2.2."
+        }
       }
     },
     "anki": {

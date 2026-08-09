@@ -35,7 +35,24 @@ rusqlite = { version = "0.32", features = ["bundled"] }
 flate2 = "1"
 sha2 = "0.10"
 base64 = "0.22"
-msedge-tts = { version = "0.4.0", features = ["tokio-runtime"] }
+# Edge's read-aloud protocol is spoken directly in src/edge_tts.rs rather than
+# through msedge-tts. That crate verifies TLS with rustls-platform-verifier,
+# which on Android needs a JNI handshake and a Kotlin AAR on the classpath -
+# and the dependency graph pulled in two incompatible versions of it at once,
+# so no single AAR could satisfy both. Speaking the protocol ourselves keeps
+# one code path on every platform and puts the proxy under our control.
+tokio-tungstenite = { version = "0.30", default-features = false, features = [
+    "connect",
+    "handshake",
+    "rustls-tls-webpki-roots",
+] }
+tokio-socks = "0.5"
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+uuid = { version = "1", features = ["v4"] }
+# Bundled Mozilla roots, so certificate verification is identical on every
+# target and never reaches for a platform trust store.
+webpki-roots = "1"
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
 
 # Desktop-only surface. Tray icons, global shortcuts, autostart and
 # single-instance handling are window-manager concepts with no Android/iOS
@@ -52,8 +69,23 @@ tauri-plugin-mcp-bridge = "0.12"
 # `default-features = false` matters here: reqwest's default set includes
 # `default-tls`, which links native-tls against an OpenSSL that does not exist
 # on Android. `system-proxy` is kept because the app relies on it everywhere.
+[target.'cfg(target_os = "macos")'.dependencies]
+# Reading the system proxy pane. Already in the tree via reqwest's
+# macos-system-configuration feature, so this costs no extra build.
+system-configuration = "0.7"
+
 [target.'cfg(any(target_os = "android", target_os = "ios"))'.dependencies]
-reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "system-proxy"] }
+# The `-no-provider` spelling is load-bearing. Plain `rustls-tls` pins rustls
+# to ring while msedge-tts's stack pins it to aws-lc-rs; with two providers
+# linked, rustls 0.23 refuses to choose and panics the moment a ClientConfig is
+# built - inside a tokio worker, where the panic surfaces as a Tauri command
+# that never resolves and a spinner that never stops. Leaving the provider
+# unpinned keeps one provider in the graph, and run() installs it explicitly.
+reqwest = { version = "0.12", default-features = false, features = [
+    "rustls-tls-webpki-roots-no-provider",
+    "system-proxy",
+] }
+rustls = { version = "0.23", default-features = false, features = ["aws-lc-rs"] }
 
 [dev-dependencies]
 tempfile = "3"

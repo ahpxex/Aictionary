@@ -101,11 +101,27 @@ export type SystemSettings = {
   checkUpdatesOnStart: boolean;
 };
 
+/**
+ * Where outbound connections look for a proxy.
+ *
+ * `auto` follows the platform - proxy environment variables, then the system
+ * pane on macOS. `manual` is the only option that works on Android, which has
+ * neither of those for an app to inherit.
+ */
+export type ProxyMode = "auto" | "manual" | "direct";
+
+export type NetworkSettings = {
+  proxyMode: ProxyMode;
+  /** `<scheme>://<host>:<port>`; http, https, socks4 and socks5 are accepted. */
+  proxyUrl: string;
+};
+
 export type AppSettings = {
   theme: ThemePreference;
   language: LanguagePreference;
   llm: LlmSettings;
   audio: AudioSettings;
+  network: NetworkSettings;
   anki: AnkiSettings;
   dictionary: DictionarySettings;
   keyboard: KeyboardShortcutSettings;

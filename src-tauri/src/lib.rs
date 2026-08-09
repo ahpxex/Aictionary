@@ -5,7 +5,9 @@ use tauri::Manager;
 mod audio_cache;
 mod dictionary;
 mod download;
+mod edge_tts;
 mod export;
+mod net;
 mod shortcuts;
 #[cfg(desktop)]
 mod tray;
@@ -33,6 +35,13 @@ fn set_tray_visibility(_app: tauri::AppHandle, _visible: bool) -> Result<(), Str
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // rustls will not guess a CryptoProvider when the dependency graph offers
+    // more than one, and the failure mode is a panic deep inside whichever
+    // worker first builds a ClientConfig. Naming the provider up front makes
+    // the choice deliberate and survives a dependency adding a second one.
+    // Failure here only means someone else installed one first.
+    let _ = rustls::crypto::ring::default_provider().install_default();
+
     let builder = tauri::Builder::default();
 
     // MCP automation bridge for development tooling only; binds to
