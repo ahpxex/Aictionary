@@ -89,10 +89,9 @@ have to agree or the build breaks on one platform or the other:
    (`autostart`, `mcp-bridge`) and the dock/taskbar window permissions, gated
    by its `platforms` list.
 
-All four TTS providers, including the keyless Edge default, build for Android:
-`msedge-tts` pulls `rodio` only as a dev-dependency, and its `reqwest` 0.13
-resolves `default-tls` to rustls, so nothing reaches for OpenSSL. Runtime
-behaviour on a device is still unverified.
+All four TTS providers, including the keyless Edge default, work on Android —
+see "Edge TTS and proxies" below for why Edge needed its own client to get
+there.
 
 Known mobile gaps: the UI is still a desktop layout, and release APKs are
 unsigned until a keystore is configured.
@@ -115,6 +114,44 @@ system properties, so pass them via `GRADLE_OPTS`
 (`-Dhttp.proxyHost=... -Dhttp.proxyPort=...`). Leave `nonProxyHosts` out of
 `GRADLE_OPTS`: `gradlew` runs that variable through `eval`, which parses the
 option's `|` separators as shell pipes.
+
+### Edge TTS and proxies
+
+`src-tauri/src/edge_tts.rs` speaks Microsoft's read-aloud protocol directly
+instead of using the `msedge-tts` crate. Two things forced that:
+
+- **Android.** The crate verifies TLS through `rustls-platform-verifier`, which
+  needs a JNI handshake and a Kotlin AAR on the classpath — and the dependency
+  graph contained two incompatible versions of it at once (0.6.2 behind the
+  websocket, 0.7.0 behind the voice list), so no single AAR could satisfy both.
+  Bundled webpki roots sidestep the platform trust store entirely.
+- **Proxies.** The crate dials a raw `TcpStream`, so it sees neither the
+  environment nor the platform's proxy pane. Some networks reset the websocket
+  upgrade while answering ordinary HTTPS from the same host, which leaves the
+  keyless default provider dead with `Connection reset by peer`.
+
+The module owns the whole exchange: the `Sec-MS-GEC` token (a SHA-256 over the
+Windows tick count snapped to a five-minute window), the `speech.config` and
+SSML frames, and the binary audio frames, whose payload starts after a
+big-endian header length. The transport is a direct socket, an HTTP `CONNECT`
+tunnel or a SOCKS5 connection depending on the resolved proxy.
+
+`src-tauri/src/net.rs` owns proxy resolution. `ProxyMode::Auto` reads the proxy
+environment variables and then, on macOS, the system network pane — a packaged
+app launched from Finder inherits no shell environment, so the pane is where a
+real user's proxy usually lives. `Manual` is the only mode that can work on
+Android, which has neither source to inherit from. The mode reaches the backend
+through `TtsStreamArgs`, is mirrored for non-React callers in
+`src/shared/state/network-runtime.ts`, and is edited in the Audio settings tab.
+
+Two guards wrap synthesis. `EDGE_CONNECT_TIMEOUT` covers a connection that is
+dropped rather than refused, and a `catch_unwind` turns any panic into an
+error — without it a panicking worker abandons the command's future and the UI
+spins forever instead of reporting anything.
+
+`run()` installs the rustls `CryptoProvider` explicitly. rustls refuses to
+guess when the graph offers more than one, and the failure is a panic deep
+inside whichever worker first builds a `ClientConfig`.
 
 ### Dictionary Data Contract
 
