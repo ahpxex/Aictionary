@@ -19,6 +19,13 @@
   -webkit-text-size-adjust: 100%;
   /* Square, flat visual language: every radius token resolves to 0. */
   --radius: 0rem;
+
+  /* System-bar insets, republished by useSafeArea on Android. Desktop has no
+     bars to dodge, so the defaults leave every consumer a no-op gutter. */
+  --safe-area-top: 0px;
+  --safe-area-right: 0px;
+  --safe-area-bottom: 0px;
+  --safe-area-left: 0px;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);

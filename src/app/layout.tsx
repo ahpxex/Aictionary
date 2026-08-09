@@ -4,6 +4,9 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import { BarChart3, BookOpen, Settings2 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { useSafeArea } from "@/shared/hooks/use-safe-area";
 import { formatShortcut, isMacPlatform } from "@/shared/lib/shortcuts";
 import type {
   QuickQueryPayload,
@@ -18,12 +21,13 @@ import { useGlobalShortcuts } from "@/shared/hooks/use-global-shortcuts";
 type NavItem = {
   to: string;
   labelKey: string;
+  icon: LucideIcon;
 };
 
 const NAV_ITEMS: NavItem[] = [
-  { to: "/", labelKey: "nav.dictionary" },
-  { to: "/statistics", labelKey: "nav.statistics" },
-  { to: "/settings", labelKey: "nav.settings" },
+  { to: "/", labelKey: "nav.dictionary", icon: BookOpen },
+  { to: "/statistics", labelKey: "nav.statistics", icon: BarChart3 },
+  { to: "/settings", labelKey: "nav.settings", icon: Settings2 },
 ];
 
 export function AppLayout() {
@@ -128,25 +132,38 @@ export function AppLayout() {
     };
   }, [navigate]);
 
+  // Republish the Android system-bar insets as CSS variables before anything
+  // measures itself against them.
+  useSafeArea();
+
   // The shell is pinned to the viewport and never scrolls itself; each page
   // owns its own scroll region (and the gutter around it), so a page can
   // decide which part of it moves under the fixed header.
+  //
+  // Two shapes share this markup. On a pointer-sized window the query bar and
+  // the section links ride one 48px row. On a phone that row cannot hold both
+  // - three tracked uppercase labels alone overrun a 411px viewport - so the
+  // query bar takes the full width and navigation drops to a thumb-reachable
+  // bar at the bottom. Header and bottom bar carry the vertical system-bar
+  // insets themselves, which lets their background run under the bars while
+  // their content stays clear of them.
   return (
-    <div className="bg-background text-foreground flex h-screen flex-col overflow-hidden">
-      <header className="z-40 shrink-0 border-b bg-background">
-        <div className="flex h-12 w-full items-center gap-6 px-6">
-          <div className="w-full max-w-sm">
+    <div className="bg-background text-foreground flex h-screen flex-col overflow-hidden pl-[var(--safe-area-left)] pr-[var(--safe-area-right)]">
+      <header className="z-40 shrink-0 border-b bg-background pt-[var(--safe-area-top)]">
+        <div className="flex h-12 w-full items-center gap-6 px-4 md:px-6">
+          <div className="min-w-0 flex-1 md:w-full md:max-w-sm md:flex-none">
             <SearchForm
               onSearch={handleSearch}
               initialValue={result?.entry.headword}
             />
           </div>
-          <div className="flex-1" />
-          <div className="flex shrink-0 items-center gap-6">
+          <div className="hidden flex-1 md:block" />
+          <div className="hidden shrink-0 items-center gap-6 md:flex">
             {NAV_ITEMS.map(({ to, labelKey }) => (
               <NavLink
                 key={to}
                 to={to}
+                end={to === "/"}
                 className={({ isActive }) =>
                   cn(
                     "focus-visible:ring-ring relative inline-flex h-12 items-center text-xs font-medium uppercase tracking-[0.15em] transition-colors focus-visible:outline-none focus-visible:ring-2",
@@ -165,6 +182,48 @@ export function AppLayout() {
       <main className="flex min-h-0 flex-1 flex-col">
         <Outlet />
       </main>
+      <nav
+        aria-label={t("nav.dictionary")}
+        className="z-40 shrink-0 border-t bg-background pb-[var(--safe-area-bottom)] md:hidden"
+      >
+        <div className="grid grid-cols-3">
+          {NAV_ITEMS.map(({ to, labelKey, icon: Icon }) => (
+            <NavLink
+              key={to}
+              to={to}
+              end={to === "/"}
+              className={({ isActive }) =>
+                cn(
+                  // 56px clears the 44px minimum touch target with room for
+                  // the label underneath.
+                  "flex h-14 flex-col items-center justify-center gap-1 transition-colors",
+                  isActive
+                    ? "text-foreground"
+                    : "text-muted-foreground active:text-foreground"
+                )
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  <Icon
+                    className="size-5"
+                    strokeWidth={isActive ? 2.25 : 1.75}
+                    aria-hidden
+                  />
+                  <span
+                    className={cn(
+                      "text-[0.625rem] uppercase tracking-[0.12em]",
+                      isActive && "font-semibold"
+                    )}
+                  >
+                    {t(labelKey)}
+                  </span>
+                </>
+              )}
+            </NavLink>
+          ))}
+        </div>
+      </nav>
     </div>
   );
 }

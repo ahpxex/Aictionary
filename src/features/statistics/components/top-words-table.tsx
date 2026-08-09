@@ -26,7 +26,10 @@ export function TopWordsTable({ metrics, onRemoveWord }: TopWordsTableProps) {
       description={t("statistics.top_words.description")}
       contentClassName="overflow-x-auto"
     >
-        <Table className="table-fixed">
+        {/* 340px of the columns are fixed, so without a floor the word column
+            collapses to a few characters on a phone instead of the row
+            scrolling sideways. */}
+        <Table className="min-w-[30rem] table-fixed">
           <TableHeader>
             <TableRow>
               <TableHead>{t("statistics.top_words.table.word")}</TableHead>

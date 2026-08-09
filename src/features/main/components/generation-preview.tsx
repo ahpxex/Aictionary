@@ -100,6 +100,7 @@ export function GenerationPreviewPanel({
             <Row
               key={groupIndex}
               divider
+              variant="marker"
               rail={<RailLabel>{group.pos ?? ""}</RailLabel>}
             >
               <div className="flex flex-col gap-3">
@@ -131,7 +132,8 @@ export function GenerationPreviewPanel({
             <Row
               key={index}
               divider
-              rail={<Skeleton className="ml-auto h-3 w-12" />}
+              variant="marker"
+              rail={<Skeleton className="ml-auto h-3 w-8 md:w-12" />}
             >
               <div className="flex flex-col gap-3">
                 <Skeleton className="h-4 w-40" />
