@@ -17,6 +17,12 @@ type ThumbGeometry = {
 
 type ScrollRegionProps = {
   className?: string;
+  /**
+   * Identity of the content being shown. When it changes the viewport jumps
+   * back to the top: swapping one panel for another (candidate list → entry)
+   * must not inherit the previous panel's scroll position.
+   */
+  resetKey?: unknown;
   children: ReactNode;
 };
 
@@ -31,9 +37,14 @@ type ScrollRegionProps = {
  * and under the cursor. At that size it reads as a rule rather than a control,
  * so it takes no pointer events and scrolling stays entirely native.
  */
-export function ScrollRegion({ className, children }: ScrollRegionProps) {
+export function ScrollRegion({ className, resetKey, children }: ScrollRegionProps) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const [thumb, setThumb] = useState<ThumbGeometry | null>(null);
+
+  // Before paint, so the swapped-in panel never flashes at the old offset.
+  useLayoutEffect(() => {
+    viewportRef.current?.scrollTo({ top: 0 });
+  }, [resetKey]);
 
   const measure = useCallback(() => {
     const viewport = viewportRef.current;

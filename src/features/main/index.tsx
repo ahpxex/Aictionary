@@ -22,8 +22,20 @@ export function MainPage() {
     returnToReverseLookup,
   } = useDictionarySearch();
 
+  // One value per distinct view, so panel swaps scroll back to the top:
+  // entry → other entry, candidate list → entry, entry → list again.
+  const viewKey = result
+    ? `entry:${result.entry.headword}`
+    : reverseLookup
+      ? `reverse:${reverseLookup.term}`
+      : nonsenseQuery
+        ? `nonsense:${nonsenseQuery}`
+        : isGeneratingFromLlm
+          ? `generating:${generatingWord ?? ""}`
+          : "empty";
+
   return (
-    <ScrollRegion className="min-h-0 flex-1">
+    <ScrollRegion className="min-h-0 flex-1" resetKey={viewKey}>
       <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col px-4 py-6 md:px-6 md:py-8">
         {!result && !isGeneratingFromLlm && !nonsenseQuery && !reverseLookup && (
           <div className="flex flex-1 flex-col items-center justify-center gap-2 py-16 text-center md:py-24">
