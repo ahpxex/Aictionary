@@ -23,6 +23,9 @@
       "button": "Search",
       "empty_error": "Please enter a word to search."
     },
+    "entry": {
+      "back_to_top": "Back to top"
+    },
     "reverse": {
       "back": "Back to matches for “{{term}}”",
       "hint": "{{count}} English words matched this Chinese text. Click one to open its entry.",

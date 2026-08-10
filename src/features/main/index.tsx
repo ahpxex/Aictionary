@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ArrowUp } from "lucide-react";
 import { useDictionarySearch } from "@/features/main/hooks/use-dictionary-search";
 import { EntryView } from "@/features/main/components/entry-view";
 import { ScrollRegion } from "@/shared/components/scroll-region";
@@ -82,6 +82,20 @@ export function MainPage() {
               </button>
             )}
             <EntryView result={result} onSearchWord={search} />
+            {/* Long entries scroll the header out of reach; hand the reader
+                a way back up from wherever the definition ends. */}
+            <button
+              type="button"
+              onClick={(event) =>
+                event.currentTarget
+                  .closest(".scroll-region")
+                  ?.scrollTo({ top: 0, behavior: "smooth" })
+              }
+              className="mt-8 flex items-center gap-1.5 self-center text-sm text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <ArrowUp className="size-3.5" />
+              {t("main.entry.back_to_top")}
+            </button>
           </>
         )}
       </div>

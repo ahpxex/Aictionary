@@ -34,7 +34,7 @@ export function AppLayout() {
   const { t } = useTranslation();
   const { settings } = useSettings();
   const navigate = useNavigate();
-  const { search, result } = useDictionarySearch();
+  const { search, result, reverseLookup } = useDictionarySearch();
 
   // Searching from any tab jumps back to the dictionary view.
   const handleSearch = (word: string) => {
@@ -154,7 +154,10 @@ export function AppLayout() {
           <div className="min-w-0 flex-1 md:w-full md:max-w-sm md:flex-none">
             <SearchForm
               onSearch={handleSearch}
-              initialValue={result?.entry.headword}
+              // While a reverse lookup is alive the query bar keeps the
+              // Chinese text that produced it: clicking through a candidate
+              // answers the question, it doesn't replace it.
+              initialValue={reverseLookup?.term ?? result?.entry.headword}
             />
           </div>
           <div className="hidden flex-1 md:block" />

@@ -23,6 +23,9 @@
       "button": "搜索",
       "empty_error": "请输入要查询的单词。"
     },
+    "entry": {
+      "back_to_top": "回到顶部"
+    },
     "reverse": {
       "back": "返回「{{term}}」的匹配列表",
       "hint": "找到 {{count}} 个释义匹配的英文单词，点击查看完整词条。",
