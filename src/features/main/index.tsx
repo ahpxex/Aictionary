@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { ArrowLeft } from "lucide-react";
 import { useDictionarySearch } from "@/features/main/hooks/use-dictionary-search";
 import { EntryView } from "@/features/main/components/entry-view";
 import { ScrollRegion } from "@/shared/components/scroll-region";
@@ -18,6 +19,7 @@ export function MainPage() {
     reverseLookup,
     result,
     search,
+    returnToReverseLookup,
   } = useDictionarySearch();
 
   return (
@@ -46,11 +48,29 @@ export function MainPage() {
         )}
 
         {reverseLookup && !result && !isGeneratingFromLlm && (
-          <ReverseLookupPanel lookup={reverseLookup} onSelectWord={search} />
+          <ReverseLookupPanel
+            lookup={reverseLookup}
+            onSelectWord={(word) => search(word, { keepReverseLookup: true })}
+          />
         )}
 
         {result && !isGeneratingFromLlm && (
-          <EntryView result={result} onSearchWord={search} />
+          <>
+            {/* The way back to the candidate list this entry was opened
+                from. Any other search drops the reverse context, so this
+                only shows on the click-through path. */}
+            {reverseLookup && (
+              <button
+                type="button"
+                onClick={returnToReverseLookup}
+                className="mb-3 flex items-center gap-1.5 self-start text-sm text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <ArrowLeft className="size-3.5" />
+                {t("main.reverse.back", { term: reverseLookup.term })}
+              </button>
+            )}
+            <EntryView result={result} onSearchWord={search} />
+          </>
         )}
       </div>
     </ScrollRegion>

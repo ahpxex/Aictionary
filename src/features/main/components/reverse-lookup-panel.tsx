@@ -1,5 +1,4 @@
 import { useTranslation } from "react-i18next";
-import { Languages } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { posLabelZh } from "@/shared/lib/dictionary-entry";
@@ -20,12 +19,6 @@ export function ReverseLookupPanel({ lookup, onSelectWord }: ReverseLookupPanelP
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <Languages className="size-4" />
-          <span className="text-xs font-semibold uppercase tracking-wide">
-            {t("main.reverse.label")}
-          </span>
-        </div>
         <h1 className="text-3xl font-bold tracking-tight">{lookup.term}</h1>
         <p className="text-sm text-muted-foreground">
           {lookup.candidates.length > 0

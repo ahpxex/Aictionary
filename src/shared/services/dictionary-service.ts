@@ -105,6 +105,23 @@ export async function reverseQueryDictionary(
   }
 }
 
+/**
+ * Ask the backend to build the reverse-lookup index ahead of the first
+ * Chinese query. Fire-and-forget: a failure only costs the first query its
+ * head start, so callers should not surface it.
+ */
+export async function warmReverseIndex(cachePath: string): Promise<void> {
+  const trimmedCachePath = cachePath.trim();
+  if (!trimmedCachePath) {
+    return;
+  }
+  try {
+    await invoke("warm_reverse_index", { cachePath: trimmedCachePath });
+  } catch (error) {
+    console.warn("Reverse-lookup index warm-up failed", error);
+  }
+}
+
 /** Persist a user-generated entry into the local user dictionary. */
 export async function writeDictionaryEntry(
   entry: DictionaryEntry,

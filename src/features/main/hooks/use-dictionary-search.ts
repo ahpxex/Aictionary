@@ -1,5 +1,5 @@
 import { useAtom, useSetAtom } from "jotai";
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
@@ -22,6 +22,7 @@ import {
 import {
   queryDictionary,
   reverseQueryDictionary,
+  warmReverseIndex,
   DictionaryQueryError,
   writeDictionaryEntry,
 } from "@/shared/services/dictionary-service";
@@ -46,8 +47,14 @@ export function useDictionarySearch() {
   const setResult = useSetAtom(setCurrentResultAtom);
   const [settings] = useAtom(settingsAtom);
 
+  // Build the backend's reverse-lookup index while the user is still
+  // typing their first query, so even the first Chinese search is instant.
+  useEffect(() => {
+    void warmReverseIndex(settings.dictionary.cachePath);
+  }, [settings.dictionary.cachePath]);
+
   const search = useCallback(
-    async (word: string) => {
+    async (word: string, options?: { keepReverseLookup?: boolean }) => {
       const normalized = word.trim();
       if (!normalized) {
         toast.error(t("main.search.empty_error"));
@@ -87,7 +94,11 @@ export function useDictionarySearch() {
         return;
       }
 
-      setReverseLookup(null);
+      // A candidate click keeps the list alive so the entry can offer a way
+      // back to it; any other search leaves the reverse context behind.
+      if (!options?.keepReverseLookup) {
+        setReverseLookup(null);
+      }
       setIsSearching(true);
       try {
         const definition = await queryDictionary(
@@ -201,6 +212,11 @@ export function useDictionarySearch() {
     setReverseLookup(null);
   }, [setNonsenseQuery, setResult, setReverseLookup]);
 
+  /** Leave the entry opened from a candidate and show the list again. */
+  const returnToReverseLookup = useCallback(() => {
+    setResult({ result: null });
+  }, [setResult]);
+
   return {
     isSearching,
     isGeneratingFromLlm,
@@ -214,5 +230,6 @@ export function useDictionarySearch() {
     result,
     search,
     clear,
+    returnToReverseLookup,
   };
 }

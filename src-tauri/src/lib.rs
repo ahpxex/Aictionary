@@ -103,6 +103,7 @@ pub fn run() {
             // Dictionary commands
             dictionary::dictionary_query,
             dictionary::dictionary_reverse_query,
+            dictionary::warm_reverse_index,
             dictionary::upsert_dictionary_entry,
             dictionary::get_default_dictionary_path,
             dictionary::check_dictionary_cache_exists,

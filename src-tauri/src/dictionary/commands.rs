@@ -1,7 +1,9 @@
 use rusqlite::{Connection, OpenFlags, OptionalExtension};
 use serde_json::{Map, Value};
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
+use std::sync::Mutex;
+use std::time::SystemTime;
 use tauri::{AppHandle, Manager};
 
 use super::types::{
@@ -151,16 +153,9 @@ pub fn dictionary_query(word: String, cache_path: String) -> Result<DictionaryLo
 /// How many candidates a reverse lookup returns at most.
 const REVERSE_RESULT_LIMIT: usize = 20;
 
-/// How many gloss rows the SQL side hands over for ranking. Generous enough
-/// that deduplication by headword still fills the result limit.
-const REVERSE_SCAN_LIMIT: u32 = 400;
-
-/// Escape LIKE wildcards so the query text is matched literally.
-fn escape_like(term: &str) -> String {
-    term.replace('\\', "\\\\")
-        .replace('%', "\\%")
-        .replace('_', "\\_")
-}
+/// How many ranked matches survive per source before merging. Generous
+/// enough that deduplication by headword still fills the result limit.
+const REVERSE_SCAN_LIMIT: usize = 400;
 
 /// Exact gloss < gloss prefix < gloss contains.
 fn rank_match(gloss: &str, term: &str) -> u8 {
@@ -206,66 +201,157 @@ fn ranked(gloss: String, term: &str, priority: String, headword: String, pos: Op
     }
 }
 
-/// Scan the distributed dictionary's Chinese glosses for the query text.
-/// This is a LIKE table scan over `meanings.short_gloss`; at the artifact's
-/// current size (~240k rows) it stays comfortably interactive.
-fn reverse_query_distribution(cache_dir: &Path, term: &str) -> Result<Vec<RankedCandidate>, String> {
+/// One searchable gloss row, preloaded from the distribution artifact.
+struct ReverseIndexRow {
+    headword: Box<str>,
+    gloss: Box<str>,
+    pos: Box<str>,
+    priority: Box<str>,
+    priority_rank: u8,
+}
+
+/// The in-memory reverse-lookup index over the distribution's glosses.
+/// A LIKE table scan over ~240k SQLite rows takes long enough to feel as a
+/// pause in the UI; a linear substring scan over preloaded rows is a few
+/// milliseconds. The index is keyed by the artifact's file fingerprint, so a
+/// re-downloaded dictionary rebuilds it transparently.
+struct ReverseIndex {
+    cache_dir: PathBuf,
+    fingerprint: Option<(u64, SystemTime)>,
+    rows: Vec<ReverseIndexRow>,
+}
+
+static REVERSE_INDEX: Mutex<Option<ReverseIndex>> = Mutex::new(None);
+
+fn distribution_fingerprint(cache_dir: &Path) -> Option<(u64, SystemTime)> {
+    let meta = fs::metadata(cache_dir.join(DISTRIBUTION_DB_FILE)).ok()?;
+    Some((meta.len(), meta.modified().ok()?))
+}
+
+fn load_reverse_index(cache_dir: &Path) -> Result<ReverseIndex, String> {
     let db_path = cache_dir.join(DISTRIBUTION_DB_FILE);
-    if !db_path.is_file() {
-        return Ok(Vec::new());
-    }
+    let fingerprint = distribution_fingerprint(cache_dir);
+    let mut rows = Vec::new();
 
-    let conn = open_read_only(&db_path)?;
-    let escaped = escape_like(term);
-    let mut stmt = conn
-        .prepare(
-            "SELECT e.headword, m.short_gloss, m.priority, p.pos,
-                    CASE WHEN m.short_gloss = ?1 THEN 0
-                         WHEN m.short_gloss LIKE ?2 ESCAPE '\\' THEN 1
-                         ELSE 2 END AS match_rank,
-                    CASE m.priority WHEN 'core' THEN 0 WHEN 'common' THEN 1 ELSE 2 END AS priority_rank
-             FROM meanings m
-             JOIN entries e ON e.entry_id = m.entry_id
-             JOIN pos_groups p ON p.entry_id = m.entry_id AND p.pos_group_index = m.pos_group_index
-             WHERE m.short_gloss LIKE ?3 ESCAPE '\\'
-             ORDER BY match_rank, priority_rank, length(m.short_gloss), e.headword
-             LIMIT ?4",
-        )
-        .map_err(|err| format!("Failed to read dictionary database: {err}"))?;
-
-    let rows = stmt
-        .query_map(
-            rusqlite::params![
-                term,
-                format!("{escaped}%"),
-                format!("%{escaped}%"),
-                REVERSE_SCAN_LIMIT
-            ],
-            |row| {
+    if db_path.is_file() {
+        let conn = open_read_only(&db_path)?;
+        let mut stmt = conn
+            .prepare(
+                "SELECT e.headword, m.short_gloss, m.priority, p.pos
+                 FROM meanings m
+                 JOIN entries e ON e.entry_id = m.entry_id
+                 JOIN pos_groups p ON p.entry_id = m.entry_id AND p.pos_group_index = m.pos_group_index
+                 WHERE m.short_gloss IS NOT NULL AND m.short_gloss <> ''",
+            )
+            .map_err(|err| format!("Failed to read dictionary database: {err}"))?;
+        let mapped = stmt
+            .query_map([], |row| {
                 Ok((
                     row.get::<_, String>(0)?,
                     row.get::<_, String>(1)?,
                     row.get::<_, String>(2)?,
                     row.get::<_, String>(3)?,
                 ))
-            },
-        )
-        .map_err(|err| format!("Failed to query dictionary database: {err}"))?;
-
-    let mut candidates = Vec::new();
-    for row in rows {
-        let (headword, gloss, priority, pos) =
-            row.map_err(|err| format!("Failed to query dictionary database: {err}"))?;
-        candidates.push(ranked(
-            gloss,
-            term,
-            priority,
-            headword,
-            Some(pos),
-            LookupSource::Dictionary,
-        ));
+            })
+            .map_err(|err| format!("Failed to query dictionary database: {err}"))?;
+        for row in mapped {
+            let (headword, gloss, priority, pos) =
+                row.map_err(|err| format!("Failed to query dictionary database: {err}"))?;
+            rows.push(ReverseIndexRow {
+                headword: headword.into(),
+                gloss: gloss.into(),
+                pos: pos.into(),
+                priority_rank: rank_priority(&priority),
+                priority: priority.into(),
+            });
+        }
     }
-    Ok(candidates)
+
+    Ok(ReverseIndex {
+        cache_dir: cache_dir.to_path_buf(),
+        fingerprint,
+        rows,
+    })
+}
+
+/// Run `f` against a current index, (re)building it first when the cache
+/// directory changed or the artifact on disk was replaced.
+fn with_reverse_index<T>(
+    cache_dir: &Path,
+    f: impl FnOnce(&ReverseIndex) -> T,
+) -> Result<T, String> {
+    let mut guard = REVERSE_INDEX
+        .lock()
+        .map_err(|_| "Reverse-lookup index is unavailable".to_string())?;
+
+    let stale = match guard.as_ref() {
+        Some(index) => {
+            index.cache_dir != cache_dir
+                || index.fingerprint != distribution_fingerprint(cache_dir)
+        }
+        None => true,
+    };
+    if stale {
+        *guard = Some(load_reverse_index(cache_dir)?);
+    }
+
+    Ok(f(guard.as_ref().expect("index was just ensured")))
+}
+
+/// Scan the in-memory gloss index for the query text. Matches are ranked
+/// without allocating; only the surviving top slice materializes candidates.
+fn reverse_query_distribution(cache_dir: &Path, term: &str) -> Result<Vec<RankedCandidate>, String> {
+    with_reverse_index(cache_dir, |index| {
+        // (sort keys..., row index): comparable tuples, strings stay put.
+        let mut matches: Vec<(u8, u8, usize, usize)> = index
+            .rows
+            .iter()
+            .enumerate()
+            .filter(|(_, row)| row.gloss.contains(term))
+            .map(|(i, row)| {
+                (
+                    rank_match(&row.gloss, term),
+                    row.priority_rank,
+                    row.gloss.chars().count(),
+                    i,
+                )
+            })
+            .collect();
+        matches.sort_unstable();
+        matches.truncate(REVERSE_SCAN_LIMIT);
+
+        matches
+            .into_iter()
+            .map(|(match_rank, priority_rank, gloss_chars, i)| {
+                let row = &index.rows[i];
+                RankedCandidate {
+                    match_rank,
+                    priority_rank,
+                    gloss_chars,
+                    candidate: ReverseLookupCandidate {
+                        headword: row.headword.to_string(),
+                        gloss: row.gloss.to_string(),
+                        pos: Some(row.pos.to_string()),
+                        priority: row.priority.to_string(),
+                        source: LookupSource::Dictionary,
+                    },
+                }
+            })
+            .collect()
+    })
+}
+
+/// Build the reverse-lookup index ahead of the first Chinese query, so even
+/// that one is instant. Called by the frontend on startup and after a
+/// dictionary download; a missing artifact just yields an empty index.
+#[tauri::command]
+pub fn warm_reverse_index(cache_path: String) -> Result<(), String> {
+    let cache_path = cache_path.trim();
+    if cache_path.is_empty() {
+        return Ok(());
+    }
+    let cache_dir = resolve_cache_dir(cache_path)?;
+    with_reverse_index(&cache_dir, |_| ())
 }
 
 /// Scan the user's own generated entries. These live as whole JSON documents
@@ -822,6 +908,15 @@ mod tests {
         assert!(!candidates.is_empty(), "expected reverse-lookup candidates");
         assert!(candidates.len() <= 20);
         assert!(candidates.iter().all(|c| c.gloss.contains("什么")));
+
+        // With the index warm, a reverse query must feel instant.
+        let start = std::time::Instant::now();
+        dictionary_reverse_query("解决".into(), dir.clone()).unwrap();
+        let elapsed = start.elapsed();
+        assert!(
+            elapsed.as_millis() < 100,
+            "warm reverse query took {elapsed:?}"
+        );
 
         let metadata = dictionary_metadata(dir).unwrap();
         assert_eq!(metadata["distribution_schema_version"], "distribution_entry_v5");

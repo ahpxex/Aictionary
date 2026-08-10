@@ -24,7 +24,7 @@
       "empty_error": "Please enter a word to search."
     },
     "reverse": {
-      "label": "Chinese → English",
+      "back": "Back to matches for “{{term}}”",
       "hint": "{{count}} English words matched this Chinese text. Click one to open its entry.",
       "empty": "No English word in the dictionary matches this Chinese text.",
       "missing_cache_path": "Set a dictionary cache path before searching in Chinese."
