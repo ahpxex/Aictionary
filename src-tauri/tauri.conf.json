@@ -50,6 +50,18 @@
           "height": 400
         }
       }
+    },
+    "createUpdaterArtifacts": true
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEU4NkUyOTI3Mjg5NEVENkYKUldSdjdaUW9KeWx1NkJEeEN2U1NyNDN0cXVOajRHajllN2xJY0J6VTl1NHNjT3RFOGFOVnFGZTkK",
+      "endpoints": [
+        "https://github.com/ahpxex/Aictionary/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
     }
   }
 }

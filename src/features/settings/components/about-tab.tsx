@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import { check as checkForUpdate } from "@tauri-apps/plugin-updater";
 import { Loader2 } from "lucide-react";
+import { installUpdate } from "@/app/update-check-sync";
+import { isMobileHost } from "@/shared/lib/platform";
 import { Button } from "@/components/ui/button";
 import { Section } from "@/shared/components/section";
 import { Switch } from "@/components/ui/switch";
@@ -105,9 +108,24 @@ export function AboutTab() {
               variant="link"
               className="h-auto p-0"
               onClick={() => {
-                void openUrl(update.latest!.htmlUrl).catch((error) => {
-                  console.warn("Failed to open the release page:", error);
-                });
+                const fallbackToReleasePage = () => {
+                  void openUrl(update.latest!.htmlUrl).catch((error) => {
+                    console.warn("Failed to open the release page:", error);
+                  });
+                };
+
+                // Desktop installs in place; Android (and any release
+                // published before the updater shipped) falls back to the
+                // release page for a manual download.
+                if (isMobileHost()) {
+                  fallbackToReleasePage();
+                  return;
+                }
+                checkForUpdate()
+                  .then((available) =>
+                    available ? installUpdate(available, t) : fallbackToReleasePage()
+                  )
+                  .catch(fallbackToReleasePage);
               }}
             >
               {t("settings.about.updates.available", {

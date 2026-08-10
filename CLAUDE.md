@@ -115,6 +115,25 @@ system properties, so pass them via `GRADLE_OPTS`
 `GRADLE_OPTS`: `gradlew` runs that variable through `eval`, which parses the
 option's `|` separators as shell pipes.
 
+### Auto-updates
+
+Desktop builds ship `tauri-plugin-updater` (desktop-only dependency, like the
+other window-manager plugins). Installed apps poll
+`releases/latest/download/latest.json`, which CI assembles from the updater
+artifacts: macOS updates from `*.app.tar.gz`, Windows from the `.msi`
+(passive install mode), Linux from the `.AppImage`. Android has no in-app
+install and keeps the release-page toast instead — the frontend picks the
+path via `isMobileHost()`.
+
+Update packages are minisign-signed. The private key lives at
+`~/.tauri/aictionary-updater.key` (no password) and in the repo secret
+`TAURI_SIGNING_PRIVATE_KEY`; the public key is embedded in
+`tauri.conf.json` under `plugins.updater.pubkey`. **Losing the private key
+breaks the update chain**: already-installed apps verify against the old
+public key, so a new key means every user has to update manually once. The
+`.sig` files never reach the release page — their contents are embedded in
+`latest.json` and the files deleted before upload.
+
 ### Edge TTS and proxies
 
 `src-tauri/src/edge_tts.rs` speaks Microsoft's read-aloud protocol directly

@@ -470,14 +470,20 @@
       },
       "updates": {
         "title": "更新",
-        "description": "从 GitHub 检查是否有新版本。不会自动下载或安装任何内容。",
+        "description": "桌面端应用内直接更新并重启；Android 从 Release 页下载 APK。",
         "auto_label": "启动时检查更新",
         "auto_helper": "关闭后，只有你手动点击时才会检查新版本。",
         "check_now": "立即检查",
         "up_to_date": "已经是最新版本。",
         "failed": "无法连接到 GitHub。",
         "available": "有新版本 {{version}}",
-        "view": "查看版本"
+        "view": "查看版本",
+        "install": "更新并重启",
+        "downloading": "正在下载更新…",
+        "downloading_progress": "正在下载更新… {{percent}}%",
+        "installing": "正在安装更新…",
+        "restarting": "更新完成，正在重启…",
+        "install_error": "更新安装失败，请前往 Release 页面手动下载。"
       },
       "data": {
         "title": "词库数据",

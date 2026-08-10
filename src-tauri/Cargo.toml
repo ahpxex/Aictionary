@@ -62,6 +62,9 @@ tauri = { version = "2", features = ["tray-icon"] }
 reqwest = { version = "0.12", features = ["default-tls", "macos-system-configuration"] }
 tauri-plugin-global-shortcut = "2"
 tauri-plugin-autostart = "2"
+# In-app updates: check + download + install; process gives the relaunch.
+tauri-plugin-updater = "2"
+tauri-plugin-process = "2"
 tauri-plugin-single-instance = { version = "2", features = ["deep-link"] }
 # Dev-only automation bridge; only initialized under cfg(debug_assertions).
 tauri-plugin-mcp-bridge = "0.12"

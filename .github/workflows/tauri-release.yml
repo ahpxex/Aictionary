@@ -82,6 +82,11 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Build Tauri app
+        env:
+          # Signs the updater artifacts (.app.tar.gz / .msi / .AppImage + .sig)
+          # so installed apps can verify what they download.
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ""
         run: |
           bun tauri build ${{ matrix.build_args }}
 
@@ -127,6 +132,25 @@ jobs:
           mkdir -p release
           DEST="release/Aictionary-${GITHUB_REF_NAME}_${{ matrix.os_name }}_${{ matrix.arch }}.${EXT}"
           cp "$ART" "$DEST"
+
+          # Updater artifacts. On Linux and Windows the installer artifact
+          # doubles as the update package, so only its .sig rides along under
+          # the renamed name; macOS updates from a separate .app.tar.gz.
+          BASE="release/Aictionary-${GITHUB_REF_NAME}_${{ matrix.os_name }}_${{ matrix.arch }}"
+          case "${{ matrix.os_name }}" in
+            macos)
+              UPD=$(find "$ART_DIR/macos" -maxdepth 1 -name '*.app.tar.gz' | head -n 1 || true)
+              if [ -n "${UPD:-}" ] && [ -f "$UPD.sig" ]; then
+                cp "$UPD" "$BASE.app.tar.gz"
+                cp "$UPD.sig" "$BASE.app.tar.gz.sig"
+              fi
+              ;;
+            windows|linux)
+              if [ -f "$ART.sig" ]; then
+                cp "$ART.sig" "$DEST.sig"
+              fi
+              ;;
+          esac
 
           if [ "${{ matrix.os_name }}" == "windows" ]; then
             BIN_PATH="src-tauri/target/release/aictionary-re.exe"
@@ -254,6 +278,48 @@ jobs:
           path: dist
           merge-multiple: true
 
+      - name: Generate updater manifest
+        env:
+          TAG: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          # latest.json is what installed apps poll: per-platform download
+          # URL plus the minisign signature of that artifact. Signatures are
+          # embedded here, so the bare .sig files stay out of the release.
+          python3 - <<'EOF'
+          import datetime
+          import json
+          import os
+
+          tag = os.environ["TAG"]
+          base = f"https://github.com/{os.environ['REPO']}/releases/download/{tag}/"
+          artifacts = {
+              "darwin-aarch64": f"Aictionary-{tag}_macos_arm64.app.tar.gz",
+              "darwin-x86_64": f"Aictionary-{tag}_macos_x86_64.app.tar.gz",
+              "linux-x86_64": f"Aictionary-{tag}_linux_x86_64.AppImage",
+              "windows-x86_64": f"Aictionary-{tag}_windows_x86_64.msi",
+          }
+
+          platforms = {}
+          for platform, name in artifacts.items():
+              if not (os.path.exists(f"dist/{name}") and os.path.exists(f"dist/{name}.sig")):
+                  print(f"skipping {platform}: {name}(.sig) missing")
+                  continue
+              with open(f"dist/{name}.sig") as f:
+                  platforms[platform] = {"signature": f.read(), "url": base + name}
+
+          manifest = {
+              "version": tag.lstrip("v"),
+              "pub_date": datetime.datetime.now(datetime.timezone.utc)
+                  .isoformat().replace("+00:00", "Z"),
+              "platforms": platforms,
+          }
+          with open("dist/latest.json", "w") as f:
+              json.dump(manifest, f, indent=2)
+          print(json.dumps({p: v["url"] for p, v in platforms.items()}, indent=2))
+          EOF
+          rm -f dist/*.sig
+
       - name: Generate Release Body
         run: |
           echo "### Downloads" > release_body.md
@@ -262,6 +328,10 @@ jobs:
           echo "| :--- |" >> release_body.md
           for file in dist/*; do
             filename=$(basename "$file")
+            # Updater-only assets stay downloadable but out of the table.
+            case "$filename" in
+              latest.json|*.app.tar.gz) continue ;;
+            esac
             echo "| [$filename](https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/$filename) |" >> release_body.md
           done
 
