@@ -1,6 +1,6 @@
 # Aictionary
 
-快速且异常好用的英汉词典 App。本地离线词库秒查，查不到的词交给大模型现场生成，基于 **Tauri 2 + React**，专注于「查词体验」这件小事。
+快速且异常好用的英汉词典 App，专注于「查词体验」这件小事。
 
 <p>
   <a href="https://github.com/ahpxex/Aictionary/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/ahpxex/Aictionary?label=release" /></a>
@@ -11,16 +11,17 @@
 
 <img width="1100" alt="Aictionary 查询 light 的词条界面" src="docs/screenshot.png" />
 
-## 功能特性
+查一个词，本地词库直接秒出结果——八万多条学习者向的中文释义，讲用法、语境和常见搭配，而不是只丢给你一个「意思」。词库是一个本地 SQLite 文件，下载一次之后查询全在本机，断网也照常用。
 
-- **详细易懂的中文释义** — 基于 84,000+ 词条的开源英汉词库，不止给出「意思」，还解释用法、语境和常见搭配
-- **完全离线查询** — 词库是一个本地 SQLite 文件，下载一次后所有查询都在本机完成，更新通过 GitHub Release 一键下载
-- **LLM 补充释义** — 本地词库查不到时，可调用任意 OpenAI 兼容接口现场生成中文详解和例句，并存入个人词库
-- **开箱即用的单词朗读** — 默认使用免费免密钥的 Edge TTS，零配置就有自然发音；也支持 Fish Audio / OpenAI / ElevenLabs
-- **一键导出 Anki 卡片** — 通过 AnkiConnect 把单词卡片推送到桌面版 Anki，生成排版统一的双语卡片
-- **统计与个人词库** — 记录查词历史和频次，高频生词一目了然，适合当复习清单
-- **键盘优先** — 全局快捷键唤起、查询剪贴板内容、切换结果……阅读英文资料时几乎不需要鼠标
-- **跨平台** — macOS / Windows / Linux 桌面端 + Android
+词库里没有的词（生僻词、术语、新造的梗），配好一个 OpenAI 兼容接口就能让大模型现场写一条，存进你的个人词库，重新下载词库也不会丢。
+
+还有一些顺手的东西：
+
+- 单词朗读默认走免费免密钥的 Edge TTS，装好就能听；想要更好的音色可以换 Fish Audio、OpenAI 或 ElevenLabs
+- 单词卡片能一键推到桌面版 Anki（走 AnkiConnect），生成排版统一的双语卡片
+- 查词历史和频次都有统计，高频生词就是现成的复习清单
+- 全局快捷键唤起、直接查剪贴板内容，读英文资料时基本不用碰鼠标
+- macOS / Windows / Linux / Android 都有包
 
 ## 下载与安装
 
@@ -37,11 +38,7 @@
 > **macOS 若提示「应用已损坏」**：应用未经 Apple 公证，请在终端运行
 > `xattr -cr /Applications/Aictionary.app` 后重新打开；或在「系统设置 → 隐私与安全性」中允许运行。
 
-### 首次使用
-
-1. 打开「设置 → 词典」，一键下载本地词库（自动从 GitHub Release 拉取、校验并解压）；
-2. （可选）在「设置 → LLM」配置 OpenAI 兼容接口与 API Key，本地词库查不到的词会自动交给大模型生成释义；
-3. 直接开查——朗读功能默认走免密钥的 Edge TTS，无需任何配置。
+装好之后只有一步是必须的：打开「设置 → 词典」下载本地词库（自动从 GitHub Release 拉取、校验并解压）。LLM 接口配不配随意，不配也是一部完整的离线词典。
 
 ## 单词朗读（TTS）
 
@@ -72,7 +69,7 @@
 
 词条数据来自上游项目 **[ahpxex/open-dictionary](https://github.com/ahpxex/open-dictionary)** —— 一部以 Wiktionary/Wiktextract 快照为基础、再用大模型补写学习者向解释的开源英汉词典，当前收录 **84,212 个词条**。
 
-Aictionary 只是它的桌面/移动端消费者：从 GitHub Release 下载 `distribution.sqlite.gz` 到本地，经 SHA-256 校验后解压使用。词库的构建管线、选词规则和释义质量由上游负责，相关问题请到上游仓库反馈。LLM 生成的词条单独存放在个人词库中，重新下载词库不会丢失。
+Aictionary 只是它的一个消费者：从 GitHub Release 下载 `distribution.sqlite.gz` 到本地，经 SHA-256 校验后解压使用。词库的构建管线、选词规则和释义质量由上游负责，相关问题请到上游仓库反馈。
 
 | | 许可 |
 | :--- | :--- |
@@ -83,7 +80,7 @@ Aictionary 只是它的桌面/移动端消费者：从 GitHub Release 下载 `di
 
 ## 开发构建
 
-技术栈：React 19 + Vite + TypeScript + Tailwind v4 + shadcn/ui + Jotai，后端为 Tauri 2（Rust）。
+前端是 React 19 + Vite + Tailwind v4 + shadcn/ui，桌面端和后端是 Tauri 2（Rust）。
 
 需要 [Tauri 2 的环境依赖](https://tauri.app/start/prerequisites/)：Node.js / Bun、Rust stable；Linux 另需 webkit2gtk 等系统库。
 
