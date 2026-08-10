@@ -4,6 +4,7 @@ import { EntryView } from "@/features/main/components/entry-view";
 import { ScrollRegion } from "@/shared/components/scroll-region";
 import { GenerationPreviewPanel } from "@/features/main/components/generation-preview";
 import { NonsenseState } from "@/features/main/components/nonsense-state";
+import { ReverseLookupPanel } from "@/features/main/components/reverse-lookup-panel";
 
 export function MainPage() {
   const { t } = useTranslation();
@@ -14,6 +15,7 @@ export function MainPage() {
     generationPreview,
     generationSummary,
     nonsenseQuery,
+    reverseLookup,
     result,
     search,
   } = useDictionarySearch();
@@ -21,7 +23,7 @@ export function MainPage() {
   return (
     <ScrollRegion className="min-h-0 flex-1">
       <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col px-4 py-6 md:px-6 md:py-8">
-        {!result && !isGeneratingFromLlm && !nonsenseQuery && (
+        {!result && !isGeneratingFromLlm && !nonsenseQuery && !reverseLookup && (
           <div className="flex flex-1 flex-col items-center justify-center gap-2 py-16 text-center md:py-24">
             <p className="text-2xl font-bold tracking-tight text-muted-foreground/40">
               Aictionary
@@ -41,6 +43,10 @@ export function MainPage() {
 
         {nonsenseQuery && !isGeneratingFromLlm && (
           <NonsenseState word={nonsenseQuery} />
+        )}
+
+        {reverseLookup && !result && !isGeneratingFromLlm && (
+          <ReverseLookupPanel lookup={reverseLookup} onSelectWord={search} />
         )}
 
         {result && !isGeneratingFromLlm && (

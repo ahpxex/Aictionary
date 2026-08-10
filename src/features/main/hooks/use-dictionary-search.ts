@@ -12,6 +12,7 @@ import {
   nonsenseQueryAtom,
   generatingWordAtom,
   queryHistoryAtom,
+  reverseLookupAtom,
   setCurrentResultAtom,
 } from "@/shared/state/dictionary";
 import {
@@ -20,6 +21,7 @@ import {
 } from "@/shared/state/settings";
 import {
   queryDictionary,
+  reverseQueryDictionary,
   DictionaryQueryError,
   writeDictionaryEntry,
 } from "@/shared/services/dictionary-service";
@@ -38,6 +40,7 @@ export function useDictionarySearch() {
   const [generatingWord, setGeneratingWord] = useAtom(generatingWordAtom);
   const [generationSummary, setGenerationSummary] = useAtom(generationSummaryAtom);
   const [nonsenseQuery, setNonsenseQuery] = useAtom(nonsenseQueryAtom);
+  const [reverseLookup, setReverseLookup] = useAtom(reverseLookupAtom);
   const [history] = useAtom(queryHistoryAtom);
   const [result] = useAtom(currentResultAtom);
   const setResult = useSetAtom(setCurrentResultAtom);
@@ -55,6 +58,36 @@ export function useDictionarySearch() {
       // to reset it, so a nonsense query's easter egg outlived every later
       // search that resolved from the dictionary and sat on top of it.
       setNonsenseQuery(null);
+
+      // Chinese input flips the direction: instead of looking up an entry,
+      // search the dictionary's Chinese glosses for English candidates.
+      // Clicking a candidate re-enters this function with an English word.
+      if (/\p{Script=Han}/u.test(normalized)) {
+        setIsSearching(true);
+        try {
+          const candidates = await reverseQueryDictionary(
+            normalized,
+            settings.dictionary.cachePath
+          );
+          setResult({ result: null });
+          setReverseLookup({ term: normalized, candidates });
+        } catch (error) {
+          console.error(error);
+          if (
+            error instanceof DictionaryQueryError &&
+            error.code === "MISSING_CACHE_PATH"
+          ) {
+            toast.error(t("main.reverse.missing_cache_path"));
+          } else {
+            toast.error(t("main.errors.dictionary"));
+          }
+        } finally {
+          setIsSearching(false);
+        }
+        return;
+      }
+
+      setReverseLookup(null);
       setIsSearching(true);
       try {
         const definition = await queryDictionary(
@@ -155,6 +188,7 @@ export function useDictionarySearch() {
       setGenerationPreview,
       setGenerationSummary,
       setNonsenseQuery,
+      setReverseLookup,
       settings.dictionary.cachePath,
       settings.llm,
       t,
@@ -164,7 +198,8 @@ export function useDictionarySearch() {
   const clear = useCallback(() => {
     setResult({ result: null });
     setNonsenseQuery(null);
-  }, [setNonsenseQuery, setResult]);
+    setReverseLookup(null);
+  }, [setNonsenseQuery, setResult, setReverseLookup]);
 
   return {
     isSearching,
@@ -174,6 +209,7 @@ export function useDictionarySearch() {
     generationPreview,
     generationSummary,
     nonsenseQuery,
+    reverseLookup,
     history,
     result,
     search,

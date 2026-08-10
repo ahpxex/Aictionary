@@ -4,7 +4,9 @@ use std::fs;
 use std::path::Path;
 use tauri::{AppHandle, Manager};
 
-use super::types::{DictionaryLookupResult, LookupSource, UpsertDictionaryEntryArgs};
+use super::types::{
+    DictionaryLookupResult, LookupSource, ReverseLookupCandidate, UpsertDictionaryEntryArgs,
+};
 use super::utils::{
     normalize_headword, resolve_cache_dir, DISTRIBUTION_DB_FILE, USER_DB_FILE,
 };
@@ -144,6 +146,234 @@ pub fn dictionary_query(word: String, cache_path: String) -> Result<DictionaryLo
     }
 
     Err(format!("Word '{}' not found in dictionary", word))
+}
+
+/// How many candidates a reverse lookup returns at most.
+const REVERSE_RESULT_LIMIT: usize = 20;
+
+/// How many gloss rows the SQL side hands over for ranking. Generous enough
+/// that deduplication by headword still fills the result limit.
+const REVERSE_SCAN_LIMIT: u32 = 400;
+
+/// Escape LIKE wildcards so the query text is matched literally.
+fn escape_like(term: &str) -> String {
+    term.replace('\\', "\\\\")
+        .replace('%', "\\%")
+        .replace('_', "\\_")
+}
+
+/// Exact gloss < gloss prefix < gloss contains.
+fn rank_match(gloss: &str, term: &str) -> u8 {
+    if gloss == term {
+        0
+    } else if gloss.starts_with(term) {
+        1
+    } else {
+        2
+    }
+}
+
+/// core < common < rare — a match on a core sense is a better candidate for
+/// "the English word for X" than a match buried in a rare sense.
+fn rank_priority(priority: &str) -> u8 {
+    match priority {
+        "core" => 0,
+        "common" => 1,
+        _ => 2,
+    }
+}
+
+/// A candidate plus its sort keys, kept until merging is done.
+struct RankedCandidate {
+    match_rank: u8,
+    priority_rank: u8,
+    gloss_chars: usize,
+    candidate: ReverseLookupCandidate,
+}
+
+fn ranked(gloss: String, term: &str, priority: String, headword: String, pos: Option<String>, source: LookupSource) -> RankedCandidate {
+    RankedCandidate {
+        match_rank: rank_match(&gloss, term),
+        priority_rank: rank_priority(&priority),
+        gloss_chars: gloss.chars().count(),
+        candidate: ReverseLookupCandidate {
+            headword,
+            gloss,
+            pos,
+            priority,
+            source,
+        },
+    }
+}
+
+/// Scan the distributed dictionary's Chinese glosses for the query text.
+/// This is a LIKE table scan over `meanings.short_gloss`; at the artifact's
+/// current size (~240k rows) it stays comfortably interactive.
+fn reverse_query_distribution(cache_dir: &Path, term: &str) -> Result<Vec<RankedCandidate>, String> {
+    let db_path = cache_dir.join(DISTRIBUTION_DB_FILE);
+    if !db_path.is_file() {
+        return Ok(Vec::new());
+    }
+
+    let conn = open_read_only(&db_path)?;
+    let escaped = escape_like(term);
+    let mut stmt = conn
+        .prepare(
+            "SELECT e.headword, m.short_gloss, m.priority, p.pos,
+                    CASE WHEN m.short_gloss = ?1 THEN 0
+                         WHEN m.short_gloss LIKE ?2 ESCAPE '\\' THEN 1
+                         ELSE 2 END AS match_rank,
+                    CASE m.priority WHEN 'core' THEN 0 WHEN 'common' THEN 1 ELSE 2 END AS priority_rank
+             FROM meanings m
+             JOIN entries e ON e.entry_id = m.entry_id
+             JOIN pos_groups p ON p.entry_id = m.entry_id AND p.pos_group_index = m.pos_group_index
+             WHERE m.short_gloss LIKE ?3 ESCAPE '\\'
+             ORDER BY match_rank, priority_rank, length(m.short_gloss), e.headword
+             LIMIT ?4",
+        )
+        .map_err(|err| format!("Failed to read dictionary database: {err}"))?;
+
+    let rows = stmt
+        .query_map(
+            rusqlite::params![
+                term,
+                format!("{escaped}%"),
+                format!("%{escaped}%"),
+                REVERSE_SCAN_LIMIT
+            ],
+            |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                    row.get::<_, String>(3)?,
+                ))
+            },
+        )
+        .map_err(|err| format!("Failed to query dictionary database: {err}"))?;
+
+    let mut candidates = Vec::new();
+    for row in rows {
+        let (headword, gloss, priority, pos) =
+            row.map_err(|err| format!("Failed to query dictionary database: {err}"))?;
+        candidates.push(ranked(
+            gloss,
+            term,
+            priority,
+            headword,
+            Some(pos),
+            LookupSource::Dictionary,
+        ));
+    }
+    Ok(candidates)
+}
+
+/// Scan the user's own generated entries. These live as whole JSON documents
+/// without a meanings table, but the set is small (one row per generated
+/// word), so walking the documents is fine.
+fn reverse_query_user(cache_dir: &Path, term: &str) -> Result<Vec<RankedCandidate>, String> {
+    let db_path = cache_dir.join(USER_DB_FILE);
+    if !db_path.is_file() {
+        return Ok(Vec::new());
+    }
+
+    let conn = open_read_only(&db_path)?;
+    let mut stmt = conn
+        .prepare("SELECT document_json FROM user_entries")
+        .map_err(|err| format!("Failed to read user dictionary: {err}"))?;
+    let rows = stmt
+        .query_map([], |row| row.get::<_, String>(0))
+        .map_err(|err| format!("Failed to query user dictionary: {err}"))?;
+
+    let mut candidates = Vec::new();
+    for row in rows {
+        let raw = row.map_err(|err| format!("Failed to query user dictionary: {err}"))?;
+        // A malformed user document should degrade to "no matches from this
+        // entry", not fail the whole reverse lookup.
+        let Ok(document) = serde_json::from_str::<Value>(&raw) else {
+            continue;
+        };
+        let Some(headword) = document.get("headword").and_then(Value::as_str) else {
+            continue;
+        };
+        let pos_groups = document
+            .get("pos_groups")
+            .and_then(Value::as_array)
+            .cloned()
+            .unwrap_or_default();
+        for group in &pos_groups {
+            let pos = group.get("pos").and_then(Value::as_str);
+            let Some(meanings) = group.get("meanings").and_then(Value::as_array) else {
+                continue;
+            };
+            for meaning in meanings {
+                let Some(gloss) = meaning.get("short_gloss").and_then(Value::as_str) else {
+                    continue;
+                };
+                if !gloss.contains(term) {
+                    continue;
+                }
+                let priority = meaning
+                    .get("priority")
+                    .and_then(Value::as_str)
+                    .unwrap_or("rare");
+                candidates.push(ranked(
+                    gloss.to_string(),
+                    term,
+                    priority.to_string(),
+                    headword.to_string(),
+                    pos.map(str::to_string),
+                    LookupSource::User,
+                ));
+            }
+        }
+    }
+    Ok(candidates)
+}
+
+/// Reverse lookup: find English headwords whose Chinese glosses contain the
+/// query text. Searches the distributed dictionary first, then the user's
+/// generated entries; results are ranked (exact gloss > prefix > contains,
+/// core sense > common > rare, shorter gloss first) and deduplicated per
+/// headword.
+#[tauri::command]
+pub fn dictionary_reverse_query(
+    term: String,
+    cache_path: String,
+) -> Result<Vec<ReverseLookupCandidate>, String> {
+    let term = term.trim();
+    let cache_path = cache_path.trim();
+
+    if term.is_empty() {
+        return Err("Search text is required".into());
+    }
+    if cache_path.is_empty() {
+        return Err("Dictionary cache path is not configured".into());
+    }
+
+    let cache_dir = resolve_cache_dir(cache_path)?;
+
+    // Distribution first: the stable sort below keeps it ahead of user
+    // entries on equal rank, mirroring the forward lookup's precedence.
+    let mut ranked = reverse_query_distribution(&cache_dir, term)?;
+    ranked.extend(reverse_query_user(&cache_dir, term)?);
+    // No headword tiebreaker: the sort must stay stable on equal ranks so
+    // distribution candidates (pushed first, already alphabetical from the
+    // SQL ORDER BY) keep precedence over user entries in deduplication.
+    ranked.sort_by_key(|item| (item.match_rank, item.priority_rank, item.gloss_chars));
+
+    let mut seen = std::collections::HashSet::new();
+    let mut result = Vec::new();
+    for item in ranked {
+        if !seen.insert(normalize_headword(&item.candidate.headword)) {
+            continue;
+        }
+        result.push(item.candidate);
+        if result.len() >= REVERSE_RESULT_LIMIT {
+            break;
+        }
+    }
+    Ok(result)
 }
 
 /// Insert or update a user-generated dictionary entry.
@@ -319,7 +549,8 @@ mod tests {
 
     /// Build a minimal distribution.sqlite matching the
     /// `distribution_sqlite_v1` packaging schema (the subset this module
-    /// reads: `entries` with its lookup index, plus `metadata`).
+    /// reads: `entries` with its lookup index, `pos_groups` and `meanings`
+    /// for reverse lookup, plus `metadata`).
     fn create_distribution_fixture(cache_dir: &Path) {
         let conn = Connection::open(cache_dir.join(DISTRIBUTION_DB_FILE)).unwrap();
         conn.execute_batch(
@@ -341,7 +572,30 @@ mod tests {
                 document_json TEXT NOT NULL
              );
              CREATE INDEX entries_lookup_idx
-                ON entries (headword_language_code, normalized_headword);",
+                ON entries (headword_language_code, normalized_headword);
+             CREATE TABLE pos_groups (
+                entry_id TEXT NOT NULL,
+                pos_group_index INTEGER NOT NULL,
+                pos TEXT NOT NULL,
+                etymology_id TEXT,
+                proper_name INTEGER NOT NULL,
+                summary TEXT NOT NULL,
+                usage_note TEXT,
+                PRIMARY KEY (entry_id, pos_group_index)
+             );
+             CREATE TABLE meanings (
+                entry_id TEXT NOT NULL,
+                pos_group_index INTEGER NOT NULL,
+                sense_id TEXT NOT NULL,
+                meaning_index INTEGER NOT NULL,
+                priority TEXT NOT NULL,
+                short_gloss TEXT,
+                learner_explanation TEXT NOT NULL,
+                usage_note TEXT,
+                labels_json TEXT NOT NULL,
+                topics_json TEXT NOT NULL,
+                PRIMARY KEY (entry_id, pos_group_index, sense_id)
+             );",
         )
         .unwrap();
 
@@ -374,6 +628,20 @@ mod tests {
             )
             .unwrap();
         }
+
+        // Chinese glosses for reverse lookup: "resolve" carries an exact
+        // "解决" on a core sense plus a containing match on a rare sense;
+        // "China" carries a containing match on a core sense.
+        conn.execute_batch(
+            "INSERT INTO pos_groups VALUES
+                ('test-resolve', 0, 'verb', NULL, 0, '', NULL),
+                ('test-china', 0, 'name', NULL, 1, '', NULL);
+             INSERT INTO meanings VALUES
+                ('test-resolve', 0, 's1', 0, 'core', '解决', '', NULL, '[]', '[]'),
+                ('test-resolve', 0, 's2', 1, 'rare', '下定决心去解决问题', '', NULL, '[]', '[]'),
+                ('test-china', 0, 's1', 0, 'core', '解决方案之外的中国', '', NULL, '[]', '[]');",
+        )
+        .unwrap();
     }
 
     fn cache_path(dir: &tempfile::TempDir) -> String {
@@ -455,6 +723,71 @@ mod tests {
     }
 
     #[test]
+    fn reverse_query_ranks_exact_core_matches_first_and_dedupes_headwords() {
+        let dir = tempfile::tempdir().unwrap();
+        create_distribution_fixture(dir.path());
+
+        let candidates = dictionary_reverse_query("解决".into(), cache_path(&dir)).unwrap();
+
+        // "resolve" matches twice (exact core + containing rare) but appears
+        // once, ranked above the containing-only match on "China".
+        let headwords: Vec<&str> = candidates.iter().map(|c| c.headword.as_str()).collect();
+        assert_eq!(headwords, ["resolve", "China"]);
+        assert_eq!(candidates[0].gloss, "解决");
+        assert_eq!(candidates[0].priority, "core");
+        assert_eq!(candidates[0].pos.as_deref(), Some("verb"));
+        assert!(matches!(candidates[0].source, LookupSource::Dictionary));
+    }
+
+    #[test]
+    fn reverse_query_includes_user_entries_but_distribution_wins_dedup() {
+        let dir = tempfile::tempdir().unwrap();
+        create_distribution_fixture(dir.path());
+
+        for (headword, gloss) in [("widget", "解决界面问题的小组件"), ("Resolve", "解决")] {
+            upsert_dictionary_entry(UpsertDictionaryEntryArgs {
+                cache_path: cache_path(&dir),
+                entry: json!({
+                    "headword": headword,
+                    "pos_groups": [{
+                        "pos": "noun",
+                        "meanings": [{
+                            "priority": "core",
+                            "short_gloss": gloss,
+                            "learner_explanation": "",
+                        }],
+                    }],
+                }),
+            })
+            .unwrap();
+        }
+
+        let candidates = dictionary_reverse_query("解决".into(), cache_path(&dir)).unwrap();
+        let resolve = candidates.iter().find(|c| c.headword.eq_ignore_ascii_case("resolve")).unwrap();
+        // The user's duplicate "Resolve" is dropped in favor of the
+        // distributed entry, mirroring forward-lookup precedence.
+        assert!(matches!(resolve.source, LookupSource::Dictionary));
+
+        let widget = candidates.iter().find(|c| c.headword == "widget").unwrap();
+        assert!(matches!(widget.source, LookupSource::User));
+        assert_eq!(widget.gloss, "解决界面问题的小组件");
+    }
+
+    #[test]
+    fn reverse_query_misses_return_empty_list_and_wildcards_are_literal() {
+        let dir = tempfile::tempdir().unwrap();
+        create_distribution_fixture(dir.path());
+
+        assert!(dictionary_reverse_query("不存在的词".into(), cache_path(&dir))
+            .unwrap()
+            .is_empty());
+        // LIKE wildcards in the query must not match everything.
+        assert!(dictionary_reverse_query("%".into(), cache_path(&dir))
+            .unwrap()
+            .is_empty());
+    }
+
+    #[test]
     fn cache_existence_and_count_track_the_distribution_db() {
         let dir = tempfile::tempdir().unwrap();
 
@@ -484,6 +817,11 @@ mod tests {
 
         let count = count_dictionary_entries(dir.clone()).unwrap();
         assert!(count > 20_000, "expected a full dictionary, got {count}");
+
+        let candidates = dictionary_reverse_query("什么".into(), dir.clone()).unwrap();
+        assert!(!candidates.is_empty(), "expected reverse-lookup candidates");
+        assert!(candidates.len() <= 20);
+        assert!(candidates.iter().all(|c| c.gloss.contains("什么")));
 
         let metadata = dictionary_metadata(dir).unwrap();
         assert_eq!(metadata["distribution_schema_version"], "distribution_entry_v5");

@@ -17,6 +17,20 @@ pub enum LookupSource {
     User,
 }
 
+/// One candidate from a reverse lookup: a definition-language (Chinese)
+/// query matched against the glosses of the dictionary, pointing back at an
+/// English headword the user can open as a normal entry.
+#[derive(Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct ReverseLookupCandidate {
+    pub headword: String,
+    /// The gloss that matched the query, shown as the candidate's summary.
+    pub gloss: String,
+    pub pos: Option<String>,
+    pub priority: String,
+    pub source: LookupSource,
+}
+
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpsertDictionaryEntryArgs {

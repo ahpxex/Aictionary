@@ -18,10 +18,16 @@
   "main": {
     "empty_state": "输入单词以查看其定义。",
     "search": {
-      "placeholder": "搜索单词…",
+      "placeholder": "搜索单词，或输入中文反查…",
       "searching": "搜索中…",
       "button": "搜索",
       "empty_error": "请输入要查询的单词。"
+    },
+    "reverse": {
+      "label": "中文 → 英文",
+      "hint": "找到 {{count}} 个释义匹配的英文单词，点击查看完整词条。",
+      "empty": "词库中没有找到释义匹配的英文单词。",
+      "missing_cache_path": "请先在设置中配置词库缓存路径，再使用中文反查。"
     },
     "history": {
       "title": "最近查询"

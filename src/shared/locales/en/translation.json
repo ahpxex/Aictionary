@@ -18,10 +18,16 @@
   "main": {
     "empty_state": "Enter a word to see its definitions.",
     "search": {
-      "placeholder": "Search a word…",
+      "placeholder": "Search a word, or Chinese to find one…",
       "searching": "Searching…",
       "button": "Search",
       "empty_error": "Please enter a word to search."
+    },
+    "reverse": {
+      "label": "Chinese → English",
+      "hint": "{{count}} English words matched this Chinese text. Click one to open its entry.",
+      "empty": "No English word in the dictionary matches this Chinese text.",
+      "missing_cache_path": "Set a dictionary cache path before searching in Chinese."
     },
     "history": {
       "title": "Recent queries"

@@ -3,6 +3,7 @@ import type {
   DictionaryEntry,
   DictionaryLookupResult,
   DictionaryMetadata,
+  ReverseLookupCandidate,
 } from "@/shared/types/dictionary";
 
 export type DictionaryErrorCode =
@@ -67,6 +68,35 @@ export async function queryDictionary(
     return await invoke<DictionaryLookupResult>("dictionary_query", {
       word: trimmedWord,
       cache_path: trimmedCachePath,
+      cachePath: trimmedCachePath,
+    });
+  } catch (error) {
+    const message = parseErrorMessage(error);
+    throw new DictionaryQueryError(message, determineErrorCode(message), { cause: error });
+  }
+}
+
+/**
+ * Reverse lookup: find English headwords whose Chinese glosses contain the
+ * query text. Returns a ranked, deduplicated candidate list (may be empty).
+ */
+export async function reverseQueryDictionary(
+  term: string,
+  cachePath: string
+): Promise<ReverseLookupCandidate[]> {
+  const trimmedTerm = term.trim();
+  if (!trimmedTerm) {
+    throw new DictionaryQueryError("Search text is required", "INVALID_WORD");
+  }
+
+  const trimmedCachePath = cachePath.trim();
+  if (!trimmedCachePath) {
+    throw new DictionaryQueryError("Dictionary cache path is missing", "MISSING_CACHE_PATH");
+  }
+
+  try {
+    return await invoke<ReverseLookupCandidate[]>("dictionary_reverse_query", {
+      term: trimmedTerm,
       cachePath: trimmedCachePath,
     });
   } catch (error) {

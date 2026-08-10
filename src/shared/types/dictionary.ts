@@ -112,3 +112,22 @@ export type QueryRecord = {
   word: string;
   timestamp: string;
 };
+
+/**
+ * One candidate from a reverse lookup: a Chinese query matched against the
+ * dictionary's glosses, pointing back at an English headword.
+ */
+export type ReverseLookupCandidate = {
+  headword: string;
+  /** The gloss that matched the query. */
+  gloss: string;
+  pos: string | null;
+  priority: MeaningPriority | (string & {});
+  source: LookupSource;
+};
+
+/** A reverse lookup's query text together with its candidates. */
+export type ReverseLookupResult = {
+  term: string;
+  candidates: ReverseLookupCandidate[];
+};
