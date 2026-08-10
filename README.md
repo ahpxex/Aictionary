@@ -1,238 +1,122 @@
 # Aictionary
 
-快速且异常好用的词典 App，基于 **Tauri 2 + React**，提供本地离线词库和可选大模型释义，专注于「查词体验」这件小事。
+快速且异常好用的英汉词典 App。本地离线词库秒查，查不到的词交给大模型现场生成，基于 **Tauri 2 + React**，专注于「查词体验」这件小事。
+
+<p>
+  <a href="https://github.com/ahpxex/Aictionary/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/ahpxex/Aictionary?label=release" /></a>
+  <a href="https://github.com/ahpxex/Aictionary/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/ahpxex/Aictionary/total" /></a>
+  <a href="./LICENSE"><img alt="License" src="https://img.shields.io/badge/code-MIT-blue" /></a>
+  <img alt="Platforms" src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux%20%7C%20Android-8A2BE2" />
+</p>
 
 <img width="1100" alt="Aictionary 查询 light 的词条界面" src="docs/screenshot.png" />
 
-
 ## 功能特性
 
-- **详细易懂的中文释义**  
-  基于开源英汉词库和自定义处理，释义不仅给出“意思”，还尽量解释用法、语境和常见搭配。
+- **详细易懂的中文释义** — 基于 84,000+ 词条的开源英汉词库，不止给出「意思」，还解释用法、语境和常见搭配
+- **完全离线查询** — 词库是一个本地 SQLite 文件，下载一次后所有查询都在本机完成，更新通过 GitHub Release 一键下载
+- **LLM 补充释义** — 本地词库查不到时，可调用任意 OpenAI 兼容接口现场生成中文详解和例句，并存入个人词库
+- **开箱即用的单词朗读** — 默认使用免费免密钥的 Edge TTS，零配置就有自然发音；也支持 Fish Audio / OpenAI / ElevenLabs
+- **一键导出 Anki 卡片** — 通过 AnkiConnect 把单词卡片推送到桌面版 Anki，生成排版统一的双语卡片
+- **统计与个人词库** — 记录查词历史和频次，高频生词一目了然，适合当复习清单
+- **键盘优先** — 全局快捷键唤起、查询剪贴板内容、切换结果……阅读英文资料时几乎不需要鼠标
+- **跨平台** — macOS / Windows / Linux 桌面端 + Android
 
-- **快速离线查询**  
-  常用高频词会预先缓存到本地，即使离线也能秒开释义；词库更新通过 GitHub Release 一键下载。
+## 下载与安装
 
-- **大语言模型驱动补充释义**  
-  当本地词库没有某个词条时，可以调用配置好的 LLM（如 OpenAI 等）生成一份中文解释和例句，适合技术 / 学术场景。
+前往 [**Releases 页面**](https://github.com/ahpxex/Aictionary/releases/latest)下载对应平台的安装包，命名规则为 `Aictionary-[版本]_[平台]_[架构].[后缀]`。
 
-- **跨平台桌面应用**  
-  基于 Tauri 框架，提供 **Windows / macOS / Linux** 原生安装包（dmg / msi / AppImage 等）。
+| 平台 | 安装包 | 说明 |
+| :--- | :--- | :--- |
+| **macOS** | `.dmg` | 打开后将 Aictionary 拖入 Applications |
+| **Windows** | `.msi` / 便携版 `.zip` | 双击安装，或解压便携版直接运行 |
+| **Linux** | `.AppImage` | `chmod +x` 赋予可执行权限后直接运行 |
+| **Android** | `.apk` | 通用包，允许安装未知来源应用后直接安装 |
 
-- **使用统计与个人词库**  
-  记录查词历史、频次等统计信息，帮助你回顾高频生词、构建个人词库。
+> [!IMPORTANT]
+> **macOS 若提示「应用已损坏」**：应用未经 Apple 公证，请在终端运行
+> `xattr -cr /Applications/Aictionary.app` 后重新打开；或在「系统设置 → 隐私与安全性」中允许运行。
 
-- **细节体验优化**  
-  - 支持键盘快捷键快速打开 / 关闭、查询当前剪贴板内容等；
-  - 查询记录自动缓存，可随时刷新词条以获取最新释义；
-  - 主题、语言、LLM 提供商、快捷键等都可在设置里集中配置。
+### 首次使用
 
----
+1. 打开「设置 → 词典」，一键下载本地词库（自动从 GitHub Release 拉取、校验并解压）；
+2. （可选）在「设置 → LLM」配置 OpenAI 兼容接口与 API Key，本地词库查不到的词会自动交给大模型生成释义；
+3. 直接开查——朗读功能默认走免密钥的 Edge TTS，无需任何配置。
 
-## 词库来源
+## 单词朗读（TTS）
 
-词条数据来自上游项目 **[ahpxex/open-dictionary](https://github.com/ahpxex/open-dictionary)** —— 一部以 Wiktionary/Wiktextract 快照为基础、再用大模型补写学习者向解释的开源英汉词典。当前发行版收录 **84,212 个词条**。
+在「设置 → 音频」中选择提供商：
 
-Aictionary 只是它的一个桌面端消费者：应用消费其 `distribution_entry_v5` 契约，从 GitHub Release 下载 `distribution.sqlite.gz` 到本地，所有查询都在本机完成。词库的构建管线、选词规则和释义质量都由上游负责，相关问题请到上游仓库反馈。
+| 提供商 | 密钥 | 说明 |
+| :--- | :--- | :--- |
+| **Edge TTS**（默认） | 无需 | 微软 Edge 朗读服务，免费、零配置，可选多种音色 |
+| **Fish Audio** | 需要 | 支持 S1 等模型，可填 Reference ID 使用自定义克隆音色 |
+| **OpenAI** | 需要 | OpenAI TTS 接口 |
+| **ElevenLabs** | 需要 | ElevenLabs 语音合成 |
 
-许可上二者是分开的：
+生成的音频会缓存到本地（如 macOS 的 `~/Library/Application Support/com.ahpx.aictionary-re/audio/`），同一单词只合成一次。所有 API Key 只保存在设备本地，不会上传。
+
+> **网络提示**：部分网络环境会重置 Edge TTS 的 websocket 连接。「设置 → 音频」中可配置代理——桌面端默认自动读取环境变量和系统代理设置，Android 上需要手动填写。
+
+## 与 Anki 同步卡片
+
+依赖社区常用的 [AnkiConnect](https://foosoft.net/projects/anki-connect/) 插件：
+
+1. 在 Anki 中安装并启用 AnkiConnect，保持 Anki 客户端开启；
+2. 在「设置 → Anki」填写 API 地址（默认 `http://127.0.0.1:8765`）、牌组名称（不存在会自动创建）和卡片主题；
+3. 在单词卡片上点击 **保存到 Anki**（书签图标）即可。
+
+每张卡片包含单词、音标、释义、词形、详解例句和词义比较，并自动附加 `aictionary` 标签。
+
+## 词库来源与许可
+
+词条数据来自上游项目 **[ahpxex/open-dictionary](https://github.com/ahpxex/open-dictionary)** —— 一部以 Wiktionary/Wiktextract 快照为基础、再用大模型补写学习者向解释的开源英汉词典，当前收录 **84,212 个词条**。
+
+Aictionary 只是它的桌面/移动端消费者：从 GitHub Release 下载 `distribution.sqlite.gz` 到本地，经 SHA-256 校验后解压使用。词库的构建管线、选词规则和释义质量由上游负责，相关问题请到上游仓库反馈。LLM 生成的词条单独存放在个人词库中，重新下载词库不会丢失。
 
 | | 许可 |
 | :--- | :--- |
 | 上游词典**数据** | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)，Wiktionary 内容的衍生作品 |
 | 上游与本项目**代码** | MIT |
 
-数据依 ShareAlike 条款分发，再分发或二次加工时须以相同许可发布，并署名 Wiktionary 贡献者。
-
----
-
-## 下载与安装
-
-### 从 GitHub Releases 安装
-
-前往项目的 **Releases 页面**，每次发布都会为不同平台生成对应安装包，命名规则统一为：
-
-`Aictionary-[version]_[os]_[arch].[extension]`
-
-#### macOS
-
-1. 下载对应架构的 `.dmg` 文件；
-2. 打开 dmg，将 `Aictionary` 拖入 `Applications` 即可；
-3. 首次运行如遇到 Gatekeeper 提示，可在「系统设置 → 隐私与安全性」中允许打开。
-
-> [!IMPORTANT]
-> 如果提示「应用损坏」之类的，请运行 `xattr -cr /Applications/Aictionary-[版本]_[架构].app` （注意根据版本号修改命令的文件名）
-
-#### Windows
-
-1. 优先下载 `.msi` 安装包；若 Release 中只有 `.exe`，则下载该安装器；
-2. 双击运行并按提示完成安装；
-3. 安装完成后可在开始菜单中搜索 `Aictionary` 启动。
-
-#### Linux（AppImage）
-
-1. 下载 `.AppImage` 文件，例如 `Aictionary-0.1.0_linux_x86_64.AppImage`；
-2. 赋予可执行权限并运行：
-
-   ```bash
-   chmod +x Aictionary-0.1.0_linux_x86_64.AppImage
-   ./Aictionary-0.1.0_linux_x86_64.AppImage
-   ```
-
-> 初次使用，建议在「设置 → 词典与 LLM」中：
-> - 先下载/更新本地词库（会通过内置下载器从 GitHub 拉取 zip 并自动解压）；  
-> - 再配置 LLM 提供商与 API Key，当本地词库缺少词条时会自动调用大模型补充中文释义。
-
-### Fish Audio 语音播放配置
-
-AIctionary 支持通过 [Fish Audio](https://fish.audio/) 生成更自然的 TTS 发音用于单词朗读。开启方式：
-
-1. 在 Fish Audio 控制台创建或获取 API Key；
-2. 打开应用内「设置 → 音频」，填写：
-   - **API Key**：Fish Audio 提供的密钥，存储在本地；
-   - **TTS 模型**：默认 S1（最新高质量），也可选 legacy 模型；
-   - **Reference ID（可选）**：若有自定义语音克隆，可填对应的 reference_id；留空则使用官方默认女声；
-3. 保存设置后，重新在单词卡片中点击喇叭按钮，会自动：
-   - 先检查是否已有缓存音频；
-   - 若无缓存，则调用 Fish Audio 生成语音并写入 `~/Library/Application Support/com.ahpx.aictionary-re/audio/`（macOS，Windows/Linux 路径类似），下次播放直接走缓存。
-
-> **注意**：Fish Audio API Key 会被写入设备本地的设置存储，不会上传到网络，请自行妥善保管与刷新密钥。
-
-
-### 与 Anki 同步卡片（AnkiConnect）
-
-AIctionary 可以把任意单词卡片一键推送到桌面版 Anki，生成排版统一、含中英释义/例句/对比分析的双语卡片。依赖的是社区常用的 [AnkiConnect](https://foosoft.net/projects/anki-connect/) 插件，因此在使用前请确保：
-
-1. **已在 Anki 中安装并启用 AnkiConnect**，并保持 Anki 客户端开启；
-2. 在 AIctionary 内打开「设置 → Anki」，填入：
-   - **API 地址**（默认 `http://127.0.0.1:8765`，除非你修改过插件端口）；
-   - **牌组名称**：可以填现有牌组或新名称（若不存在会自动创建）；
-   - **卡片主题**：选择导出的卡片是浅色或深色背景；
-3. 配置完成后，回到单词详情卡片，点击发音按钮旁的 **“保存到 Anki”**（书签图标）即可写入卡片；
-4. 每张卡片会生成 Front/Back 两个面，包含：单词、音标、简洁释义、词形、详解及例句、词义比较等内容，同时自动附加 `aictionary` 标签。
-
-如果牌组尚未存在，应用会先调用 AnkiConnect 创建；写入失败时会在应用内弹出 toast，方便重新尝试。
-
----
-
-## 使用提示
-
-- **键盘操作优先**  
-  应用尽量为常用操作提供快捷键（查词、切换结果、刷新词条等），阅读英文资料时几乎不需要鼠标。
-
-- **本地缓存与历史记录**  
-  所有查过的词都会写入本地缓存，可离线查看；支持按需刷新，确保释义与在线词库同步。
-
-- **统计与复习**  
-  统计页面展示一段时间内的查词量、高频生词等，适合作为「背单词/复习清单」。
-
-- **界面与语言**  
-  支持深浅色主题切换、强调色选择，以及中英文界面（基于 `react-i18next`），都在设置中配置。
-
----
-
-## 技术栈
-
-- **前端**
-  - React 19
-  - Vite
-  - TypeScript
-  - Tailwind CSS v4 + shadcn/ui
-  - Jotai（集中设置状态管理）
-  - react-hook-form + zod 表单校验
-  - react-router v7
-
-- **桌面端 / 后端**
-  - Tauri 2（Rust + WebView）
-
----
+数据依 ShareAlike 条款分发：再分发或二次加工时须以相同许可发布，并署名 Wiktionary 贡献者。
 
 ## 开发构建
 
-### 环境准备
+技术栈：React 19 + Vite + TypeScript + Tailwind v4 + shadcn/ui + Jotai，后端为 Tauri 2（Rust）。
 
-根据 Tauri 2 官方文档，需要：
-
-- **通用**
-  - Node.js / Bun
-  - Rust（stable toolchain）
-  - Tauri CLI（本项目通过 devDependencies 已内置）
-
-- **Linux 额外依赖**（Debian/Ubuntu）：
-  ```bash
-  sudo apt-get update
-  sudo apt-get install -y \
-    libwebkit2gtk-4.0-dev \
-    libwebkit2gtk-4.1-dev \
-    libappindicator3-dev \
-    librsvg2-dev \
-    patchelf
-  ```
-
-### 启动开发环境
+需要 [Tauri 2 的环境依赖](https://tauri.app/start/prerequisites/)：Node.js / Bun、Rust stable；Linux 另需 webkit2gtk 等系统库。
 
 ```bash
-# 安装依赖
-bun install
-
-# 启动前端开发服务器（Vite）
-bun run dev
-
-# 启动 Tauri 开发模式（桌面窗口）
-bun tauri dev
+bun install        # 安装依赖
+bun tauri dev      # 桌面开发模式
+bun tauri build    # 构建当前平台安装包，产物在 src-tauri/target/release/bundle/
 ```
 
-> 一般情况下直接运行 `bun tauri dev` 即可，它会按照 `src-tauri/tauri.conf.json` 中的配置先执行 `bun run build` / 使用 dev server。
-
-### 构建发行版
+Android 构建需要 Android SDK / NDK 和 JDK 21：
 
 ```bash
-# 构建当前平台的 Tauri 安装包
-bun tauri build
+bun tauri android build --apk
 ```
 
-构建完成后，Tauri 的所有原始产物都会放在：
-
-- `src-tauri/target/release/bundle/`
-
-GitHub Actions 会在 CI 中对 macOS / Windows / Linux 分别执行构建，并将这些文件重命名为：
-
-- `Aictionary-[version]_[os]_[arch].[extension]`
-
-然后自动上传到 GitHub Release。
-
----
+GitHub Actions 会在打 tag 时对全平台（含 Android 签名 APK）执行构建并上传到 Release。
 
 ## 反馈与贡献
 
-- 欢迎通过 **Issues** 反馈 Bug 或功能建议；
-- 也非常欢迎 **PR**：
-  - 尽量附上改动说明或截图，方便快速 Review；
-  - 用户可见文案请记得同步更新中/英翻译；
-- 对以下方向感兴趣都可以一起讨论：
-  - 扩展或替换词库来源；
-  - 支持更多平台或打包格式；
-  - 接入新的 LLM 提供商，优化释义风格或对话能力。
-
----
+- 欢迎通过 [Issues](https://github.com/ahpxex/Aictionary/issues) 反馈 Bug 或功能建议；
+- PR 请尽量附上改动说明或截图，用户可见文案记得同步更新中/英翻译（`src/shared/locales/`）；
+- 扩展词库来源、支持更多平台、接入新的 LLM/TTS 提供商等方向都欢迎讨论。
 
 ## 致谢
 
-- **[open-dictionary](https://github.com/ahpxex/open-dictionary)** —— 词库数据的来源；再往上是 **[Wiktionary](https://www.wiktionary.org/)** 的贡献者们，没有他们的持续编纂就没有这部词典的底子。
-
-- **[linux.do](https://linux.do/)** —— 项目在社区发过帖，收到了大量真实使用中的反馈和功能建议，很多改进就是从那些帖子里的讨论来的。
-
-- **每一位提过 [issue](https://github.com/ahpxex/Aictionary/issues) 和 [PR](https://github.com/ahpxex/Aictionary/pulls) 的人** —— Linux 支持、打包修复、安装文档，以及那些只是认真描述清楚了一个 bug 的反馈。
-
+- **[open-dictionary](https://github.com/ahpxex/open-dictionary)** 与其上游 **[Wiktionary](https://www.wiktionary.org/)** 的贡献者们——没有他们的持续编纂就没有这部词典的底子；
+- **[linux.do](https://linux.do/)** 社区——大量真实使用反馈和功能建议来自那里的讨论；
+- **每一位提过 [issue](https://github.com/ahpxex/Aictionary/issues) 和 [PR](https://github.com/ahpxex/Aictionary/pulls) 的人**——Linux 支持、打包修复、安装文档，以及认真描述清楚一个 bug 的每条反馈；
 - 以及 [Tauri](https://tauri.app/)、[shadcn/ui](https://ui.shadcn.com/)、[Vercel AI SDK](https://ai-sdk.dev/) 等项目——应用的骨架建立在它们之上。
-
----
 
 ## License
 
-本项目代码为 MIT，见 [`LICENSE`](./LICENSE)。
-
-内置词库并非本项目作品：它来自 [ahpxex/open-dictionary](https://github.com/ahpxex/open-dictionary)，以 **CC BY-SA 4.0** 发布，是 Wiktionary 内容的衍生作品，署名归 Wiktionary 贡献者。分发或二次加工该数据时须遵守 ShareAlike 条款。
+本项目代码为 MIT，见 [`LICENSE`](./LICENSE)。内置词库并非本项目作品，以 **CC BY-SA 4.0** 发布（详见上文「词库来源与许可」）。
 
 ---
 
