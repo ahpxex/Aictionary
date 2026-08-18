@@ -21,7 +21,8 @@
       "placeholder": "Search a word, or Chinese to find one…",
       "searching": "Searching…",
       "button": "Search",
-      "empty_error": "Please enter a word to search."
+      "empty_error": "Please enter a word to search.",
+      "suggestions_label": "Dictionary suggestions"
     },
     "entry": {
       "back_to_top": "Back to top"

@@ -3,6 +3,7 @@ import type {
   DictionaryEntry,
   DictionaryLookupResult,
   DictionaryMetadata,
+  DictionarySuggestion,
   ReverseLookupCandidate,
 } from "@/shared/types/dictionary";
 
@@ -73,6 +74,30 @@ export async function queryDictionary(
   } catch (error) {
     const message = parseErrorMessage(error);
     throw new DictionaryQueryError(message, determineErrorCode(message), { cause: error });
+  }
+}
+
+/** Return a small local candidate list for an incomplete headword. */
+export async function suggestDictionary(
+  query: string,
+  cachePath: string
+): Promise<DictionarySuggestion[]> {
+  const trimmedQuery = query.trim();
+  const trimmedCachePath = cachePath.trim();
+  if (!trimmedQuery || !trimmedCachePath) {
+    return [];
+  }
+
+  try {
+    return await invoke<DictionarySuggestion[]>("dictionary_suggest", {
+      query: trimmedQuery,
+      cachePath: trimmedCachePath,
+    });
+  } catch (error) {
+    // Suggestions are an enhancement to typing; a missing cache must not
+    // turn into an error toast or interrupt free-form search.
+    console.warn("Dictionary suggestions unavailable", error);
+    return [];
   }
 }
 

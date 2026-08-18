@@ -9,9 +9,7 @@ use tauri::{AppHandle, Manager};
 use super::types::{
     DictionaryLookupResult, LookupSource, ReverseLookupCandidate, UpsertDictionaryEntryArgs,
 };
-use super::utils::{
-    normalize_headword, resolve_cache_dir, DISTRIBUTION_DB_FILE, USER_DB_FILE,
-};
+use super::utils::{normalize_headword, resolve_cache_dir, DISTRIBUTION_DB_FILE, USER_DB_FILE};
 
 fn open_read_only(path: &Path) -> Result<Connection, String> {
     Connection::open_with_flags(
@@ -118,7 +116,10 @@ fn open_user_db_rw(cache_dir: &Path) -> Result<Connection, String> {
 /// Looks in {cache_path}/distribution.sqlite first, then in the user's own
 /// generated entries at {cache_path}/user_dictionary.sqlite.
 #[tauri::command]
-pub fn dictionary_query(word: String, cache_path: String) -> Result<DictionaryLookupResult, String> {
+pub fn dictionary_query(
+    word: String,
+    cache_path: String,
+) -> Result<DictionaryLookupResult, String> {
     let word = word.trim();
     let cache_path = cache_path.trim();
 
@@ -186,7 +187,14 @@ struct RankedCandidate {
     candidate: ReverseLookupCandidate,
 }
 
-fn ranked(gloss: String, term: &str, priority: String, headword: String, pos: Option<String>, source: LookupSource) -> RankedCandidate {
+fn ranked(
+    gloss: String,
+    term: &str,
+    priority: String,
+    headword: String,
+    pos: Option<String>,
+    source: LookupSource,
+) -> RankedCandidate {
     RankedCandidate {
         match_rank: rank_match(&gloss, term),
         priority_rank: rank_priority(&priority),
@@ -286,8 +294,7 @@ fn with_reverse_index<T>(
 
     let stale = match guard.as_ref() {
         Some(index) => {
-            index.cache_dir != cache_dir
-                || index.fingerprint != distribution_fingerprint(cache_dir)
+            index.cache_dir != cache_dir || index.fingerprint != distribution_fingerprint(cache_dir)
         }
         None => true,
     };
@@ -300,7 +307,10 @@ fn with_reverse_index<T>(
 
 /// Scan the in-memory gloss index for the query text. Matches are ranked
 /// without allocating; only the surviving top slice materializes candidates.
-fn reverse_query_distribution(cache_dir: &Path, term: &str) -> Result<Vec<RankedCandidate>, String> {
+fn reverse_query_distribution(
+    cache_dir: &Path,
+    term: &str,
+) -> Result<Vec<RankedCandidate>, String> {
     with_reverse_index(cache_dir, |index| {
         // (sort keys..., row index): comparable tuples, strings stay put.
         let mut matches: Vec<(u8, u8, usize, usize)> = index
@@ -538,11 +548,10 @@ pub fn check_dictionary_cache_exists(cache_path: String) -> Result<bool, String>
         Err(_) => return Ok(false),
     };
 
-    let has_entries: Result<bool, _> = conn.query_row(
-        "SELECT EXISTS(SELECT 1 FROM entries LIMIT 1)",
-        [],
-        |row| row.get(0),
-    );
+    let has_entries: Result<bool, _> =
+        conn.query_row("SELECT EXISTS(SELECT 1 FROM entries LIMIT 1)", [], |row| {
+            row.get(0)
+        });
 
     Ok(has_entries.unwrap_or(false))
 }
@@ -572,7 +581,8 @@ pub fn count_dictionary_entries(cache_path: String) -> Result<u64, String> {
         Err(_) => return Ok(0),
     };
 
-    let count: Result<u64, _> = conn.query_row("SELECT count(*) FROM entries", [], |row| row.get(0));
+    let count: Result<u64, _> =
+        conn.query_row("SELECT count(*) FROM entries", [], |row| row.get(0));
     Ok(count.unwrap_or(0))
 }
 
@@ -830,7 +840,8 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         create_distribution_fixture(dir.path());
 
-        for (headword, gloss) in [("widget", "解决界面问题的小组件"), ("Resolve", "解决")] {
+        for (headword, gloss) in [("widget", "解决界面问题的小组件"), ("Resolve", "解决")]
+        {
             upsert_dictionary_entry(UpsertDictionaryEntryArgs {
                 cache_path: cache_path(&dir),
                 entry: json!({
@@ -849,7 +860,10 @@ mod tests {
         }
 
         let candidates = dictionary_reverse_query("解决".into(), cache_path(&dir)).unwrap();
-        let resolve = candidates.iter().find(|c| c.headword.eq_ignore_ascii_case("resolve")).unwrap();
+        let resolve = candidates
+            .iter()
+            .find(|c| c.headword.eq_ignore_ascii_case("resolve"))
+            .unwrap();
         // The user's duplicate "Resolve" is dropped in favor of the
         // distributed entry, mirroring forward-lookup precedence.
         assert!(matches!(resolve.source, LookupSource::Dictionary));
@@ -864,9 +878,11 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         create_distribution_fixture(dir.path());
 
-        assert!(dictionary_reverse_query("不存在的词".into(), cache_path(&dir))
-            .unwrap()
-            .is_empty());
+        assert!(
+            dictionary_reverse_query("不存在的词".into(), cache_path(&dir))
+                .unwrap()
+                .is_empty()
+        );
         // LIKE wildcards in the query must not match everything.
         assert!(dictionary_reverse_query("%".into(), cache_path(&dir))
             .unwrap()
@@ -899,7 +915,9 @@ mod tests {
         assert!(matches!(result.source, LookupSource::Dictionary));
         assert_eq!(result.entry["headword"], "resolve");
         assert_eq!(result.entry["schema_version"], "distribution_entry_v5");
-        assert!(result.entry["pos_groups"].as_array().is_some_and(|g| !g.is_empty()));
+        assert!(result.entry["pos_groups"]
+            .as_array()
+            .is_some_and(|g| !g.is_empty()));
 
         let count = count_dictionary_entries(dir.clone()).unwrap();
         assert!(count > 20_000, "expected a full dictionary, got {count}");
@@ -919,7 +937,10 @@ mod tests {
         );
 
         let metadata = dictionary_metadata(dir).unwrap();
-        assert_eq!(metadata["distribution_schema_version"], "distribution_entry_v5");
+        assert_eq!(
+            metadata["distribution_schema_version"],
+            "distribution_entry_v5"
+        );
     }
 
     #[test]
@@ -935,7 +956,10 @@ mod tests {
 
         let metadata = dictionary_metadata(cache_path(&dir)).unwrap();
         assert_eq!(metadata["entry_count"], 2);
-        assert_eq!(metadata["distribution_schema_version"], "distribution_entry_v5");
+        assert_eq!(
+            metadata["distribution_schema_version"],
+            "distribution_entry_v5"
+        );
         assert_eq!(metadata["user_entry_count"], 1);
     }
 }

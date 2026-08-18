@@ -363,9 +363,7 @@ pub async fn extract_gzip(app: AppHandle, args: ExtractGzipArgs) -> Result<Strin
         return Err("Archive file does not exist".into());
     }
 
-    let total = fs::metadata(&gzip_path)
-        .map(|meta| meta.len())
-        .unwrap_or(0);
+    let total = fs::metadata(&gzip_path).map(|meta| meta.len()).unwrap_or(0);
 
     app.emit("extract-start", serde_json::json!({ "totalBytes": total }))
         .ok();

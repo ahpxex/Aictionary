@@ -105,6 +105,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             // Dictionary commands
             dictionary::dictionary_query,
+            dictionary::suggestions::dictionary_suggest,
             dictionary::dictionary_reverse_query,
             dictionary::warm_reverse_index,
             dictionary::upsert_dictionary_entry,

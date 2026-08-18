@@ -97,6 +97,12 @@ export type DictionaryLookupResult = {
   entry: DictionaryEntry;
 };
 
+export type DictionarySuggestion = {
+  headword: string;
+  gloss: string | null;
+  source: LookupSource;
+};
+
 /** Metadata embedded in the distribution.sqlite artifact. */
 export type DictionaryMetadata = {
   distribution_schema_version?: string;
