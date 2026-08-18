@@ -3,6 +3,15 @@
     "name": "Aictionary",
     "loading": "Loading…"
   },
+  "popup": {
+    "search_placeholder": "Search a word",
+    "search_label": "Search a word",
+    "learn_more": "Learn More",
+    "history": "Recent queries",
+    "history_empty": "No recent queries",
+    "open_main": "Open Main Window",
+    "ai_searching": "This word is not in the local dictionary. Searching with AI…"
+  },
   "nav": {
     "dictionary": "Dictionary",
     "statistics": "Statistics",
@@ -21,7 +30,9 @@
       "placeholder": "Search a word, or Chinese to find one…",
       "searching": "Searching…",
       "button": "Search",
-      "empty_error": "Please enter a word to search."
+      "clear": "Clear search",
+      "empty_error": "Please enter a word to search.",
+      "suggestions_label": "Dictionary suggestions"
     },
     "entry": {
       "back_to_top": "Back to top"
@@ -435,18 +446,20 @@
     "keyboard": {
       "shortcuts": {
         "title": "Shortcuts",
-        "description": "Configure global hotkeys for copying selections or opening a fresh query.",
+        "description": "Configure global hotkeys for copying selections, opening a fresh query, or toggling the popup.",
         "enable_label": "Enable global shortcuts",
         "enable_helper": "When disabled, keyboard shortcuts are ignored until you turn them back on.",
-        "quick_query": "Quick query",
+        "quick_query": "Quick query (open main window query)",
         "new_query": "New query",
+        "popup_query": "Popup lookup",
         "reset": "Reset to defaults"
       },
       "usage": {
         "title": "Usage",
         "items": [
-          "Quick query: Focus the search input from anywhere in the app.",
-          "New query: Clear the search and start fresh."
+          "Quick query (open main window query): Focus the search input from anywhere in the app.",
+          "New query: Clear the search and start fresh.",
+          "Popup lookup: Show or hide the popup window."
         ]
       },
       "toast": {

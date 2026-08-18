@@ -345,3 +345,65 @@ const MainPage = lazy(() =>
 - Strict mode enabled
 - No unused locals/parameters allowed
 - All settings types defined in `src/shared/types/settings.ts`
+
+## Lookup Improvement Constraints
+
+These rules apply to the Popup, query routing, and suggestion work described in
+`docs/lookup-improvements-plan.md`.
+
+### Product routing contract
+
+- A single word or short phrase is an offline dictionary query. It must use
+  `dictionary_query` and must not silently fall back to an online service.
+- A sentence or multi-clause natural-language input is an online Microsoft
+  Translator query. It must not be sent through the dictionary or LLM entry
+  generator by default.
+- Keep routing deterministic and testable in a pure TypeScript function. Do
+  not classify from an API response, and do not use an opaque AI classifier.
+- The existing LLM entry-generation flow is a separate, explicit user action;
+  it must not become a hidden third route.
+- Online translation must have explicit loading, timeout, offline, and
+  credential-error states. Never log API keys, request headers, or full query
+  text when it may contain private content.
+
+### Popup constraints
+
+- The Popup is a separate lightweight Tauri desktop window, not a second copy
+  of the main page and not a CSS overlay inside the main window.
+- It owns only query text, suggestions, compact result state, and the action to
+  open the full result in the main window. The main window remains the owner of
+  the full dictionary entry and history presentation.
+- Popup results are intentionally limited to headword, pronunciation, and one
+  or two core meanings. Full meanings, examples, relations, audio controls,
+  and generated explanations belong in the main window.
+- Tray positioning and focus behavior are Rust/Tauri responsibilities. React
+  should receive a small event or command payload rather than calculate screen
+  coordinates.
+- Popup close, Escape, outside-click, and repeated tray-click behavior must be
+  defined and tested on macOS. Desktop-only code remains behind `cfg(desktop)`.
+
+### Suggestion constraints
+
+- Suggestions are queried from the local dictionary index through a bounded
+  Rust command; never load the complete SQLite dictionary into the webview.
+- Return a small, stable result set with deterministic ranking: exact prefix,
+  normalized prefix, edit-distance/fuzzy match, then lexical tie-breaker.
+- Debounce input, cancel or ignore stale responses, and keep keyboard
+  navigation accessible. An empty or very short input must not trigger an
+  unbounded query.
+- Suggestions are hints, not automatic searches. Enter and candidate selection
+  must still use the same central query service and routing contract.
+
+### Change and validation rules
+
+- Add or update types and service boundaries before wiring UI components.
+- Every new user-facing string is added to both locale files.
+- Prefer focused tests for the router, suggestion ranking, compact-result
+  mapping, and Rust SQLite queries. If the repository has no test runner for a
+  layer, add a small pure function that can be tested without a window.
+- Validate with `bun run build` for frontend changes and `cargo check` from
+  `src-tauri` for Rust changes. Do not claim window behavior is verified by a
+  compile-only check; manually test tray positioning and focus on macOS.
+- Keep the three product features independently reviewable. Shared contracts
+  belong in a small foundation change; avoid mixing visual polish with routing
+  or database migrations.

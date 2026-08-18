@@ -150,6 +150,10 @@ export function useDictionarySearch() {
               result: { source: "user", entry: aiEntry },
               word: normalized,
             });
+            // The result is ready for the UI now. Persistence remains part of
+            // the same workflow, but must not keep Popup in a loading state.
+            setIsSearching(false);
+            setIsGeneratingFromLlm(false);
             toast.success(
               t("main.llm.success", { model: llm.model })
             );

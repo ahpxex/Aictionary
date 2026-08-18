@@ -18,6 +18,21 @@
         "minWidth": 640,
         "minHeight": 480,
         "titleBarStyle": "Transparent"
+      },
+      {
+        "label": "popup",
+        "title": "Aictionary",
+        "width": 315,
+        "height": 360,
+        "minWidth": 315,
+        "minHeight": 360,
+        "visible": false,
+        "decorations": false,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "resizable": true,
+        "focus": true,
+        "titleBarStyle": "Transparent"
       }
     ],
     "security": {

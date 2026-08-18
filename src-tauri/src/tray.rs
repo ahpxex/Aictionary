@@ -10,34 +10,54 @@
 
 #![cfg(desktop)]
 
-use tauri::{menu::MenuBuilder, tray::TrayIconBuilder, AppHandle, Emitter, Manager};
+use tauri::{
+    menu::MenuBuilder,
+    tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
+    AppHandle, Emitter, LogicalPosition, Manager, PhysicalPosition, Position, Runtime,
+};
+use std::sync::Mutex;
 
 // Stable identifiers so both Rust and JS can rely on them.
 pub const TRAY_ID: &str = "main-tray";
 
 pub const MENU_ID_OPEN: &str = "tray-open";
-pub const MENU_ID_QUERY: &str = "tray-query";
-pub const MENU_ID_ABOUT: &str = "tray-about";
+pub const MENU_ID_SETTINGS: &str = "tray-settings";
 pub const MENU_ID_EXIT: &str = "tray-exit";
+pub const POPUP_ID: &str = "popup";
+
+const POPUP_GAP: f64 = 8.0;
+
+static LAST_TRAY_POSITION: Mutex<Option<Position>> = Mutex::new(None);
 
 /// Creates the tray icon and attaches its menu.
 pub fn init_tray(app: &AppHandle) -> tauri::Result<()> {
     let handle = app.clone();
 
-    // Build the tray menu (IDs are used in the global menu handler).
+    // Build the context menu (IDs are used in the global menu handler).
     let menu = MenuBuilder::new(&handle)
-        .text(MENU_ID_OPEN, "Open")
-        .text(MENU_ID_QUERY, "New query")
-        .separator()
-        .text(MENU_ID_ABOUT, "About")
-        .separator()
+        .text(MENU_ID_OPEN, "Main window")
+        .text(MENU_ID_SETTINGS, "Settings")
         .text(MENU_ID_EXIT, "Exit")
         .build()?;
 
     // Build the tray icon itself.
     let mut builder = TrayIconBuilder::with_id(TRAY_ID)
         .menu(&menu)
-        .show_menu_on_left_click(true)
+        .show_menu_on_left_click(false)
+        .on_tray_icon_event(|tray, event| {
+            if let TrayIconEvent::Click {
+                button: MouseButton::Left,
+                button_state: MouseButtonState::Down,
+                rect,
+                ..
+            } = event
+            {
+                if let Ok(mut last_position) = LAST_TRAY_POSITION.lock() {
+                    *last_position = Some(rect.position.clone());
+                }
+                toggle_popup(tray.app_handle(), Some(rect.position));
+            }
+        })
         .tooltip("AIctionary");
 
     // Try to reuse the default app icon for the tray, if available.
@@ -59,43 +79,83 @@ pub fn register_menu_handler(app: &AppHandle) {
 
         if id == MENU_ID_OPEN {
             handle_open(app_handle);
-        } else if id == MENU_ID_QUERY {
-            handle_query(app_handle);
-        } else if id == MENU_ID_ABOUT {
-            handle_about(app_handle);
+        } else if id == MENU_ID_SETTINGS {
+            handle_settings(app_handle);
         } else if id == MENU_ID_EXIT {
             app_handle.exit(0);
         }
     });
 }
 
+pub fn focus_window<R: Runtime>(app: &AppHandle<R>, label: &str) {
+    if let Some(window) = app.get_webview_window(label) {
+        let _ = window.show();
+        let _ = window.unminimize();
+        let _ = window.set_focus();
+    }
+}
+
 fn handle_open(app: &AppHandle) {
-    if let Some(window) = app.get_webview_window("main") {
-        let _ = window.show();
-        let _ = window.unminimize();
-        let _ = window.set_focus();
-    }
+    focus_window(app, "main");
 }
 
-fn handle_query(app: &AppHandle) {
-    if let Some(window) = app.get_webview_window("main") {
-        let _ = window.show();
-        let _ = window.unminimize();
-        let _ = window.set_focus();
-    }
+fn handle_settings(app: &AppHandle) {
+    focus_window(app, "main");
 
-    // Reuse the same event that the global keyboard shortcut emits so
-    // the React side doesn't need a special code path for tray clicks.
-    let _ = app.emit("new-query", ());
+    let _ = app.emit("open-settings", ());
 }
 
-fn handle_about(app: &AppHandle) {
-    if let Some(window) = app.get_webview_window("main") {
+pub fn toggle_popup<R: Runtime>(app: &AppHandle<R>, tray_position: Option<Position>) {
+    if let Some(window) = app.get_webview_window(POPUP_ID) {
+        if window.is_visible().unwrap_or(false) {
+            let _ = window.hide();
+            return;
+        }
+
+        let popup_size = window.outer_size().ok();
+        let scale_factor = window.scale_factor().unwrap_or(1.0);
+        let tray_position = tray_position
+            .or_else(|| LAST_TRAY_POSITION.lock().ok().and_then(|position| position.clone()))
+            .or_else(|| {
+                app.primary_monitor().ok().flatten().map(|monitor| {
+                    let monitor_position = monitor.position();
+                    let monitor_size = monitor.size();
+                    let popup_width = popup_size
+                        .map(|size| size.width as i32)
+                        .unwrap_or(315);
+                    let popup_height = popup_size
+                        .map(|size| size.height as i32)
+                        .unwrap_or(360);
+                    Position::Physical(PhysicalPosition::new(
+                        monitor_position.x + (monitor_size.width as i32 - popup_width) / 2,
+                        monitor_position.y + (monitor_size.height as i32 - popup_height) / 2,
+                    ))
+                })
+            });
+
+        let position = tray_position.map(|tray_position| match tray_position {
+            Position::Logical(position) => Position::Logical(LogicalPosition::new(
+                position.x
+                    - popup_size
+                        .map(|size| f64::from(size.width) / scale_factor / 2.0)
+                        .unwrap_or(157.5),
+                position.y + POPUP_GAP,
+            )),
+            Position::Physical(position) => Position::Physical(PhysicalPosition::new(
+                position.x
+                    - popup_size
+                        .map(|size| size.width as i32 / 2)
+                        .unwrap_or(158),
+                position.y + POPUP_GAP as i32,
+            )),
+        });
+
+        if let Some(position) = position {
+            let _ = window.set_position(position);
+        }
         let _ = window.show();
         let _ = window.unminimize();
         let _ = window.set_focus();
+        let _ = app.emit("popup-opened", ());
     }
-
-    // Ask the frontend to navigate to Settings → About.
-    let _ = app.emit("open-settings-about", ());
 }

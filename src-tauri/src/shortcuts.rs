@@ -1,7 +1,7 @@
 use serde::Serialize;
 use tauri::{AppHandle, Runtime};
 #[cfg(desktop)]
-use tauri::{Emitter, Manager};
+use tauri::Emitter;
 #[cfg(desktop)]
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
@@ -13,11 +13,19 @@ use tauri_plugin_clipboard_manager::ClipboardExt;
 #[cfg(desktop)]
 fn normalize_token(token: &str) -> String {
     match token.to_ascii_lowercase().as_str() {
-        "mod" => if cfg!(target_os = "macos") { "Command" } else { "Control" }.to_string(),
-        "ctrl" | "control" => "Control".to_string(),
-        "super" | "meta" | "cmd" | "command" => {
-            if cfg!(target_os = "macos") { "Command" } else { "Super" }.to_string()
+        "mod" => if cfg!(target_os = "macos") {
+            "Command"
+        } else {
+            "Control"
         }
+        .to_string(),
+        "ctrl" | "control" => "Control".to_string(),
+        "super" | "meta" | "cmd" | "command" => if cfg!(target_os = "macos") {
+            "Command"
+        } else {
+            "Super"
+        }
+        .to_string(),
         "alt" | "option" => "Alt".to_string(),
         "shift" => "Shift".to_string(),
         // An empty segment is what "Mod+ " (a space binding) splits into.
@@ -152,20 +160,7 @@ struct QuickQueryPayload {
 pub struct ShortcutSetupReport {
     quick_query_error: Option<String>,
     new_query_error: Option<String>,
-}
-
-/// Bring the main window forward.
-///
-/// `unminimize` has to come before `set_focus`: focusing a still-minimised
-/// window is a no-op, which used to leave the window restored but unfocused
-/// so the query bar never received the caret.
-#[cfg(desktop)]
-fn focus_main_window<R: Runtime>(app: &AppHandle<R>) {
-    if let Some(window) = app.get_webview_window("main") {
-        let _ = window.unminimize();
-        let _ = window.show();
-        let _ = window.set_focus();
-    }
+    popup_query_error: Option<String>,
 }
 
 #[cfg(desktop)]
@@ -174,6 +169,7 @@ pub async fn setup_shortcuts<R: Runtime>(
     app: AppHandle<R>,
     quick_query: String,
     new_query: String,
+    popup_query: String,
     enabled: bool,
 ) -> Result<ShortcutSetupReport, String> {
     use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
@@ -220,7 +216,7 @@ pub async fn setup_shortcuts<R: Runtime>(
 
                     // Always surface the window: a silent no-op is
                     // indistinguishable from the shortcut not working at all.
-                    focus_main_window(&app_handle);
+                    crate::tray::focus_window(&app_handle, "main");
 
                     let _ = app_handle.emit("quick-query", QuickQueryPayload { text, copy_error });
                 });
@@ -246,7 +242,7 @@ pub async fn setup_shortcuts<R: Runtime>(
 
                 let app_handle = app_handle.clone();
                 tauri::async_runtime::spawn(async move {
-                    focus_main_window(&app_handle);
+                    crate::tray::focus_window(&app_handle, "main");
                     let _ = app_handle.emit("new-query", ());
                 });
             });
@@ -257,6 +253,28 @@ pub async fn setup_shortcuts<R: Runtime>(
         }
         Err(error) => {
             report.new_query_error = Some(error.to_string());
+        }
+    }
+
+    // Register the Popup toggle. It deliberately reuses the Tray's native
+    // show/hide path so the shortcut behaves exactly like a Tray click.
+    match normalize_shortcut(&popup_query).parse::<Shortcut>() {
+        Ok(shortcut) => {
+            let app_handle = app.clone();
+            let registration = shortcuts.on_shortcut(shortcut, move |_app, _shortcut, event| {
+                if event.state != ShortcutState::Pressed {
+                    return;
+                }
+
+                crate::tray::toggle_popup(&app_handle, None);
+            });
+
+            if let Err(error) = registration {
+                report.popup_query_error = Some(error.to_string());
+            }
+        }
+        Err(error) => {
+            report.popup_query_error = Some(error.to_string());
         }
     }
 
@@ -272,6 +290,7 @@ pub async fn setup_shortcuts<R: Runtime>(
     _app: AppHandle<R>,
     _quick_query: String,
     _new_query: String,
+    _popup_query: String,
     _enabled: bool,
 ) -> Result<ShortcutSetupReport, String> {
     Ok(ShortcutSetupReport::default())

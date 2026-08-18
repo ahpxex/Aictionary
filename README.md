@@ -1,6 +1,12 @@
-# Aictionary
+# LookUP简单的查词/翻译软件
+对留学生来说非常有用的小工具。在上课遇到不会的单词的时候，直接按快捷键出来搜一搜，立马掌握。
 
-快速且异常好用的英汉词典 App，专注于「查词体验」这件小事。
+## 核心功能
+1. 基础的字典/查词界面由 Aictionary 开源项目改进而来。提供完善，简明易懂的翻译结果
+2. 快捷键 popup 窗口快速查单词/翻译句子，不等待不尴尬
+
+
+# 词典基座软件 Aictionary 介绍
 
 <p>
   <a href="https://github.com/ahpxex/Aictionary/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/ahpxex/Aictionary?label=release" /></a>

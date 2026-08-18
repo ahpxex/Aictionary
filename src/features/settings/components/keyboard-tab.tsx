@@ -17,6 +17,7 @@ export function KeyboardTab() {
     updateKeyboard({
       quickQuery: defaultSettings.keyboard.quickQuery,
       newQuery: defaultSettings.keyboard.newQuery,
+      popupQuery: defaultSettings.keyboard.popupQuery,
     });
     toast.success(t("settings.keyboard.toast.reset"));
   };
@@ -63,6 +64,15 @@ export function KeyboardTab() {
               value={settings.keyboard.newQuery}
               onChange={(value) => updateKeyboard({ newQuery: value })}
               placeholder={placeholder(defaultSettings.keyboard.newQuery)}
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="shortcut-popup">{t("settings.keyboard.shortcuts.popup_query")}</Label>
+            <KbdInput
+              id="shortcut-popup"
+              value={settings.keyboard.popupQuery}
+              onChange={(value) => updateKeyboard({ popupQuery: value })}
+              placeholder={placeholder(defaultSettings.keyboard.popupQuery)}
             />
           </div>
           <Button variant="outline" onClick={handleReset}>
