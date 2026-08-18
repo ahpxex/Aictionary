@@ -8,18 +8,26 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
-import { Search } from "lucide-react";
+import { Search, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useSettings } from "@/features/settings/hooks/use-settings";
 import { suggestDictionary } from "@/shared/services/dictionary-service";
 import type { DictionarySuggestion } from "@/shared/types/dictionary";
+import { cn } from "@/lib/utils";
 
 type SearchFormProps = {
   onSearch: (word: string) => void;
   initialValue?: string;
+  showIcon?: boolean;
+  className?: string;
+  onValueChange?: (value: string) => void;
+  showClearButton?: boolean;
+  onClear?: () => void;
 };
 
 export interface SearchFormRef {
   focusInput: () => void;
+  setInputValue: (value: string) => void;
 }
 
 /**
@@ -28,7 +36,15 @@ export interface SearchFormRef {
  * the way to ask for the next one. Enter submits; there is no button.
  */
 export const SearchForm = forwardRef<SearchFormRef, SearchFormProps>(
-  ({ onSearch, initialValue = "" }, ref) => {
+  ({
+    onSearch,
+    initialValue = "",
+    showIcon = true,
+    className,
+    onValueChange,
+    showClearButton = false,
+    onClear,
+  }, ref) => {
     const { t } = useTranslation();
     const { settings } = useSettings();
     const [value, setValue] = useState(initialValue);
@@ -49,6 +65,14 @@ export const SearchForm = forwardRef<SearchFormRef, SearchFormProps>(
       inputRef.current?.blur();
       closeSuggestions();
       onSearch(headword);
+    };
+
+    const clearValue = () => {
+      setValue("");
+      onValueChange?.("");
+      closeSuggestions();
+      onClear?.();
+      inputRef.current?.focus();
     };
 
     // Only follow a real result. During generation the current result is
@@ -95,6 +119,10 @@ export const SearchForm = forwardRef<SearchFormRef, SearchFormProps>(
       focusInput: () => {
         inputRef.current?.focus();
         inputRef.current?.select();
+      },
+      setInputValue: (nextValue: string) => {
+        setValue(nextValue);
+        onValueChange?.(nextValue);
       },
     }));
 
@@ -155,25 +183,26 @@ export const SearchForm = forwardRef<SearchFormRef, SearchFormProps>(
     };
 
     return (
-      <div ref={formContainerRef} className="relative min-w-0 flex-1">
+      <div ref={formContainerRef} className={cn("relative min-w-0 flex-1", className)}>
         <form
           onSubmit={handleSubmit}
           className="flex h-8 min-w-0 items-center gap-2 px-2 transition-colors hover:bg-muted/40 focus-within:bg-muted/60"
         >
           {/* The icon stays put while a lookup runs: the query bar is chrome,
               and progress belongs in the page, not in the field's affordance. */}
-          <Search className="size-3.5 shrink-0 text-muted-foreground" />
+          {showIcon && <Search className="size-3.5 shrink-0 text-muted-foreground" />}
           <input
             ref={inputRef}
             value={value}
             onChange={(event) => {
-              setValue(event.target.value);
+              const nextValue = event.target.value;
+              setValue(nextValue);
+              onValueChange?.(nextValue);
               setIsSuggestionsOpen(true);
             }}
             onKeyDown={handleKeyDown}
             onPointerDown={() => setIsSuggestionsOpen(suggestions.length > 0)}
-            onFocus={(event) => {
-              window.requestAnimationFrame(() => event.target.select());
+            onFocus={() => {
               setIsSuggestionsOpen(suggestions.length > 0);
             }}
             placeholder={t("main.search.placeholder")}
@@ -191,6 +220,20 @@ export const SearchForm = forwardRef<SearchFormRef, SearchFormProps>(
                 : undefined
             }
           />
+          {showClearButton && value && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              className="size-6 shrink-0 text-muted-foreground hover:text-foreground"
+              aria-label={t("main.search.clear")}
+              title={t("main.search.clear")}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={clearValue}
+            >
+              <X className="size-3.5" />
+            </Button>
+          )}
         </form>
         {isSuggestionsOpen && suggestions.length > 0 && (
           <ul

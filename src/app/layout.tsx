@@ -2,6 +2,7 @@ import { Outlet, NavLink, useNavigate } from "react-router";
 import { useCallback, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { BarChart3, BookOpen, Settings2 } from "lucide-react";
@@ -17,6 +18,19 @@ import { useSettings } from "@/features/settings/hooks/use-settings";
 import { useDictionarySearch } from "@/features/main/hooks/use-dictionary-search";
 import { SearchForm } from "@/features/main/components/search-form";
 import { useGlobalShortcuts } from "@/shared/hooks/use-global-shortcuts";
+import { useSetAtom } from "jotai";
+import {
+  currentResultAtom,
+  generationPreviewAtom,
+  generationSummaryAtom,
+  generatingModelAtom,
+  generatingWordAtom,
+  isGeneratingFromLlmAtom,
+  nonsenseQueryAtom,
+  reverseLookupAtom,
+} from "@/shared/state/dictionary";
+import type { DictionaryLookupResult } from "@/shared/types/dictionary";
+import type { GenerationPreview } from "@/shared/services/llm-service";
 
 type NavItem = {
   to: string;
@@ -35,6 +49,14 @@ export function AppLayout() {
   const { settings } = useSettings();
   const navigate = useNavigate();
   const { search, result, reverseLookup } = useDictionarySearch();
+  const setCurrentResult = useSetAtom(currentResultAtom);
+  const setIsGeneratingFromLlm = useSetAtom(isGeneratingFromLlmAtom);
+  const setGeneratingWord = useSetAtom(generatingWordAtom);
+  const setGeneratingModel = useSetAtom(generatingModelAtom);
+  const setGenerationSummary = useSetAtom(generationSummaryAtom);
+  const setGenerationPreview = useSetAtom(generationPreviewAtom);
+  const setNonsenseQuery = useSetAtom(nonsenseQueryAtom);
+  const setReverseLookup = useSetAtom(reverseLookupAtom);
 
   // Searching from any tab jumps back to the dictionary view.
   const handleSearch = (word: string) => {
@@ -106,8 +128,20 @@ export function AppLayout() {
           })
         );
       }
+      if (report.popupQueryError) {
+        toast.error(
+          t("settings.keyboard.toast.register_failed", {
+            shortcut: formatShortcut(settings.keyboard.popupQuery).join(" "),
+          })
+        );
+      }
     },
-    [settings.keyboard.newQuery, settings.keyboard.quickQuery, t]
+    [
+      settings.keyboard.newQuery,
+      settings.keyboard.popupQuery,
+      settings.keyboard.quickQuery,
+      t,
+    ]
   );
 
   // Global keyboard shortcuts are wired here so they work regardless of
@@ -115,6 +149,7 @@ export function AppLayout() {
   useGlobalShortcuts({
     quickQuery: settings.keyboard.quickQuery,
     newQuery: settings.keyboard.newQuery,
+    popupQuery: settings.keyboard.popupQuery,
     enabled: settings.keyboard.enabled,
     onQuickQuery: handleQuickQuery,
     onNewQuery: focusQueryBar,
@@ -125,6 +160,99 @@ export function AppLayout() {
   useEffect(() => {
     const unlistenPromise = listen("open-settings-about", () => {
       navigate("/settings/about");
+    });
+
+    return () => {
+      unlistenPromise.then((unlisten) => unlisten());
+    };
+  }, [navigate]);
+
+  useEffect(() => {
+    const unlistenPromise = listen("open-settings", () => {
+      navigate("/settings");
+    });
+
+    return () => {
+      unlistenPromise.then((unlisten) => unlisten());
+    };
+  }, [navigate]);
+
+  useEffect(() => {
+    const unlistenPromise = listen<{ result: DictionaryLookupResult }>(
+      "open-main-result",
+      (event) => {
+        const window = getCurrentWebviewWindow();
+        navigate("/");
+        setCurrentResult(event.payload.result);
+        setIsGeneratingFromLlm(false);
+        setGeneratingWord(null);
+        setGeneratingModel(null);
+        setGenerationSummary(null);
+        setGenerationPreview(null);
+        void window.show().then(() => window.unminimize()).then(() => window.setFocus());
+      }
+    );
+
+    return () => {
+      unlistenPromise.then((unlisten) => unlisten());
+    };
+  }, [navigate, setCurrentResult]);
+
+  useEffect(() => {
+    const unlistenPromise = listen<{
+      word: string;
+      model: string | null;
+      summary: string | null;
+      preview: GenerationPreview | null;
+    }>("open-main-generation", (event) => {
+      const window = getCurrentWebviewWindow();
+      navigate("/");
+      setCurrentResult(null);
+      setReverseLookup(null);
+      setNonsenseQuery(null);
+      setGeneratingWord(event.payload.word);
+      setGeneratingModel(event.payload.model);
+      setGenerationSummary(event.payload.summary);
+      setGenerationPreview(event.payload.preview);
+      setIsGeneratingFromLlm(true);
+      void window.show().then(() => window.unminimize()).then(() => window.setFocus());
+    });
+
+    return () => {
+      unlistenPromise.then((unlisten) => unlisten());
+    };
+  }, [
+    navigate,
+    setCurrentResult,
+    setGenerationPreview,
+    setGenerationSummary,
+    setGeneratingModel,
+    setGeneratingWord,
+    setIsGeneratingFromLlm,
+    setNonsenseQuery,
+    setReverseLookup,
+  ]);
+
+  useEffect(() => {
+    const unlistenPromise = listen<{ word: string }>("open-main-nonsense", (event) => {
+      const window = getCurrentWebviewWindow();
+      navigate("/");
+      setCurrentResult(null);
+      setIsGeneratingFromLlm(false);
+      setNonsenseQuery(event.payload.word);
+      void window.show().then(() => window.unminimize()).then(() => window.setFocus());
+    });
+
+    return () => {
+      unlistenPromise.then((unlisten) => unlisten());
+    };
+  }, [navigate, setCurrentResult, setIsGeneratingFromLlm, setNonsenseQuery]);
+
+  useEffect(() => {
+    const unlistenPromise = listen("open-main-window", () => {
+      const window = getCurrentWebviewWindow();
+      navigate("/");
+      void window.show().then(() => window.setFocus());
     });
 
     return () => {

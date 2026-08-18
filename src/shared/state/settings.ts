@@ -68,6 +68,7 @@ export const defaultSettings: AppSettings = {
   keyboard: {
     quickQuery: "Mod+Shift+D",
     newQuery: "Mod+Shift+K",
+    popupQuery: "Mod+Shift+P",
     enabled: true,
   },
   about: {

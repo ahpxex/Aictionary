@@ -33,6 +33,19 @@ fn set_tray_visibility(_app: tauri::AppHandle, _visible: bool) -> Result<(), Str
     Ok(())
 }
 
+#[tauri::command]
+#[cfg(desktop)]
+fn open_main_window(app: tauri::AppHandle) -> Result<(), String> {
+    tray::focus_window(&app, "main");
+    Ok(())
+}
+
+#[tauri::command]
+#[cfg(not(desktop))]
+fn open_main_window(_app: tauri::AppHandle) -> Result<(), String> {
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // rustls will not guess a CryptoProvider when the dependency graph offers
@@ -75,7 +88,7 @@ pub fn run() {
             }
         }));
 
-    builder
+    let app = builder
         .setup(|_app| {
             #[cfg(desktop)]
             {
@@ -95,6 +108,22 @@ pub fn run() {
                         if let WindowEvent::CloseRequested { api, .. } = event {
                             api.prevent_close();
                             let _ = window_for_event.hide();
+                        }
+                    });
+                }
+
+                if let Some(popup_window) = handle.get_webview_window(tray::POPUP_ID) {
+                    let window_for_event = popup_window.clone();
+                    popup_window.on_window_event(move |event| {
+                        match event {
+                            WindowEvent::CloseRequested { api, .. } => {
+                                api.prevent_close();
+                                let _ = window_for_event.hide();
+                            }
+                            WindowEvent::Focused(false) => {
+                                let _ = window_for_event.hide();
+                            }
+                            _ => {}
                         }
                     });
                 }
@@ -131,7 +160,19 @@ pub fn run() {
             shortcuts::open_shortcut_permission_settings,
             // Tray commands
             set_tray_visibility,
+            open_main_window,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application");
+
+    app.run(|app_handle, event| {
+        #[cfg(desktop)]
+        if let tauri::RunEvent::Reopen { .. } = event {
+            if let Some(main_window) = app_handle.get_webview_window("main") {
+                let _ = main_window.show();
+                let _ = main_window.unminimize();
+                let _ = main_window.set_focus();
+            }
+        }
+    });
 }

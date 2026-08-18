@@ -83,6 +83,7 @@ export type DictionarySettings = {
 export type KeyboardShortcutSettings = {
   quickQuery: string;
   newQuery: string;
+  popupQuery: string;
   enabled: boolean;
 };
 
