@@ -13,11 +13,19 @@ use tauri_plugin_clipboard_manager::ClipboardExt;
 #[cfg(desktop)]
 fn normalize_token(token: &str) -> String {
     match token.to_ascii_lowercase().as_str() {
-        "mod" => if cfg!(target_os = "macos") { "Command" } else { "Control" }.to_string(),
-        "ctrl" | "control" => "Control".to_string(),
-        "super" | "meta" | "cmd" | "command" => {
-            if cfg!(target_os = "macos") { "Command" } else { "Super" }.to_string()
+        "mod" => if cfg!(target_os = "macos") {
+            "Command"
+        } else {
+            "Control"
         }
+        .to_string(),
+        "ctrl" | "control" => "Control".to_string(),
+        "super" | "meta" | "cmd" | "command" => if cfg!(target_os = "macos") {
+            "Command"
+        } else {
+            "Super"
+        }
+        .to_string(),
         "alt" | "option" => "Alt".to_string(),
         "shift" => "Shift".to_string(),
         // An empty segment is what "Mod+ " (a space binding) splits into.

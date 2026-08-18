@@ -10,6 +10,15 @@ pub struct DictionaryLookupResult {
     pub entry: Value,
 }
 
+/// A lightweight headword returned while the user is still typing.
+#[derive(Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct DictionarySuggestion {
+    pub headword: String,
+    pub gloss: Option<String>,
+    pub source: LookupSource,
+}
+
 #[derive(Serialize, Clone, Copy, Debug)]
 #[serde(rename_all = "snake_case")]
 pub enum LookupSource {

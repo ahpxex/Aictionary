@@ -21,7 +21,8 @@
       "placeholder": "搜索单词，或输入中文反查…",
       "searching": "搜索中…",
       "button": "搜索",
-      "empty_error": "请输入要查询的单词。"
+      "empty_error": "请输入要查询的单词。",
+      "suggestions_label": "词典联想"
     },
     "entry": {
       "back_to_top": "回到顶部"
