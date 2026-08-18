@@ -141,11 +141,7 @@ const EDGE_CONNECT_TIMEOUT: Duration = Duration::from_secs(15);
 /// The connection is the fragile part: some networks reset the websocket
 /// upgrade while leaving ordinary HTTPS to the same host alone, which is why
 /// the proxy travels all the way down here.
-async fn synthesize_edge(
-    voice: &str,
-    text: &str,
-    proxy: Option<&str>,
-) -> Result<Vec<u8>, String> {
+async fn synthesize_edge(voice: &str, text: &str, proxy: Option<&str>) -> Result<Vec<u8>, String> {
     let config = edge_tts::SpeechConfig::new(voice);
     let connect = edge_tts::synthesize(&config, text, proxy);
 
@@ -468,9 +464,8 @@ pub async fn start_tts_stream(app: AppHandle, args: TtsStreamArgs) -> Result<(),
             .await
             .unwrap_or_else(|_| "Unable to read error message".to_string());
 
-        let message = extract_error_message(&details).unwrap_or_else(|| {
-            format!("{provider_name} request failed ({status}): {details}")
-        });
+        let message = extract_error_message(&details)
+            .unwrap_or_else(|| format!("{provider_name} request failed ({status}): {details}"));
 
         emit_tts_error(&app, &request_id, &message);
         return Err(message);

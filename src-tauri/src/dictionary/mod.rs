@@ -1,4 +1,5 @@
 pub mod commands;
+pub mod suggestions;
 mod types;
 mod utils;
 

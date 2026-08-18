@@ -62,9 +62,7 @@ fn from_system() -> Option<String> {
     let proxies = store.get_proxies()?;
 
     let lookup = |key: &str| -> Option<CFType> {
-        proxies
-            .find(&CFString::new(key))
-            .map(|value| value.clone())
+        proxies.find(&CFString::new(key)).map(|value| value.clone())
     };
     let enabled = |key: &str| -> bool {
         lookup(key)

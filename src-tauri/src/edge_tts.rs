@@ -185,7 +185,12 @@ async fn open_transport(proxy: Option<&str>) -> Result<Box<dyn Transport>, Strin
                 (HOST.to_string(), 443u16),
             )
             .await
-            .map_err(|err| format!("SOCKS5 proxy {} refused the connection: {err}", url.authority))?;
+            .map_err(|err| {
+                format!(
+                    "SOCKS5 proxy {} refused the connection: {err}",
+                    url.authority
+                )
+            })?;
             Ok(Box::new(stream))
         }
         "http" | "https" => {
@@ -253,8 +258,7 @@ where
         })
         .unwrap_or_default();
 
-    let request =
-        format!("CONNECT {HOST}:443 HTTP/1.1\r\nHost: {HOST}:443\r\n{authorization}\r\n");
+    let request = format!("CONNECT {HOST}:443 HTTP/1.1\r\nHost: {HOST}:443\r\n{authorization}\r\n");
     stream
         .write_all(request.as_bytes())
         .await
@@ -422,7 +426,9 @@ mod tests {
     fn the_token_is_a_stable_uppercase_sha256() {
         let token = sec_ms_gec();
         assert_eq!(token.len(), 64);
-        assert!(token.chars().all(|c| c.is_ascii_hexdigit() && !c.is_lowercase()));
+        assert!(token
+            .chars()
+            .all(|c| c.is_ascii_hexdigit() && !c.is_lowercase()));
         // Snapped to a five minute window, so two calls agree.
         assert_eq!(token, sec_ms_gec());
     }
