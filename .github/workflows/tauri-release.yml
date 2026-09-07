@@ -81,14 +81,62 @@ jobs:
       - name: Install frontend dependencies
         run: bun install --frozen-lockfile
 
+      # A Developer ID signature plus a notarization ticket is what lets
+      # Gatekeeper open the app without the "unidentified developer" wall.
+      # The bundler imports APPLE_CERTIFICATE into a throwaway keychain and
+      # notarizes with the App Store Connect API key on its own; the only
+      # thing it cannot do is materialize the .p8 from a secret, so that is
+      # written here. Missing secrets would silently yield an ad-hoc build
+      # that nobody can open, so fail loudly instead.
+      - name: Prepare macOS signing credentials
+        if: matrix.os_name == 'macos'
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+        run: |
+          set -euo pipefail
+          for name in APPLE_CERTIFICATE APPLE_API_KEY_P8 APPLE_API_KEY; do
+            if [ -z "${!name:-}" ]; then
+              echo "$name is not set; refusing to ship an unsigned macOS build." >&2
+              exit 1
+            fi
+          done
+          KEY_PATH="$RUNNER_TEMP/AuthKey_${APPLE_API_KEY}.p8"
+          printf '%s' "$APPLE_API_KEY_P8" > "$KEY_PATH"
+          chmod 600 "$KEY_PATH"
+          echo "APPLE_API_KEY_PATH=$KEY_PATH" >> "$GITHUB_ENV"
+
       - name: Build Tauri app
         env:
           # Signs the updater artifacts (.app.tar.gz / .msi / .AppImage + .sig)
           # so installed apps can verify what they download.
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ""
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
         run: |
           bun tauri build ${{ matrix.build_args }}
+
+      # Gatekeeper's own verdict on the bundle, so a build that was signed
+      # but not notarized (or notarized but not stapled) cannot reach the
+      # release page.
+      - name: Verify macOS signature and notarization
+        if: matrix.os_name == 'macos'
+        run: |
+          set -euo pipefail
+          APP=$(find "src-tauri/target/${{ matrix.rust_target }}/release/bundle/macos" -maxdepth 1 -name '*.app' | head -n 1)
+          codesign --verify --deep --strict --verbose=2 "$APP"
+          xcrun stapler validate "$APP"
+          spctl --assess --type exec --verbose=2 "$APP"
+
+      - name: Clean up macOS signing credentials
+        if: always() && matrix.os_name == 'macos'
+        run: rm -f "$RUNNER_TEMP"/AuthKey_*.p8
 
       - name: Collect and rename artifact
         run: |

@@ -134,6 +134,35 @@ public key, so a new key means every user has to update manually once. The
 `.sig` files never reach the release page — their contents are embedded in
 `latest.json` and the files deleted before upload.
 
+### macOS signing and notarization
+
+Release DMGs are signed with the team's `Developer ID Application`
+identity (team `L7GVXT64TV`) and notarized through an App Store Connect
+API key, otherwise Gatekeeper refuses to open the app. The Tauri bundler
+does the whole dance itself — hardened-runtime signing, notary submission,
+stapling — as soon as the `APPLE_*` environment variables are set; nothing
+in `tauri.conf.json` refers to signing.
+
+- **CI** (`.github/workflows/tauri-release.yml`): the macOS jobs read
+  `APPLE_CERTIFICATE` (base64 `.p12`), `APPLE_CERTIFICATE_PASSWORD`,
+  `APPLE_SIGNING_IDENTITY`, `APPLE_TEAM_ID`, `APPLE_API_KEY`,
+  `APPLE_API_ISSUER` and `APPLE_API_KEY_P8` from repository secrets. The
+  `.p8` is written to the runner temp dir and exposed as
+  `APPLE_API_KEY_PATH`; a verify step runs `spctl` and `stapler validate`
+  so an unnotarized bundle cannot reach the release page. Missing secrets
+  fail the job instead of producing an ad-hoc build.
+- **Locally**: `scripts/release-macos.sh` builds and verifies the same way,
+  and `scripts/notary-setup.sh` stores a `notarytool` keychain profile for
+  ad-hoc `xcrun notarytool` use. `scripts/export-signing-identity.swift`
+  re-exports the identity as a `.p12` when the certificate is renewed
+  (`security export` cannot pick a single identity).
+- **Secrets of record** live in 1Password (vault Private):
+  "Aictionary Notarization (App Store Connect API Key)" holds the `.p8`,
+  key ID and issuer ID; "Aictionary Developer ID Application (signing
+  identity p12)" holds the `.p12` and its password. The `.p8` can only be
+  downloaded once from App Store Connect, so those items are the backup.
+  `*.p8` and `*.p12` are git-ignored.
+
 ### Edge TTS and proxies
 
 `src-tauri/src/edge_tts.rs` speaks Microsoft's read-aloud protocol directly
