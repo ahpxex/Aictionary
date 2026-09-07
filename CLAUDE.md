@@ -139,9 +139,12 @@ public key, so a new key means every user has to update manually once. The
 Release DMGs are signed with the team's `Developer ID Application`
 identity (team `L7GVXT64TV`) and notarized through an App Store Connect
 API key, otherwise Gatekeeper refuses to open the app. The Tauri bundler
-does the whole dance itself — hardened-runtime signing, notary submission,
-stapling — as soon as the `APPLE_*` environment variables are set; nothing
-in `tauri.conf.json` refers to signing.
+does the whole dance for the `.app` itself — hardened-runtime signing,
+notary submission, stapling — as soon as the `APPLE_*` environment
+variables are set; nothing in `tauri.conf.json` refers to signing. It only
+*signs* the DMG around the app, and Gatekeeper assesses the disk image on
+open before it looks inside, so CI and the local script submit the DMG to
+`notarytool` and staple it as a separate step.
 
 - **CI** (`.github/workflows/tauri-release.yml`): the macOS jobs read
   `APPLE_CERTIFICATE` (base64 `.p12`), `APPLE_CERTIFICATE_PASSWORD`,

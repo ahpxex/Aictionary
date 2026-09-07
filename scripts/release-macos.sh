@@ -54,9 +54,18 @@ APPLE_API_KEY_PATH="$KEY_PATH" \
 
 BUNDLE="src-tauri/target/$TARGET/release/bundle"
 APP=$(find "$BUNDLE/macos" -maxdepth 1 -name '*.app' | head -n 1)
+DMG=$(find "$BUNDLE/dmg" -maxdepth 1 -name '*.dmg' | head -n 1)
 
-echo "==> verifying $APP"
+# The bundler notarizes the .app but only signs the DMG around it; Gatekeeper
+# assesses the disk image on open, so notarize and staple that as well.
+echo "==> notarizing $DMG"
+xcrun notarytool submit "$DMG" --key "$KEY_PATH" --key-id "$KEY_ID" --issuer "$ISSUER" --wait
+xcrun stapler staple "$DMG"
+
+echo "==> verifying $APP and $DMG"
 codesign --verify --deep --strict --verbose=2 "$APP"
 xcrun stapler validate "$APP"
 spctl --assess --type exec --verbose=2 "$APP"
-echo "==> ok. DMG: $(find "$BUNDLE/dmg" -maxdepth 1 -name '*.dmg' | head -n 1)"
+xcrun stapler validate "$DMG"
+spctl --assess --type open --context context:primary-signature --verbose=2 "$DMG"
+echo "==> ok. DMG: $DMG"

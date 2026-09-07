@@ -122,17 +122,36 @@ jobs:
         run: |
           bun tauri build ${{ matrix.build_args }}
 
-      # Gatekeeper's own verdict on the bundle, so a build that was signed
-      # but not notarized (or notarized but not stapled) cannot reach the
-      # release page.
+      # The bundler notarizes and staples the .app but only signs the DMG
+      # around it, and Gatekeeper assesses the disk image on open before it
+      # ever looks at the app inside. The app is already notarized, so this
+      # second submission is quick.
+      - name: Notarize macOS disk image
+        if: matrix.os_name == 'macos'
+        env:
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+        run: |
+          set -euo pipefail
+          DMG=$(find "src-tauri/target/${{ matrix.rust_target }}/release/bundle/dmg" -maxdepth 1 -name '*.dmg' | head -n 1)
+          xcrun notarytool submit "$DMG" --key "$APPLE_API_KEY_PATH" --key-id "$APPLE_API_KEY" --issuer "$APPLE_API_ISSUER" --wait
+          xcrun stapler staple "$DMG"
+
+      # Gatekeeper's own verdict on the bundle and the disk image, so a build
+      # that was signed but not notarized (or notarized but not stapled)
+      # cannot reach the release page.
       - name: Verify macOS signature and notarization
         if: matrix.os_name == 'macos'
         run: |
           set -euo pipefail
-          APP=$(find "src-tauri/target/${{ matrix.rust_target }}/release/bundle/macos" -maxdepth 1 -name '*.app' | head -n 1)
+          BUNDLE="src-tauri/target/${{ matrix.rust_target }}/release/bundle"
+          APP=$(find "$BUNDLE/macos" -maxdepth 1 -name '*.app' | head -n 1)
+          DMG=$(find "$BUNDLE/dmg" -maxdepth 1 -name '*.dmg' | head -n 1)
           codesign --verify --deep --strict --verbose=2 "$APP"
           xcrun stapler validate "$APP"
           spctl --assess --type exec --verbose=2 "$APP"
+          xcrun stapler validate "$DMG"
+          spctl --assess --type open --context context:primary-signature --verbose=2 "$DMG"
 
       - name: Clean up macOS signing credentials
         if: always() && matrix.os_name == 'macos'
