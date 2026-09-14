@@ -18,6 +18,11 @@ export const CUSTOM_PROVIDER_ID = "custom";
 
 export const LLM_PROVIDER_PRESETS: LlmProviderPreset[] = [
   { id: "openai", label: "OpenAI", baseUrl: "https://api.openai.com/v1" },
+  {
+    id: "atlascloud",
+    label: "Atlas Cloud",
+    baseUrl: "https://api.atlascloud.ai/v1",
+  },
   { id: "deepseek", label: "DeepSeek", baseUrl: "https://api.deepseek.com/v1" },
   {
     id: "openrouter",
