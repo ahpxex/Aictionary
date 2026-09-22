@@ -98,13 +98,20 @@ export const SearchForm = forwardRef<SearchFormRef, SearchFormProps>(
         <input
           ref={inputRef}
           value={value}
-          onChange={(event) => { setValue(event.target.value); setDismissed(false); }}
+          onChange={(event) => { setValue(event.target.value); setDismissed(false); setSuggestions([]); setActive(-1); }}
           onFocus={(event) => { event.target.select(); setFocused(true); setDismissed(false); }}
           onBlur={() => { setFocused(false); setDismissed(true); }}
           onCompositionStart={() => setComposing(true)}
           onCompositionEnd={() => setComposing(false)}
           onKeyDown={(event) => {
-            if (event.nativeEvent.isComposing || composing || event.keyCode === 229) return;
+            if (event.nativeEvent.isComposing || composing || event.keyCode === 229) {
+              if (event.key === "Enter") event.preventDefault();
+              return;
+            }
+            if (event.key === "Enter" && showSuggestions && active >= 0) {
+              event.preventDefault();
+              submit(suggestions[active]);
+            }
             if (event.key === "Escape") { setDismissed(true); setActive(-1); }
             if (showSuggestions && (event.key === "ArrowDown" || event.key === "ArrowUp")) {
               event.preventDefault();
