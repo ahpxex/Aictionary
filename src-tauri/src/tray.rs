@@ -40,7 +40,12 @@ pub fn init_tray(app: &AppHandle) -> tauri::Result<()> {
         .show_menu_on_left_click(true)
         .tooltip("AIctionary");
 
-    // Try to reuse the default app icon for the tray, if available.
+    // Template alpha is tinted by macOS for either menu-bar appearance.
+    #[cfg(target_os = "macos")]
+    {
+        builder = builder.icon(template_icon()).icon_as_template(true);
+    }
+    #[cfg(not(target_os = "macos"))]
     if let Some(icon) = app.default_window_icon() {
         builder = builder.icon(icon.clone());
     }
@@ -58,7 +63,7 @@ pub fn register_menu_handler(app: &AppHandle) {
         let id = event.id();
 
         if id == MENU_ID_OPEN {
-            handle_open(app_handle);
+            show_main_window(app_handle);
         } else if id == MENU_ID_QUERY {
             handle_query(app_handle);
         } else if id == MENU_ID_ABOUT {
@@ -69,7 +74,7 @@ pub fn register_menu_handler(app: &AppHandle) {
     });
 }
 
-fn handle_open(app: &AppHandle) {
+pub fn show_main_window(app: &AppHandle) {
     if let Some(window) = app.get_webview_window("main") {
         let _ = window.show();
         let _ = window.unminimize();
@@ -78,11 +83,7 @@ fn handle_open(app: &AppHandle) {
 }
 
 fn handle_query(app: &AppHandle) {
-    if let Some(window) = app.get_webview_window("main") {
-        let _ = window.show();
-        let _ = window.unminimize();
-        let _ = window.set_focus();
-    }
+    show_main_window(app);
 
     // Reuse the same event that the global keyboard shortcut emits so
     // the React side doesn't need a special code path for tray clicks.
@@ -90,12 +91,25 @@ fn handle_query(app: &AppHandle) {
 }
 
 fn handle_about(app: &AppHandle) {
-    if let Some(window) = app.get_webview_window("main") {
-        let _ = window.show();
-        let _ = window.unminimize();
-        let _ = window.set_focus();
-    }
+    show_main_window(app);
 
     // Ask the frontend to navigate to Settings → About.
     let _ = app.emit("open-settings-about", ());
+}
+
+/// A small open book with a transparent background. The app icon's filled
+/// blue tile cannot serve as a template: its alpha would become a solid box.
+#[cfg(target_os = "macos")]
+fn template_icon() -> tauri::image::Image<'static> {
+    let mut rgba = vec![0; 22 * 22 * 4];
+    for y in 4..18 {
+        for x in 3..19 {
+            let edge = x == 3 || x == 10 || x == 11 || x == 18 || y == 4 || y == 17;
+            let text = (y == 8 || y == 11) && ((5..9).contains(&x) || (13..17).contains(&x));
+            if edge || text {
+                rgba[(y * 22 + x) * 4 + 3] = 255;
+            }
+        }
+    }
+    tauri::image::Image::new_owned(rgba, 22, 22)
 }

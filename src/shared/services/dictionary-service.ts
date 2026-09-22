@@ -1,4 +1,9 @@
 import { invoke } from "@tauri-apps/api/core";
+
+export function suggestDictionary(prefix: string, cachePath: string): Promise<string[]> {
+  if (!prefix.trim() || !cachePath.trim()) return Promise.resolve([]);
+  return invoke("dictionary_suggest", { prefix, cachePath });
+}
 import type {
   DictionaryEntry,
   DictionaryLookupResult,

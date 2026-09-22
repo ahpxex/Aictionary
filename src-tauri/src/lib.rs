@@ -2,6 +2,7 @@
 use tauri::Manager;
 
 // Module declarations
+mod anki;
 mod audio_cache;
 mod dictionary;
 mod download;
@@ -69,10 +70,7 @@ pub fn run() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
-            if let Some(window) = app.get_webview_window("main") {
-                let _ = window.show();
-                let _ = window.set_focus();
-            }
+            tray::show_main_window(app);
         }));
 
     builder
@@ -103,8 +101,10 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            anki::anki_request,
             // Dictionary commands
             dictionary::dictionary_query,
+            dictionary::dictionary_suggest,
             dictionary::dictionary_reverse_query,
             dictionary::warm_reverse_index,
             dictionary::upsert_dictionary_entry,
@@ -131,6 +131,14 @@ pub fn run() {
             // Tray commands
             set_tray_visibility,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|_app, _event| {
+            // Closing the window hides it. macOS delivers Dock clicks as a
+            // Reopen event, not as another single-instance launch.
+            #[cfg(target_os = "macos")]
+            if let tauri::RunEvent::Reopen { .. } = _event {
+                tray::show_main_window(_app);
+            }
+        });
 }

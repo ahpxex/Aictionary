@@ -1,3 +1,4 @@
+import { invoke } from "@tauri-apps/api/core";
 import { getRuntimeAnkiSettings } from "@/shared/state/anki-runtime";
 import type { DictionaryEntry } from "@/shared/types/dictionary";
 import type { AnkiSettings } from "@/shared/types/settings";
@@ -395,20 +396,18 @@ async function requestAnki<T, Params = Record<string, unknown>>(
   payload: AnkiRequestPayload<Params>,
   signal?: AbortSignal
 ): Promise<T> {
-  const response = await fetch(apiUrl, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-    signal,
+  signal?.throwIfAborted();
+  const result = await invoke<AnkiConnectResponse<T>>("anki_request", {
+    apiUrl,
+    payload,
+  }).catch((error: unknown) => {
+    throw error instanceof Error ? error : new Error(String(error));
   });
+  signal?.throwIfAborted();
 
-  if (!response.ok) {
-    throw new Error(`AnkiConnect request failed: ${response.status}`);
+  if (!result || typeof result !== "object" || !("error" in result) || !("result" in result)) {
+    throw new Error("Invalid AnkiConnect response");
   }
-
-  const result: AnkiConnectResponse<T> = await response.json();
 
   if (result.error) {
     throw new Error(result.error);
