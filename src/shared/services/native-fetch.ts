@@ -14,7 +14,10 @@ export async function nativeFetch(input: RequestInfo | URL, init?: RequestInit):
   request.signal.throwIfAborted();
   const body = request.body ? await request.text() : null;
   request.signal.throwIfAborted();
-  const id = crypto.randomUUID();
+  // WKWebView's custom app origin may not expose secure-context randomUUID.
+  // getRandomValues is available there and still gives each request a random ID.
+  const id = Array.from(crypto.getRandomValues(new Uint8Array(16)),
+    (byte) => byte.toString(16).padStart(2, "0")).join("");
   return new Promise<Response>((resolve, reject) => {
     let controller: ReadableStreamDefaultController<Uint8Array>;
     let ended = false;

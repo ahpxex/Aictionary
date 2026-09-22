@@ -14,9 +14,43 @@ mock.module("../src/shared/state/network-runtime", () => ({
   getRuntimeNetworkSettings: () => ({ proxyMode: "direct", proxyUrl: "", customCaPem: "test-ca" }),
 }));
 const { nativeFetch } = await import("../src/shared/services/native-fetch");
+const { getLatestDictionaryRelease } = await import("../src/shared/services/github-service");
 afterEach(() => { cancelled.length = 0; });
 
 describe("native fetch bridge", () => {
+  test("dictionary setup still has checksum and download URLs when GitHub API quota is exhausted", async () => {
+    for (const status of [403, 429]) {
+      onStart = async ({ onEvent }) => {
+        queueMicrotask(() => onEvent.onmessage({ type: "headers", status, headers: [] }));
+      };
+      const release = await getLatestDictionaryRelease();
+      expect(release.downloadUrl).toBe("https://github.com/ahpxex/open-dictionary/releases/latest/download/distribution.sqlite.gz");
+      expect(release.checksumsUrl).toBe("https://github.com/ahpxex/open-dictionary/releases/latest/download/SHA256SUMS.txt");
+      expect(release.publishedAt).toBeNull();
+    }
+  });
+
+  test("starts independent requests when WebKit does not expose randomUUID", async () => {
+    const original = crypto.randomUUID;
+    const ids: string[] = [];
+    Object.defineProperty(crypto, "randomUUID", { configurable: true, value: undefined });
+    try {
+      onStart = async ({ args, onEvent }) => {
+        ids.push(args.id);
+        queueMicrotask(() => {
+          onEvent.onmessage({ type: "headers", status: 200, headers: [] });
+          onEvent.onmessage({ type: "chunk", data: btoa("dictionary") });
+          onEvent.onmessage({ type: "end" });
+        });
+      };
+      const responses = await Promise.all([nativeFetch("https://example.test/one"), nativeFetch("https://example.test/two")]);
+      expect(await Promise.all(responses.map((response) => response.text()))).toEqual(["dictionary", "dictionary"]);
+      expect(new Set(ids).size).toBe(2);
+    } finally {
+      Object.defineProperty(crypto, "randomUUID", { configurable: true, value: original });
+    }
+  });
+
   test("resolves on headers and exposes incremental UTF-8 chunks before completion", async () => {
     let events: any;
     onStart = async ({ args, onEvent }) => {

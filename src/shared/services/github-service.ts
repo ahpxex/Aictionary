@@ -19,7 +19,7 @@ export interface DictionaryReleaseInfo {
   fileName: string;
   /** Size in bytes of the compressed archive. */
   size: number;
-  publishedAt: string;
+  publishedAt: string | null;
   /** Download URL of the release's SHA256SUMS.txt, when published. */
   checksumsUrl: string | null;
 }
@@ -107,6 +107,22 @@ export async function getLatestDictionaryRelease(): Promise<DictionaryReleaseInf
     const response = await nativeFetch(
       `https://api.github.com/repos/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}/releases/latest`
     );
+
+    // GitHub's unauthenticated API quota is shared by an entire network.
+    // Public release assets remain available through its canonical latest
+    // download URLs; offline setup must not depend on spare API quota.
+    if (response.status === 403 || response.status === 429) {
+      await response.body?.cancel();
+      const base = `https://github.com/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}/releases/latest/download`;
+      return {
+        version: "latest",
+        downloadUrl: `${base}/${DICTIONARY_ASSET_NAME}`,
+        fileName: DICTIONARY_ASSET_NAME,
+        size: 0,
+        publishedAt: null,
+        checksumsUrl: `${base}/${CHECKSUMS_ASSET_NAME}`,
+      };
+    }
 
     if (!response.ok) {
       throw new Error(

@@ -64,6 +64,7 @@ async fn send(args: HttpRequest, events: &Channel<HttpEvent>) -> Result<(), Stri
         Some(&args.network.proxy_url),
         &args.network.custom_ca_pem,
     )?
+    .user_agent(concat!("Aictionary/", env!("CARGO_PKG_VERSION")))
     .read_timeout(std::time::Duration::from_secs(60))
     .timeout(std::time::Duration::from_secs(300))
     .build()
@@ -137,5 +138,56 @@ pub fn cancel_http_request(id: String, requests: tauri::State<'_, HttpRequests>)
         if let Some(abort) = active.remove(&id) {
             abort.abort();
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::{BufRead, BufReader, Write};
+
+    #[tokio::test]
+    async fn native_http_sends_a_user_agent_required_by_github() {
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = std::thread::spawn(move || {
+            let (mut socket, _) = listener.accept().unwrap();
+            socket
+                .set_read_timeout(Some(std::time::Duration::from_secs(5)))
+                .unwrap();
+            let mut headers = String::new();
+            let mut reader = BufReader::new(&mut socket);
+            loop {
+                let mut line = String::new();
+                assert!(reader.read_line(&mut line).unwrap() > 0);
+                if line == "\r\n" {
+                    break;
+                }
+                headers.push_str(&line);
+            }
+            socket
+                .write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\nConnection: close\r\n\r\nOK")
+                .unwrap();
+            headers
+        });
+        let events = Channel::new(|_| Ok(()));
+        send(
+            HttpRequest {
+                id: "user-agent-test".into(),
+                url: format!("http://{address}/releases/latest"),
+                method: "GET".into(),
+                headers: vec![],
+                body: None,
+                network: NetworkSettings::default(),
+            },
+            &events,
+        )
+        .await
+        .unwrap();
+        let headers = server.join().unwrap().to_ascii_lowercase();
+        assert!(headers.contains(&format!(
+            "user-agent: aictionary/{}",
+            env!("CARGO_PKG_VERSION")
+        )));
     }
 }
