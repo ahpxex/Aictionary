@@ -27,7 +27,7 @@
 
 ## 下载与安装
 
-前往 [**Releases 页面**](https://github.com/ahpxex/Aictionary/releases/latest)下载对应平台的安装包，命名规则为 `Aictionary-[版本]_[平台]_[架构].[后缀]`。
+桌面端和 Android 安装包可从 [**Releases 页面**](https://github.com/ahpxex/Aictionary/releases/latest)下载，命名规则为 `Aictionary-[版本]_[平台]_[架构].[后缀]`。iOS 测试版通过下方 TestFlight 公开链接加入。
 
 | 平台 | 安装包 | 说明 |
 | :--- | :--- | :--- |
@@ -35,6 +35,9 @@
 | **Windows** | `.msi` / 便携版 `.zip` | 双击安装，或解压便携版直接运行 |
 | **Linux** | `.AppImage` | `chmod +x` 赋予可执行权限后直接运行 |
 | **Android** | `.apk` | 通用包，允许安装未知来源应用后直接安装 |
+| **iOS** | [加入 TestFlight 测试](https://testflight.apple.com/join/qEzjS8bY) | 需要 iOS 16.4 或更高版本，安装 Apple TestFlight 后通过链接加入 |
+
+> **iOS 外部测试**：首个测试版本 **3.4.0（构建 1.1）** 已上传并提交 Apple 外部测试审核，目前等待审核。**审核通过后，才能通过公开链接加入并安装**；若页面暂不可加入，请等待审核完成。
 
 > **macOS 官方安装包已使用 Apple Developer ID 签名并通过 Apple 公证**，应用和 DMG 均附带公证票据。打开 DMG 后将 Aictionary 拖入 Applications，即可正常启动，无需执行终端去隔离命令。Apple Silicon 请选择 `arm64`，Intel Mac 请选择 `x86_64`。
 
