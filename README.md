@@ -19,6 +19,8 @@
 
 - 单词朗读默认走免费免密钥的 Edge TTS，装好就能听；想要更好的音色可以换 Fish Audio、OpenAI 或 ElevenLabs
 - 单词卡片能一键推到桌面版 Anki（走 AnkiConnect），生成排版统一的双语卡片
+- 输入字母即可联想本地词库中的单词，支持上下键选择、回车查询
+- 独立英文语料词频库显示单词的 Zipf 分数和每百万词出现次数，帮助判断常见程度
 - 查词历史和频次都有统计，高频生词就是现成的复习清单
 - 全局快捷键唤起、直接查剪贴板内容，读英文资料时基本不用碰鼠标
 - macOS / Windows / Linux / Android 都有包
@@ -34,9 +36,7 @@
 | **Linux** | `.AppImage` | `chmod +x` 赋予可执行权限后直接运行 |
 | **Android** | `.apk` | 通用包，允许安装未知来源应用后直接安装 |
 
-> [!IMPORTANT]
-> **macOS 若提示「应用已损坏」**：应用未经 Apple 公证，请在终端运行
-> `xattr -cr /Applications/Aictionary.app` 后重新打开；或在「系统设置 → 隐私与安全性」中允许运行。
+> **macOS 官方安装包已使用 Apple Developer ID 签名并通过 Apple 公证**，应用和 DMG 均附带公证票据。打开 DMG 后将 Aictionary 拖入 Applications，即可正常启动，无需执行终端去隔离命令。Apple Silicon 请选择 `arm64`，Intel Mac 请选择 `x86_64`。
 
 装好之后只有一步是必须的：打开「设置 → 词典」下载本地词库（自动从 GitHub Release 拉取、校验并解压）。LLM 接口配不配随意，不配也是一部完整的离线词典。
 
@@ -53,7 +53,7 @@
 
 生成的音频会缓存到本地（如 macOS 的 `~/Library/Application Support/com.ahpx.aictionary-re/audio/`），同一单词只合成一次。所有 API Key 只保存在设备本地，不会上传。
 
-> **网络提示**：部分网络环境会重置 Edge TTS 的 websocket 连接。「设置 → 音频」中可配置代理——桌面端默认自动读取环境变量和系统代理设置，Android 上需要手动填写。
+> **网络提示**：部分网络环境会重置 Edge TTS 的 websocket 连接。「设置 → 网络」中可配置代理——桌面端默认自动读取环境变量和系统代理设置，Android 上需要手动填写。如网络代理使用自定义 CA，可在同一页面保存 PEM 证书，适用于 AI、词典下载、Anki 和语音请求；应用自动更新继续使用系统证书库。
 
 ## 与 Anki 同步卡片
 
@@ -74,9 +74,10 @@ Aictionary 只是它的一个消费者：从 GitHub Release 下载 `distribution
 | | 许可 |
 | :--- | :--- |
 | 上游词典**数据** | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)，Wiktionary 内容的衍生作品 |
-| 上游与本项目**代码** | MIT |
+| 内置英文**词频数据** | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)，来自 [wordfreq 3.1.1](https://github.com/rspeer/wordfreq)，作者 Robyn Speer；完整署名与来源保存在独立数据库中，见 [数据说明](src-tauri/data/README.md) |
+| 上游词典与本项目**代码** | MIT |
 
-数据依 ShareAlike 条款分发：再分发或二次加工时须以相同许可发布，并署名 Wiktionary 贡献者。
+数据依 ShareAlike 条款分发：再分发或二次加工时须以相同许可发布，并保留对应数据源的署名与许可信息。
 
 ## 开发构建
 

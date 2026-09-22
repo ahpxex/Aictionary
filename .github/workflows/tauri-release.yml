@@ -148,6 +148,9 @@ jobs:
           APP=$(find "$BUNDLE/macos" -maxdepth 1 -name '*.app' | head -n 1)
           DMG=$(find "$BUNDLE/dmg" -maxdepth 1 -name '*.dmg' | head -n 1)
           codesign --verify --deep --strict --verbose=2 "$APP"
+          codesign --display --verbose=4 "$APP"
+          codesign --verify --strict --verbose=2 "$DMG"
+          codesign --display --verbose=4 "$DMG"
           xcrun stapler validate "$APP"
           spctl --assess --type exec --verbose=2 "$APP"
           xcrun stapler validate "$DMG"
@@ -339,6 +342,9 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Checkout release notes
+        uses: actions/checkout@v4
+
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
@@ -370,8 +376,7 @@ jobs:
           platforms = {}
           for platform, name in artifacts.items():
               if not (os.path.exists(f"dist/{name}") and os.path.exists(f"dist/{name}.sig")):
-                  print(f"skipping {platform}: {name}(.sig) missing")
-                  continue
+                  raise SystemExit(f"Missing signed updater artifact for {platform}: {name}(.sig)")
               with open(f"dist/{name}.sig") as f:
                   platforms[platform] = {"signature": f.read(), "url": base + name}
 
@@ -389,7 +394,15 @@ jobs:
 
       - name: Generate Release Body
         run: |
-          echo "### Downloads" > release_body.md
+          set -euo pipefail
+          NOTES="docs/releases/${{ github.ref_name }}.md"
+          if [ -f "$NOTES" ]; then
+            cat "$NOTES" > release_body.md
+          else
+            : > release_body.md
+          fi
+          echo "" >> release_body.md
+          echo "### Downloads" >> release_body.md
           echo "" >> release_body.md
           echo "| File |" >> release_body.md
           echo "| :--- |" >> release_body.md
