@@ -118,6 +118,13 @@
         "Came up empty. Inventing a definition would only be convincing, not correct."
       ],
       "hint": "Check the spelling, or try another word."
+    },
+    "frequency": {
+      "high": "High frequency",
+      "medium": "Medium frequency",
+      "low": "Low frequency",
+      "explanation": "About {{frequency}} occurrences per million words. The Zipf score uses a logarithmic scale; higher means more common.",
+      "scope": "English corpus frequency, not your lookup count. Unknown words and phrases have no score. Source data predates 2022."
     }
   },
   "statistics": {

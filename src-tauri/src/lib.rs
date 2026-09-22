@@ -8,6 +8,7 @@ mod dictionary;
 mod download;
 mod edge_tts;
 mod export;
+mod frequency;
 mod net;
 mod shortcuts;
 #[cfg(desktop)]
@@ -102,6 +103,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             anki::anki_request,
+            frequency::word_frequency,
             // Dictionary commands
             dictionary::dictionary_query,
             dictionary::dictionary_suggest,

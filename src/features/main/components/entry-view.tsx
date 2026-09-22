@@ -28,6 +28,7 @@ import {
 } from "@/features/main/components/entry-layout";
 import { resolveAudioCache } from "@/shared/services/audio-cache";
 import { addEntryToAnki } from "@/shared/services/anki-service";
+import { WordFrequency } from "./word-frequency";
 
 const MANUAL_STOP_MESSAGE = "Stream manually stopped";
 const AUDIO_FORMAT = "mp3";
@@ -570,6 +571,7 @@ export function EntryView({
         }
         meta={
           <>
+            <WordFrequency word={entry.headword} language={entry.headword_language.code} />
             {pronunciations.map((pronunciation, index) => (
               <span key={`pron-${index}`} className="font-mono text-sm text-muted-foreground">
                 {pronunciation.tags.length > 0 && (
