@@ -1,3 +1,4 @@
+use crate::net::{http_client_builder, NetworkSettings};
 use flate2::read::GzDecoder;
 use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
@@ -34,6 +35,8 @@ pub struct DownloadArgs {
     pub url: String,
     pub file_path: String,
     pub max_retries: Option<u32>,
+    #[serde(default)]
+    pub network: NetworkSettings,
 }
 
 async fn download_with_progress(
@@ -41,6 +44,7 @@ async fn download_with_progress(
     url: &str,
     dest_path: &Path,
     max_retries: u32,
+    network: &NetworkSettings,
 ) -> Result<u64, String> {
     let mut attempt = 0;
     let mut last_error = String::new();
@@ -57,7 +61,7 @@ async fn download_with_progress(
             .ok();
         }
 
-        match try_download(&app, url, dest_path).await {
+        match try_download(&app, url, dest_path, network).await {
             Ok(total_bytes) => return Ok(total_bytes),
             Err(err) => {
                 last_error = err;
@@ -77,11 +81,20 @@ async fn download_with_progress(
     ))
 }
 
-async fn try_download(app: &AppHandle, url: &str, dest_path: &Path) -> Result<u64, String> {
-    let client = reqwest::Client::builder()
-        .timeout(std::time::Duration::from_secs(300))
-        .build()
-        .map_err(|e| e.to_string())?;
+async fn try_download(
+    app: &AppHandle,
+    url: &str,
+    dest_path: &Path,
+    network: &NetworkSettings,
+) -> Result<u64, String> {
+    let client = http_client_builder(
+        network.proxy_mode,
+        Some(&network.proxy_url),
+        &network.custom_ca_pem,
+    )?
+    .timeout(std::time::Duration::from_secs(300))
+    .build()
+    .map_err(|e| e.to_string())?;
 
     let response = client
         .get(url)
@@ -168,7 +181,15 @@ pub async fn download_file(app: AppHandle, args: DownloadArgs) -> Result<Downloa
     app.emit("download-start", serde_json::json!({ "url": args.url }))
         .ok();
 
-    match download_with_progress(app.clone(), &args.url, &dest_path, max_retries).await {
+    match download_with_progress(
+        app.clone(),
+        &args.url,
+        &dest_path,
+        max_retries,
+        &args.network,
+    )
+    .await
+    {
         Ok(total_bytes) => {
             let result = DownloadComplete {
                 file_path: args.file_path.clone(),
@@ -363,9 +384,7 @@ pub async fn extract_gzip(app: AppHandle, args: ExtractGzipArgs) -> Result<Strin
         return Err("Archive file does not exist".into());
     }
 
-    let total = fs::metadata(&gzip_path)
-        .map(|meta| meta.len())
-        .unwrap_or(0);
+    let total = fs::metadata(&gzip_path).map(|meta| meta.len()).unwrap_or(0);
 
     app.emit("extract-start", serde_json::json!({ "totalBytes": total }))
         .ok();
@@ -404,16 +423,24 @@ pub async fn extract_gzip(app: AppHandle, args: ExtractGzipArgs) -> Result<Strin
 /// Fetch a small text file (e.g. a release's SHA256SUMS.txt) over HTTP.
 /// Runs in Rust so release-asset downloads never depend on webview CORS.
 #[tauri::command]
-pub async fn fetch_text_file(url: String) -> Result<String, String> {
+pub async fn fetch_text_file(
+    url: String,
+    network: Option<NetworkSettings>,
+) -> Result<String, String> {
+    let network = network.unwrap_or_default();
     let url = url.trim().to_string();
     if url.is_empty() {
         return Err("URL is required".into());
     }
 
-    let client = reqwest::Client::builder()
-        .timeout(std::time::Duration::from_secs(60))
-        .build()
-        .map_err(|e| e.to_string())?;
+    let client = http_client_builder(
+        network.proxy_mode,
+        Some(&network.proxy_url),
+        &network.custom_ca_pem,
+    )?
+    .timeout(std::time::Duration::from_secs(60))
+    .build()
+    .map_err(|e| e.to_string())?;
 
     let response = client
         .get(&url)

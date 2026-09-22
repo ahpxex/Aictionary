@@ -1,3 +1,4 @@
+import { getRuntimeNetworkSettings } from "@/shared/state/network-runtime";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import type {
@@ -66,6 +67,7 @@ export async function downloadFile(
         url,
         filePath,
         maxRetries,
+        network: getRuntimeNetworkSettings(),
       },
     });
 
@@ -96,5 +98,5 @@ export async function downloadFile(
  * release-asset downloads never depend on webview CORS policies.
  */
 export async function fetchTextFile(url: string): Promise<string> {
-  return invoke<string>("fetch_text_file", { url });
+  return invoke<string>("fetch_text_file", { url, network: getRuntimeNetworkSettings() });
 }

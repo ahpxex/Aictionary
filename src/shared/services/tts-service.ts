@@ -147,6 +147,7 @@ export async function startTtsStream(
               text: options.text,
               proxyMode: network.proxyMode,
               proxyUrl: network.proxyUrl,
+              customCaPem: network.customCaPem,
               requestId,
               format: options.format,
               cacheFilePath: options.cacheFilePath,

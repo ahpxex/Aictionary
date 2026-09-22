@@ -1,3 +1,4 @@
+import { nativeFetch } from "./native-fetch";
 import { createOpenAI } from "@ai-sdk/openai";
 import {
   APICallError,
@@ -215,6 +216,7 @@ function createModels(config: LlmProvider) {
   const provider = createOpenAI({
     apiKey: sanitized.apiKey,
     baseURL: sanitized.baseURL,
+    fetch: nativeFetch,
   });
 
   return {
@@ -379,7 +381,7 @@ export async function fetchAvailableModels(
   const { apiKey, baseURL } = sanitizeCredentials(config);
 
   try {
-    const response = await fetch(`${baseURL}/models`, {
+    const response = await nativeFetch(`${baseURL}/models`, {
       headers: { Authorization: `Bearer ${apiKey}` },
     });
 

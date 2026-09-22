@@ -11,8 +11,7 @@ export function AudioSync() {
     setRuntimeAudioSettings(normalizeAudioSettings(settings.audio));
   }, [settings.audio]);
 
-  // Audio is the one subsystem that has to be told about the proxy: the Edge
-  // websocket cannot discover one on its own.
+  // Native network services share the same settings outside React.
   useEffect(() => {
     setRuntimeNetworkSettings(settings.network);
   }, [settings.network]);

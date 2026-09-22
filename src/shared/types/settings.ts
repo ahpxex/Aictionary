@@ -105,15 +105,17 @@ export type SystemSettings = {
  * Where outbound connections look for a proxy.
  *
  * `auto` follows the platform - proxy environment variables, then the system
- * pane on macOS. `manual` is the only option that works on Android, which has
+ * pane on macOS and Windows. `manual` is the only option that works on Android, which has
  * neither of those for an app to inherit.
  */
 export type ProxyMode = "auto" | "manual" | "direct";
 
 export type NetworkSettings = {
   proxyMode: ProxyMode;
-  /** `<scheme>://<host>:<port>`; http, https, socks4 and socks5 are accepted. */
+  /** `<scheme>://<host>:<port>`; http, https, socks5 and socks5h are accepted. */
   proxyUrl: string;
+  /** Additional trusted PEM CA certificates; normal TLS verification stays enabled. */
+  customCaPem: string;
 };
 
 export type AppSettings = {

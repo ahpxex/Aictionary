@@ -45,6 +45,8 @@ pub struct TtsStreamArgs {
     pub proxy_mode: ProxyMode,
     #[serde(default)]
     pub proxy_url: Option<String>,
+    #[serde(default)]
+    pub custom_ca_pem: String,
 }
 
 /// Build the synthesis endpoint from a user-supplied base URL. Accepts a
@@ -101,9 +103,14 @@ pub struct EdgeVoice {
 pub async fn list_edge_voices(
     proxy_mode: Option<ProxyMode>,
     proxy_url: Option<String>,
+    custom_ca_pem: Option<String>,
 ) -> Result<Vec<EdgeVoice>, String> {
     let mode = proxy_mode.unwrap_or_default();
-    let client = http_client(mode, proxy_url.as_deref())?;
+    let client = http_client(
+        mode,
+        proxy_url.as_deref(),
+        custom_ca_pem.as_deref().unwrap_or_default(),
+    )?;
     let voices = edge_tts::list_voices(&client).await?;
 
     let mut result: Vec<EdgeVoice> = voices
@@ -145,9 +152,10 @@ async fn synthesize_edge(
     voice: &str,
     text: &str,
     proxy: Option<&str>,
+    ca: &str,
 ) -> Result<Vec<u8>, String> {
     let config = edge_tts::SpeechConfig::new(voice);
-    let connect = edge_tts::synthesize(&config, text, proxy);
+    let connect = edge_tts::synthesize(&config, text, proxy, ca);
 
     // A panic below would otherwise abandon this command's future without ever
     // resolving it, leaving the caller waiting for an answer that cannot
@@ -271,6 +279,7 @@ pub async fn start_tts_stream(app: AppHandle, args: TtsStreamArgs) -> Result<(),
         api_key,
         proxy_mode,
         proxy_url,
+        custom_ca_pem,
     } = args;
 
     let resolved_api_key = api_key.trim().to_string();
@@ -342,7 +351,14 @@ pub async fn start_tts_stream(app: AppHandle, args: TtsStreamArgs) -> Result<(),
             .filter(|value| !value.is_empty())
             .unwrap_or(DEFAULT_EDGE_VOICE);
 
-        let audio = match synthesize_edge(edge_voice, &normalized_text, proxy.as_deref()).await {
+        let audio = match synthesize_edge(
+            edge_voice,
+            &normalized_text,
+            proxy.as_deref(),
+            &custom_ca_pem,
+        )
+        .await
+        {
             Ok(audio) => audio,
             Err(err) => {
                 emit_tts_error(&app, &request_id, &err);
@@ -360,7 +376,7 @@ pub async fn start_tts_stream(app: AppHandle, args: TtsStreamArgs) -> Result<(),
         return Ok(());
     }
 
-    let client = match http_client(proxy_mode, proxy_url.as_deref()) {
+    let client = match http_client(proxy_mode, proxy_url.as_deref(), &custom_ca_pem) {
         Ok(client) => client,
         Err(err) => {
             emit_tts_error(&app, &request_id, &err);
@@ -468,9 +484,8 @@ pub async fn start_tts_stream(app: AppHandle, args: TtsStreamArgs) -> Result<(),
             .await
             .unwrap_or_else(|_| "Unable to read error message".to_string());
 
-        let message = extract_error_message(&details).unwrap_or_else(|| {
-            format!("{provider_name} request failed ({status}): {details}")
-        });
+        let message = extract_error_message(&details)
+            .unwrap_or_else(|| format!("{provider_name} request failed ({status}): {details}"));
 
         emit_tts_error(&app, &request_id, &message);
         return Err(message);

@@ -28,10 +28,10 @@ const HOST: &str = "speech.platform.bing.com";
 const TRUSTED_CLIENT_TOKEN: &str = "6A5AA1D4EAFF4E9FB37E23D68491D6F4";
 const VOICE_LIST_URL: &str = "https://speech.platform.bing.com/consumer/speech/synthesize/readaloud/voices/list?trustedclienttoken=6A5AA1D4EAFF4E9FB37E23D68491D6F4";
 const WSS_PATH: &str = "/consumer/speech/synthesize/readaloud/edge/v1";
-const USER_AGENT: &str = "Mozilla/5.0 (Linux; Android 10; HD1913) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.7499.193 Mobile Safari/537.36 EdgA/143.0.3650.125";
+const USER_AGENT: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0";
 const ORIGIN: &str = "chrome-extension://jdiccldimpdaibmpdkjnbmckianbfold";
 /// Ships alongside the Sec-MS-GEC token; the service rejects a stale pairing.
-const SEC_MS_GEC_VERSION: &str = "1-130.0.2849.68";
+const SEC_MS_GEC_VERSION: &str = "1-143.0.3650.75";
 
 /// The default output format: mp3 is what the frontend player expects.
 pub const AUDIO_FORMAT: &str = "audio-24khz-48kbitrate-mono-mp3";
@@ -167,7 +167,7 @@ trait Transport: AsyncRead + AsyncWrite + Unpin + Send {}
 impl<T: AsyncRead + AsyncWrite + Unpin + Send> Transport for T {}
 
 /// Open the TCP path to the endpoint, going through a proxy when one is given.
-async fn open_transport(proxy: Option<&str>) -> Result<Box<dyn Transport>, String> {
+async fn open_transport(proxy: Option<&str>, ca: &str) -> Result<Box<dyn Transport>, String> {
     let Some(proxy) = proxy else {
         let stream = TcpStream::connect((HOST, 443))
             .await
@@ -180,21 +180,53 @@ async fn open_transport(proxy: Option<&str>) -> Result<Box<dyn Transport>, Strin
 
     match url.scheme.as_str() {
         "socks5" | "socks5h" | "socks" => {
-            let stream = tokio_socks::tcp::Socks5Stream::connect(
-                url.authority.as_str(),
-                (HOST.to_string(), 443u16),
-            )
-            .await
-            .map_err(|err| format!("SOCKS5 proxy {} refused the connection: {err}", url.authority))?;
+            let stream = if let Some(credentials) = &url.credentials {
+                let (username, password) = credentials.split_once(':').unwrap_or((credentials, ""));
+                tokio_socks::tcp::Socks5Stream::connect_with_password(
+                    url.authority.as_str(),
+                    (HOST, 443u16),
+                    username,
+                    password,
+                )
+                .await
+            } else {
+                tokio_socks::tcp::Socks5Stream::connect(url.authority.as_str(), (HOST, 443u16))
+                    .await
+            }
+            .map_err(|err| {
+                format!(
+                    "SOCKS5 proxy {} refused the connection: {err}",
+                    url.authority
+                )
+            })?;
             Ok(Box::new(stream))
         }
         "http" | "https" => {
-            let mut stream = TcpStream::connect(url.authority.as_str())
+            let stream = TcpStream::connect(url.authority.as_str())
                 .await
                 .map_err(|err| format!("Failed to reach proxy {}: {err}", url.authority))?;
             stream.set_nodelay(true).ok();
+            let mut stream: Box<dyn Transport> = if url.scheme == "https" {
+                let authority: tokio_tungstenite::tungstenite::http::uri::Authority = url
+                    .authority
+                    .parse()
+                    .map_err(|_| "Invalid HTTPS proxy address".to_string())?;
+                let host = authority.host().trim_matches(['[', ']']).to_string();
+                let server_name = rustls::pki_types::ServerName::try_from(host)
+                    .map_err(|_| "Invalid HTTPS proxy hostname".to_string())?;
+                let connector =
+                    tokio_rustls::TlsConnector::from(Arc::new(crate::net::tls_config(ca)?));
+                Box::new(
+                    connector
+                        .connect(server_name, stream)
+                        .await
+                        .map_err(|e| format!("HTTPS proxy TLS failed: {e}"))?,
+                )
+            } else {
+                Box::new(stream)
+            };
             http_connect(&mut stream, url.credentials.as_deref()).await?;
-            Ok(Box::new(stream))
+            Ok(stream)
         }
         other => Err(format!(
             "Unsupported proxy scheme '{other}'. Use http, https or socks5."
@@ -253,8 +285,7 @@ where
         })
         .unwrap_or_default();
 
-    let request =
-        format!("CONNECT {HOST}:443 HTTP/1.1\r\nHost: {HOST}:443\r\n{authorization}\r\n");
+    let request = format!("CONNECT {HOST}:443 HTTP/1.1\r\nHost: {HOST}:443\r\n{authorization}\r\n");
     stream
         .write_all(request.as_bytes())
         .await
@@ -287,22 +318,85 @@ where
     Ok(())
 }
 
-fn tls_connector() -> Connector {
-    let roots = rustls::RootCertStore {
-        roots: webpki_roots::TLS_SERVER_ROOTS.to_vec(),
-    };
-    let config = rustls::ClientConfig::builder()
-        .with_root_certificates(roots)
-        .with_no_client_auth();
-    Connector::Rustls(Arc::new(config))
+fn tls_connector(ca: &str) -> Result<Connector, String> {
+    Ok(Connector::Rustls(Arc::new(crate::net::tls_config(ca)?)))
 }
 
-/// Synthesize `text` and return the encoded audio.
+#[derive(Debug)]
+struct EdgeError {
+    message: String,
+    retryable: bool,
+}
+
+impl From<String> for EdgeError {
+    fn from(message: String) -> Self {
+        Self {
+            message,
+            retryable: false,
+        }
+    }
+}
+
+impl EdgeError {
+    fn from_socket(error: tokio_tungstenite::tungstenite::Error) -> Self {
+        use tokio_tungstenite::tungstenite::{error::ProtocolError, Error};
+        let retryable = match &error {
+            Error::Io(err) => matches!(
+                err.kind(),
+                std::io::ErrorKind::ConnectionReset
+                    | std::io::ErrorKind::ConnectionAborted
+                    | std::io::ErrorKind::BrokenPipe
+                    | std::io::ErrorKind::UnexpectedEof
+                    | std::io::ErrorKind::TimedOut
+            ),
+            Error::Protocol(ProtocolError::ResetWithoutClosingHandshake)
+            | Error::ConnectionClosed
+            | Error::AlreadyClosed => true,
+            Error::Http(response) => {
+                response.status().is_server_error() || response.status().as_u16() == 429
+            }
+            _ => false,
+        };
+        Self {
+            message: format!("Edge TTS connection failed: {error}"),
+            retryable,
+        }
+    }
+}
+
+async fn retry_synthesis<F, Fut>(mut run: F) -> Result<Vec<u8>, String>
+where
+    F: FnMut() -> Fut,
+    Fut: std::future::Future<Output = Result<Vec<u8>, EdgeError>>,
+{
+    for attempt in 0..3 {
+        match run().await {
+            Ok(audio) => return Ok(audio),
+            Err(error) if !error.retryable || attempt == 2 => return Err(error.message),
+            Err(_) => tokio::time::sleep(std::time::Duration::from_millis(300 << attempt)).await,
+        }
+    }
+    unreachable!()
+}
+
+/// Retry transient websocket resets with a fresh connection and request ID.
+/// No audio is published or cached until a complete turn has arrived.
 pub async fn synthesize(
     config: &SpeechConfig,
     text: &str,
     proxy: Option<&str>,
+    ca: &str,
 ) -> Result<Vec<u8>, String> {
+    retry_synthesis(|| synthesize_once(config, text, proxy, ca)).await
+}
+
+/// Synthesize `text` and return the encoded audio.
+async fn synthesize_once(
+    config: &SpeechConfig,
+    text: &str,
+    proxy: Option<&str>,
+    ca: &str,
+) -> Result<Vec<u8>, EdgeError> {
     let url = format!(
         "wss://{HOST}{WSS_PATH}?TrustedClientToken={TRUSTED_CLIENT_TOKEN}&ConnectionId={}&Sec-MS-GEC={}&Sec-MS-GEC-Version={SEC_MS_GEC_VERSION}",
         uuid::Uuid::new_v4().simple(),
@@ -318,40 +412,51 @@ pub async fn synthesize(
         headers.insert(header::CACHE_CONTROL, "no-cache".parse().unwrap());
         headers.insert(header::USER_AGENT, USER_AGENT.parse().unwrap());
         headers.insert(header::ORIGIN, ORIGIN.parse().unwrap());
+        headers.insert(
+            header::COOKIE,
+            format!(
+                "muid={};",
+                uuid::Uuid::new_v4().simple().to_string().to_uppercase()
+            )
+            .parse()
+            .unwrap(),
+        );
     }
 
-    let transport = open_transport(proxy).await?;
+    let transport = open_transport(proxy, ca).await?;
     let (mut socket, _) = tokio_tungstenite::client_async_tls_with_config(
         request,
         transport,
         None,
-        Some(tls_connector()),
+        Some(tls_connector(ca)?),
     )
     .await
-    .map_err(|err| format!("Edge TTS refused the connection: {err}"))?;
+    .map_err(|err| EdgeError::from_socket(err))?;
 
     socket
         .send(config_message(config))
         .await
-        .map_err(|err| format!("Failed to send the Edge TTS configuration: {err}"))?;
+        .map_err(|err| EdgeError::from_socket(err))?;
     socket
         .send(ssml_message(text, config))
         .await
-        .map_err(|err| format!("Failed to send the Edge TTS request: {err}"))?;
+        .map_err(|err| EdgeError::from_socket(err))?;
 
     let mut audio = Vec::new();
     // Binary frames only carry audio once the service has acknowledged the
     // turn; anything before that is protocol chatter with no payload.
     let mut streaming = false;
+    let mut completed = false;
 
     while let Some(message) = socket.next().await {
-        let message = message.map_err(|err| format!("Edge TTS connection failed: {err}"))?;
+        let message = message.map_err(|err| EdgeError::from_socket(err))?;
 
         match message {
             Message::Text(text) => {
                 if text.contains("turn.start") || text.contains("Path:response") {
                     streaming = true;
                 } else if text.contains("turn.end") {
+                    completed = true;
                     break;
                 }
             }
@@ -374,8 +479,11 @@ pub async fn synthesize(
 
     let _ = socket.close(None).await;
 
-    if audio.is_empty() {
-        return Err("Edge TTS returned no audio.".to_string());
+    if !completed || audio.is_empty() {
+        return Err(EdgeError {
+            message: "Edge TTS ended before returning complete audio.".into(),
+            retryable: true,
+        });
     }
 
     Ok(audio)
@@ -384,6 +492,65 @@ pub async fn synthesize(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[tokio::test]
+    async fn retries_a_reset_but_not_a_certificate_failure() {
+        let mut calls = 0;
+        let audio = retry_synthesis(|| {
+            calls += 1;
+            let attempt = calls;
+            async move {
+                if attempt < 3 {
+                    Err(EdgeError {
+                        message: "reset".into(),
+                        retryable: true,
+                    })
+                } else {
+                    Ok(vec![1, 2, 3])
+                }
+            }
+        })
+        .await
+        .unwrap();
+        assert_eq!(calls, 3);
+        assert_eq!(audio, vec![1, 2, 3]);
+        let mut calls = 0;
+        let error = retry_synthesis(|| {
+            calls += 1;
+            async {
+                Err(EdgeError {
+                    message: "certificate".into(),
+                    retryable: false,
+                })
+            }
+        })
+        .await
+        .unwrap_err();
+        assert_eq!(calls, 1);
+        assert_eq!(error, "certificate");
+    }
+
+    #[tokio::test]
+    #[ignore = "live Microsoft service; run explicitly with a proxy configured"]
+    async fn live_edge_synthesizes_consecutive_words() {
+        let _ = rustls::crypto::ring::default_provider().install_default();
+        let proxy = crate::net::resolve_proxy(crate::net::ProxyMode::Auto, None);
+        for word in ["dictionary", "connection", "apple"] {
+            let audio = tokio::time::timeout(
+                std::time::Duration::from_secs(20),
+                synthesize(
+                    &SpeechConfig::new("en-US-AndrewNeural"),
+                    word,
+                    proxy.as_deref(),
+                    "",
+                ),
+            )
+            .await
+            .unwrap()
+            .unwrap();
+            assert!(audio.len() > 1000, "missing audio for {word}");
+        }
+    }
 
     #[test]
     fn parses_a_bare_host_and_port_as_http() {
@@ -422,7 +589,9 @@ mod tests {
     fn the_token_is_a_stable_uppercase_sha256() {
         let token = sec_ms_gec();
         assert_eq!(token.len(), 64);
-        assert!(token.chars().all(|c| c.is_ascii_hexdigit() && !c.is_lowercase()));
+        assert!(token
+            .chars()
+            .all(|c| c.is_ascii_hexdigit() && !c.is_lowercase()));
         // Snapped to a five minute window, so two calls agree.
         assert_eq!(token, sec_ms_gec());
     }

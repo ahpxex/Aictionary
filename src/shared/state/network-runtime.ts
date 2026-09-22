@@ -10,7 +10,7 @@ import type { NetworkSettings } from "@/shared/types/settings";
 let runtimeNetworkSettings: NetworkSettings = defaultSettings.network;
 
 export function setRuntimeNetworkSettings(settings: NetworkSettings) {
-  runtimeNetworkSettings = { ...settings };
+  runtimeNetworkSettings = { ...defaultSettings.network, ...settings };
 }
 
 export function getRuntimeNetworkSettings(): NetworkSettings {

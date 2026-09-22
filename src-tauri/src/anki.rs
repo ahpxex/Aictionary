@@ -4,29 +4,42 @@ use serde_json::Value;
 use std::time::Duration;
 
 #[tauri::command]
-pub async fn anki_request(api_url: String, payload: Value) -> Result<Value, String> {
-    let url = reqwest::Url::parse(api_url.trim())
-        .map_err(|_| "Invalid AnkiConnect URL".to_string())?;
+pub async fn anki_request(
+    api_url: String,
+    payload: Value,
+    custom_ca_pem: Option<String>,
+) -> Result<Value, String> {
+    let url =
+        reqwest::Url::parse(api_url.trim()).map_err(|_| "Invalid AnkiConnect URL".to_string())?;
     if !matches!(url.scheme(), "http" | "https") || url.host_str().is_none() {
         return Err("AnkiConnect requires an HTTP or HTTPS URL".into());
     }
 
-    let client = reqwest::Client::builder()
-        // Anki can also be on a local LAN. Never send cards to an outbound proxy.
-        .no_proxy()
-        .connect_timeout(Duration::from_secs(5))
-        .timeout(Duration::from_secs(15))
-        .build()
-        .map_err(|err| err.to_string())?;
+    let client = crate::net::http_client_builder(
+        crate::net::ProxyMode::Direct,
+        None,
+        custom_ca_pem.as_deref().unwrap_or_default(),
+    )?
+    // Anki can also be on a local LAN. Never send cards to an outbound proxy.
+    .no_proxy()
+    .connect_timeout(Duration::from_secs(5))
+    .timeout(Duration::from_secs(15))
+    .build()
+    .map_err(|err| err.to_string())?;
     let response = client
         .post(url)
         .json(&payload)
         .send()
         .await
-        .map_err(|err| format!("Cannot reach AnkiConnect. Open Anki and enable the AnkiConnect add-on: {err}"))?
+        .map_err(|err| {
+            format!("Cannot reach AnkiConnect. Open Anki and enable the AnkiConnect add-on: {err}")
+        })?
         .error_for_status()
         .map_err(|err| format!("AnkiConnect request failed: {err}"))?;
-    response.json().await.map_err(|err| format!("Invalid AnkiConnect response: {err}"))
+    response
+        .json()
+        .await
+        .map_err(|err| format!("Invalid AnkiConnect response: {err}"))
 }
 
 #[cfg(test)]
@@ -48,13 +61,21 @@ mod tests {
             let body = r#"{"result":123,"error":null}"#;
             stream.write_all(format!("HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}", body.len()).as_bytes()).await.unwrap();
         });
-        let result = anki_request(format!("http://{address}"), serde_json::json!({"action":"version","version":6})).await.unwrap();
+        let result = anki_request(
+            format!("http://{address}"),
+            serde_json::json!({"action":"version","version":6}),
+            None,
+        )
+        .await
+        .unwrap();
         assert_eq!(result["result"], 123);
         server.await.unwrap();
     }
 
     #[tokio::test]
     async fn rejects_non_http_urls() {
-        assert!(anki_request("file:///tmp/anki".into(), Value::Null).await.is_err());
+        assert!(anki_request("file:///tmp/anki".into(), Value::Null, None)
+            .await
+            .is_err());
     }
 }

@@ -28,7 +28,7 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 # TLS is picked per platform below: the system stack on desktop, rustls on
 # mobile, where no OpenSSL is available to link against.
-reqwest = { version = "0.12", default-features = false, features = ["json", "stream", "charset", "http2"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "stream", "charset", "http2", "socks"] }
 tokio = { version = "1", features = ["full"] }
 futures-util = "0.3"
 rusqlite = { version = "0.32", features = ["bundled"] }
@@ -47,6 +47,7 @@ tokio-tungstenite = { version = "0.30", default-features = false, features = [
     "rustls-tls-webpki-roots",
 ] }
 tokio-socks = "0.5"
+tokio-rustls = { version = "0.26", default-features = false, features = ["ring", "tls12"] }
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
 uuid = { version = "1", features = ["v4"] }
 # Bundled Mozilla roots, so certificate verification is identical on every
@@ -74,6 +75,9 @@ tauri-plugin-mcp-bridge = "0.12"
 # macos-system-configuration feature, so this costs no extra build.
 system-configuration = "0.7"
 
+[target.'cfg(target_os = "windows")'.dependencies]
+windows-registry = "0.6"
+
 # `default-features = false` matters here: reqwest's default set includes
 # `default-tls`, which links native-tls against an OpenSSL that does not exist
 # on Android. `system-proxy` is kept because the app relies on it everywhere.
@@ -92,3 +96,4 @@ reqwest = { version = "0.12", default-features = false, features = [
 
 [dev-dependencies]
 tempfile = "3"
+rcgen = "0.13"

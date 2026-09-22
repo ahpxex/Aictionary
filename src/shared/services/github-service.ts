@@ -1,3 +1,4 @@
+import { nativeFetch } from "./native-fetch";
 interface GitHubAsset {
   name: string;
   browser_download_url: string;
@@ -45,7 +46,7 @@ export interface AppReleaseInfo {
  * GitHub's "latest" endpoint already skips drafts and pre-releases.
  */
 export async function getLatestAppRelease(): Promise<AppReleaseInfo> {
-  const response = await fetch(
+  const response = await nativeFetch(
     `https://api.github.com/repos/${GITHUB_REPO_OWNER}/${APP_REPO_NAME}/releases/latest`
   );
 
@@ -103,7 +104,7 @@ function toDictionaryReleaseInfo(
  */
 export async function getLatestDictionaryRelease(): Promise<DictionaryReleaseInfo> {
   try {
-    const response = await fetch(
+    const response = await nativeFetch(
       `https://api.github.com/repos/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}/releases/latest`
     );
 
@@ -136,7 +137,7 @@ export async function getAllDictionaryReleases(): Promise<
   DictionaryReleaseInfo[]
 > {
   try {
-    const response = await fetch(
+    const response = await nativeFetch(
       `https://api.github.com/repos/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}/releases`
     );
 

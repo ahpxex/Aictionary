@@ -36,6 +36,7 @@ export function useSettings() {
       llm: normalizeLlmSettings(current.llm),
       about: { ...defaultSettings.about, ...(current.about ?? {}) },
       system: { ...defaultSettings.system, ...(current.system ?? {}) },
+      network: { ...defaultSettings.network, ...(current.network ?? {}) },
     }),
     []
   );

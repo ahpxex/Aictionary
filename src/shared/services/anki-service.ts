@@ -1,3 +1,4 @@
+import { getRuntimeNetworkSettings } from "@/shared/state/network-runtime";
 import { invoke } from "@tauri-apps/api/core";
 import { getRuntimeAnkiSettings } from "@/shared/state/anki-runtime";
 import type { DictionaryEntry } from "@/shared/types/dictionary";
@@ -400,6 +401,7 @@ async function requestAnki<T, Params = Record<string, unknown>>(
   const result = await invoke<AnkiConnectResponse<T>>("anki_request", {
     apiUrl,
     payload,
+    customCaPem: getRuntimeNetworkSettings().customCaPem,
   }).catch((error: unknown) => {
     throw error instanceof Error ? error : new Error(String(error));
   });

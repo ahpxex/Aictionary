@@ -187,7 +187,8 @@
       "anki": "Anki",
       "dictionary": "Dictionary",
       "keyboard": "Keyboard",
-      "about": "About"
+      "about": "About",
+      "network": "Network"
     },
     "appearance": {
       "title": "Theme",
@@ -350,7 +351,7 @@
       },
       "proxy": {
         "title": "Proxy",
-        "description": "Edge TTS opens a raw websocket, so unlike the other providers it never sees the proxy your system is configured with. Point it somewhere if synthesis cannot connect.",
+        "description": "Proxy settings for AI, dictionary downloads and speech. Localhost connections stay direct.",
         "mode": {
           "label": "Proxy",
           "auto": "Automatic",
@@ -506,6 +507,17 @@
         "shadcn": "shadcn/ui",
         "open_dictionary": "Open Dictionary"
       }
+    },
+    "network": {
+      "ca_title": "Custom CA certificates",
+      "ca_description": "Trust a CA used by your company or network proxy while keeping certificate and hostname verification enabled.",
+      "ca_label": "CA certificate bundle (PEM)",
+      "ca_scope": "Applies to AI requests, dictionary downloads, Anki and speech. Paste only public CA certificates from a trusted network administrator. App updates use the system certificate store.",
+      "save": "Save certificates",
+      "remove": "Remove certificates",
+      "saved": "Certificates saved. New requests will use them.",
+      "removed": "Custom certificates removed.",
+      "invalid": "Cannot save certificates: {{detail}}"
     }
   },
   "common": {

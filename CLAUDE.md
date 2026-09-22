@@ -188,12 +188,12 @@ big-endian header length. The transport is a direct socket, an HTTP `CONNECT`
 tunnel or a SOCKS5 connection depending on the resolved proxy.
 
 `src-tauri/src/net.rs` owns proxy resolution. `ProxyMode::Auto` reads the proxy
-environment variables and then, on macOS, the system network pane — a packaged
+environment variables and then, on macOS and Windows, the system network settings — a packaged
 app launched from Finder inherits no shell environment, so the pane is where a
 real user's proxy usually lives. `Manual` is the only mode that can work on
 Android, which has neither source to inherit from. The mode reaches the backend
 through `TtsStreamArgs`, is mirrored for non-React callers in
-`src/shared/state/network-runtime.ts`, and is edited in the Audio settings tab.
+`src/shared/state/network-runtime.ts`, and is edited in the Network settings tab.
 
 Two guards wrap synthesis. `EDGE_CONNECT_TIMEOUT` covers a connection that is
 dropped rather than refused, and a `catch_unwind` turns any panic into an
@@ -377,3 +377,27 @@ const MainPage = lazy(() =>
 - Strict mode enabled
 - No unused locals/parameters allowed
 - All settings types defined in `src/shared/types/settings.ts`
+
+### Native networking and corpus frequency
+
+- Network settings include an optional PEM CA bundle. `net.rs` adds it to the
+  normal trust roots for HTTP and Edge WebSocket TLS; hostname verification stays
+  enabled. `native-fetch.ts` and `http.rs` preserve streaming and cancellation for
+  AI and GitHub requests. Downloads and Anki receive the same certificate setting.
+  Desktop updater packages still use the system certificate store.
+- AnkiConnect requests use `anki_request` in Rust, avoiding WebView CORS and
+  mixed-content restrictions. Anki connections always bypass outbound proxies.
+- `dictionary_suggest` queries the existing distribution/user lookup indexes for
+  literal prefixes, with an eight-result limit. Search supports arrow keys,
+  Enter, Escape, and IME composition.
+- `word_frequency` reads a separately versioned wordfreq English SQLite database.
+  Data and full attribution live under `src-tauri/data`; regenerate it with
+  `scripts/build-word-frequency.py`. Never write frequency into v5 dictionary
+  entries or confuse corpus frequency with the user's lookup history.
+
+Relevant regression checks: `bun run build`, `bun test tests`, and
+`cargo test --manifest-path src-tauri/Cargo.toml --lib --locked`.
+The ignored Edge test reaches the live Microsoft service and must be run
+explicitly with an appropriate proxy. Windows host behavior and real Anki
+card receipt require those applications/platforms; a local fixture is not
+proof of either.

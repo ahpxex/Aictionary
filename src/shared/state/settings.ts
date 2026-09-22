@@ -76,6 +76,7 @@ export const defaultSettings: AppSettings = {
   network: {
     proxyMode: "auto",
     proxyUrl: "",
+    customCaPem: "",
   },
   system: {
     trayIconEnabled: true,

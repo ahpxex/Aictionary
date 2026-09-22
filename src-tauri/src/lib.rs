@@ -9,6 +9,7 @@ mod download;
 mod edge_tts;
 mod export;
 mod frequency;
+mod http;
 mod net;
 mod shortcuts;
 #[cfg(desktop)]
@@ -75,6 +76,7 @@ pub fn run() {
         }));
 
     builder
+        .manage(http::HttpRequests::default())
         .setup(|_app| {
             #[cfg(desktop)]
             {
@@ -104,6 +106,9 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             anki::anki_request,
             frequency::word_frequency,
+            net::validate_custom_ca,
+            http::start_http_request,
+            http::cancel_http_request,
             // Dictionary commands
             dictionary::dictionary_query,
             dictionary::dictionary_suggest,

@@ -32,12 +32,10 @@ import { FISH_AUDIO_MODEL_OPTIONS } from "@/features/settings/constants/audio";
 import type {
   AudioSettings,
   NetworkSettings,
-  ProxyMode,
   TtsProviderKind,
 } from "@/shared/types/settings";
 
 const PROVIDERS: TtsProviderKind[] = ["edge", "fish", "openai", "elevenlabs"];
-const PROXY_MODES: ProxyMode[] = ["auto", "manual", "direct"];
 
 type EdgeVoice = {
   shortName: string;
@@ -75,6 +73,7 @@ function EdgeVoicePicker({
       invoke<EdgeVoice[]>("list_edge_voices", {
         proxyMode: network.proxyMode,
         proxyUrl: network.proxyUrl,
+        customCaPem: network.customCaPem,
       })
         .then(setVoices)
         .catch((error) => {
@@ -170,7 +169,7 @@ function TextField({ id, labelKey, value, onChange, password }: FieldProps) {
 
 export function AudioTab() {
   const { t } = useTranslation();
-  const { settings, updateAudio, updateNetwork } = useSettings();
+  const { settings, updateAudio } = useSettings();
   const audio = settings.audio;
   const network = settings.network;
 
@@ -358,49 +357,6 @@ export function AudioTab() {
         </Section>
       )}
 
-      {/* Lives with the audio settings because Edge is the only subsystem that
-          cannot find a proxy by itself: it opens a raw socket, so the platform's
-          proxy never reaches it. Everything else here already follows the
-          system, and honours this too once it is set. */}
-      <Section
-        title={t("settings.audio.proxy.title")}
-        description={t("settings.audio.proxy.description")}
-        contentClassName="grid gap-4"
-      >
-        <div className="grid gap-2">
-          <Label>{t("settings.audio.proxy.mode.label")}</Label>
-          <ToggleGroup
-            type="single"
-            variant="outline"
-            spacing={0}
-            size="sm"
-            value={network.proxyMode}
-            onValueChange={(value) => {
-              if (!value) return;
-              updateNetwork({ proxyMode: value as ProxyMode });
-            }}
-            className="w-fit bg-transparent"
-          >
-            {PROXY_MODES.map((mode) => (
-              <ToggleGroupItem key={mode} value={mode}>
-                {t(`settings.audio.proxy.mode.${mode}`)}
-              </ToggleGroupItem>
-            ))}
-          </ToggleGroup>
-          <p className="text-xs text-muted-foreground">
-            {t(`settings.audio.proxy.mode.${network.proxyMode}_helper`)}
-          </p>
-        </div>
-
-        {network.proxyMode === "manual" && (
-          <TextField
-            id="proxy-url"
-            labelKey="settings.audio.proxy.url"
-            value={network.proxyUrl}
-            onChange={(value) => updateNetwork({ proxyUrl: value.trim() })}
-          />
-        )}
-      </Section>
     </div>
   );
 }

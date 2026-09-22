@@ -187,7 +187,8 @@
       "anki": "Anki",
       "dictionary": "词典",
       "keyboard": "键盘",
-      "about": "关于"
+      "about": "关于",
+      "network": "网络"
     },
     "appearance": {
       "title": "主题",
@@ -350,7 +351,7 @@
       },
       "proxy": {
         "title": "代理",
-        "description": "Edge TTS 走的是原始 websocket，和其他服务商不同，它读不到系统配置的代理。如果语音合成连不上，在这里指定一个。",
+        "description": "用于 AI、词典下载和语音请求的代理设置。本机连接始终直连。",
         "mode": {
           "label": "代理",
           "auto": "自动",
@@ -506,6 +507,17 @@
         "shadcn": "shadcn/ui",
         "open_dictionary": "开放词典"
       }
+    },
+    "network": {
+      "ca_title": "自定义 CA 证书",
+      "ca_description": "信任公司或网络代理使用的 CA，同时保留证书和主机名验证。",
+      "ca_label": "CA 证书包（PEM）",
+      "ca_scope": "用于 AI 请求、词典下载、Anki 和语音。请仅粘贴可信网络管理员提供的公开 CA 证书。应用更新使用系统证书库。",
+      "save": "保存证书",
+      "remove": "移除证书",
+      "saved": "证书已保存，新请求立即生效。",
+      "removed": "已移除自定义证书。",
+      "invalid": "无法保存证书：{{detail}}"
     }
   },
   "common": {
