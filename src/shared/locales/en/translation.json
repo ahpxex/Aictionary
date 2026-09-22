@@ -402,7 +402,8 @@
         "button_show": "Show in Finder",
         "button_clear": "Clear path",
         "last_updated": "Last updated:",
-        "never": "Never"
+        "never": "Never",
+        "ios_location": "The dictionary is stored on this device and stays available after app updates."
       },
       "why": {
         "title": "Why cache?",
@@ -492,7 +493,8 @@
         "downloading_progress": "Downloading update… {{percent}}%",
         "installing": "Installing update…",
         "restarting": "Update installed, restarting…",
-        "install_error": "The update could not be installed. Download it from the release page instead."
+        "install_error": "The update could not be installed. Download it from the release page instead.",
+        "ios_description": "Updates for iPhone and iPad are delivered through TestFlight or the App Store."
       },
       "data": {
         "title": "Dictionary data",

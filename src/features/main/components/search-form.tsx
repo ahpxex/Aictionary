@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Search } from "lucide-react";
 import { useSettings } from "@/features/settings/hooks/use-settings";
 import { suggestDictionary } from "@/shared/services/dictionary-service";
+import { isMobileHost } from "@/shared/lib/platform";
 
 type SearchFormProps = {
   onSearch: (word: string) => void;
@@ -59,6 +60,7 @@ export const SearchForm = forwardRef<SearchFormRef, SearchFormProps>(
       setSuggestions([]);
       setValue(word);
       onSearch(word);
+      if (isMobileHost()) inputRef.current?.blur();
     };
 
     useImperativeHandle(ref, () => ({
@@ -97,6 +99,8 @@ export const SearchForm = forwardRef<SearchFormRef, SearchFormProps>(
         <Search className="size-3.5 shrink-0 text-muted-foreground" />
         <input
           ref={inputRef}
+          type="search"
+          enterKeyHint="search"
           value={value}
           onChange={(event) => { setValue(event.target.value); setDismissed(false); setSuggestions([]); setActive(-1); }}
           onFocus={(event) => { event.target.select(); setFocused(true); setDismissed(false); }}
@@ -128,8 +132,8 @@ export const SearchForm = forwardRef<SearchFormRef, SearchFormProps>(
           aria-activedescendant={showSuggestions && active >= 0 ? `${listId}-${active}` : undefined}
           autoComplete="off"
           placeholder={t("main.search.placeholder")}
-          className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/60"
-          autoFocus
+          className="min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground/60 md:text-sm"
+          autoFocus={!isMobileHost()}
           autoCorrect="off"
           autoCapitalize="off"
           spellCheck={false}

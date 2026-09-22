@@ -4,6 +4,7 @@ import { useTheme } from "next-themes";
 import { useTranslation } from "react-i18next";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { settingsAtom } from "@/shared/state/settings";
+import { isMobileHost } from "@/shared/lib/platform";
 
 /**
  * The titlebar is styled Transparent, so it shows the NSWindow background
@@ -26,6 +27,7 @@ export function AppearanceSync() {
   }, [settings.theme.mode, setTheme]);
 
   useEffect(() => {
+    if (isMobileHost()) return;
     const mode = resolvedTheme === "dark" ? "dark" : "light";
     const appWindow = getCurrentWindow();
 
@@ -59,4 +61,3 @@ export function AppearanceSync() {
 
   return null;
 }
-

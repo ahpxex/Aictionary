@@ -402,7 +402,8 @@
         "button_show": "在访达中显示",
         "button_clear": "清除路径",
         "last_updated": "最后更新：",
-        "never": "从未"
+        "never": "从未",
+        "ios_location": "词库保存在此设备上，应用更新后仍可继续使用。"
       },
       "why": {
         "title": "为什么需要缓存？",
@@ -492,7 +493,8 @@
         "downloading_progress": "正在下载更新… {{percent}}%",
         "installing": "正在安装更新…",
         "restarting": "更新完成，正在重启…",
-        "install_error": "更新安装失败，请前往 Release 页面手动下载。"
+        "install_error": "更新安装失败，请前往 Release 页面手动下载。",
+        "ios_description": "iPhone 和 iPad 版本通过 TestFlight 或 App Store 更新。"
       },
       "data": {
         "title": "词库数据",

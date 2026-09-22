@@ -17,6 +17,7 @@ import { getDictionaryMetadata } from "@/shared/services/dictionary-service";
 import type { DictionaryMetadata } from "@/shared/types/dictionary";
 import type { DownloadOptions } from "@/shared/types/download";
 import { MIN_FULL_DICTIONARY_ENTRIES } from "@/shared/constants/dictionary";
+import { isIosHost } from "@/shared/lib/platform";
 
 export function DictionaryTab() {
   const { t } = useTranslation();
@@ -167,7 +168,9 @@ export function DictionaryTab() {
           description={t("settings.dictionary.why.items.0")}
           contentClassName="grid gap-4"
         >
-            <div className="grid gap-2">
+            {isIosHost() ? (
+              <p className="text-sm text-muted-foreground">{t("settings.dictionary.cache.ios_location")}</p>
+            ) : <div className="grid gap-2">
               <Label htmlFor="cache-path">
                 {t("settings.dictionary.cache.label")}
               </Label>
@@ -189,7 +192,7 @@ export function DictionaryTab() {
                   <FolderOpen className="h-4 w-4" />
                 </Button>
               </div>
-            </div>
+            </div>}
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <span>{t("settings.dictionary.cache.last_updated")}</span>
               <span className="font-medium text-foreground">
@@ -252,9 +255,9 @@ export function DictionaryTab() {
                   ? t("settings.dictionary.cache.button_checking")
                   : t("settings.dictionary.cache.button_check")}
               </Button>
-              <Button variant="outline" onClick={handleOpenCache}>
+              {!isIosHost() && <Button variant="outline" onClick={handleOpenCache}>
                 {t("settings.dictionary.cache.button_show")}
-              </Button>
+              </Button>}
               <Button
                 variant="outline"
                 onClick={() => {

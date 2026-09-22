@@ -6,7 +6,7 @@
  * however wide the screen is. Layout responds to `md:`, platform-only features
  * respond to this.
  *
- * The signal is the Kotlin bridge MainActivity injects, so it is synchronous
+ * The signals are native initialization bridges, so they are synchronous
  * and available on the very first render - a Tauri command would resolve a
  * frame or two late and flash desktop-only settings on a phone.
  */
@@ -20,6 +20,8 @@ declare global {
   interface Window {
     /** Injected by MainActivity on Android; absent on every other host. */
     AndroidHost?: AndroidHost;
+    /** Installed at document creation by the iOS host plugin. */
+    AictionaryHost?: { readonly platform: "ios" };
   }
 }
 
@@ -27,7 +29,11 @@ export function androidHost(): AndroidHost | undefined {
   return typeof window === "undefined" ? undefined : window.AndroidHost;
 }
 
-/** True only inside the Android app; false on macOS, Windows and Linux. */
+export function isIosHost(): boolean {
+  return typeof window !== "undefined" && window.AictionaryHost?.platform === "ios";
+}
+
+/** A native phone/tablet host, independent of window width or user agent. */
 export function isMobileHost(): boolean {
-  return androidHost() !== undefined;
+  return isIosHost() || androidHost() !== undefined;
 }

@@ -6,7 +6,7 @@
   <a href="https://github.com/ahpxex/Aictionary/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/ahpxex/Aictionary?label=release" /></a>
   <a href="https://github.com/ahpxex/Aictionary/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/ahpxex/Aictionary/total" /></a>
   <a href="./LICENSE"><img alt="License" src="https://img.shields.io/badge/code-MIT-blue" /></a>
-  <img alt="Platforms" src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux%20%7C%20Android-8A2BE2" />
+  <img alt="Platforms" src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux%20%7C%20Android%20%7C%20iOS-8A2BE2" />
 </p>
 
 <img width="1100" alt="Aictionary 查询 light 的词条界面" src="docs/screenshot.png" />
@@ -23,7 +23,7 @@
 - 独立英文语料词频库显示单词的 Zipf 分数和每百万词出现次数，帮助判断常见程度
 - 查词历史和频次都有统计，高频生词就是现成的复习清单
 - 全局快捷键唤起、直接查剪贴板内容，读英文资料时基本不用碰鼠标
-- macOS / Windows / Linux / Android 都有包
+- macOS / Windows / Linux / Android 都有包，iOS 通过 TestFlight 分发测试版
 
 ## 下载与安装
 
@@ -51,9 +51,9 @@
 | **OpenAI** | 需要 | OpenAI TTS 接口 |
 | **ElevenLabs** | 需要 | ElevenLabs 语音合成 |
 
-生成的音频会缓存到本地（如 macOS 的 `~/Library/Application Support/com.ahpx.aictionary-re/audio/`），同一单词只合成一次。所有 API Key 只保存在设备本地，不会上传。
+生成的音频会缓存到本地（如 macOS 的 `~/Library/Application Support/com.ahpx.aictionary-re/audio/`），同一单词只合成一次。所有 API Key 保存在设备本地，仅随请求发送给你选定的服务商，不会发送给 Aictionary 开发者。
 
-> **网络提示**：部分网络环境会重置 Edge TTS 的 websocket 连接。「设置 → 网络」中可配置代理——桌面端默认自动读取环境变量和系统代理设置，Android 上需要手动填写。如网络代理使用自定义 CA，可在同一页面保存 PEM 证书，适用于 AI、词典下载、Anki 和语音请求；应用自动更新继续使用系统证书库。
+> **网络提示**：部分网络环境会重置 Edge TTS 的 websocket 连接。「设置 → 网络」中可配置代理——桌面端默认自动读取环境变量和系统代理设置，Android / iOS 上需要手动填写。如网络代理使用自定义 CA，可在同一页面保存 PEM 证书，适用于 AI、词典下载、Anki 和语音请求；应用自动更新继续使用系统证书库。
 
 ## 与 Anki 同步卡片
 
@@ -97,7 +97,9 @@ Android 构建需要 Android SDK / NDK 和 JDK 21：
 bun tauri android build --apk
 ```
 
-GitHub Actions 会在打 tag 时对全平台（含 Android 签名 APK）执行构建并上传到 Release。
+GitHub Actions 会在打 tag 时对桌面平台及 Android 签名 APK 执行构建并上传到 Release。iOS 的签名、上传与外部测试流程见 [iOS 发布说明](docs/ios-release.md)。
+
+隐私与可选联网功能见 [隐私政策](PRIVACY.md)。
 
 ## 反馈与贡献
 

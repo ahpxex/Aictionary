@@ -4,7 +4,7 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 import { check as checkForUpdate } from "@tauri-apps/plugin-updater";
 import { Loader2 } from "lucide-react";
 import { installUpdate } from "@/app/update-check-sync";
-import { isMobileHost } from "@/shared/lib/platform";
+import { isIosHost, isMobileHost } from "@/shared/lib/platform";
 import { Button } from "@/components/ui/button";
 import { Section } from "@/shared/components/section";
 import { Switch } from "@/components/ui/switch";
@@ -61,9 +61,10 @@ export function AboutTab() {
 
       <Section
         title={t("settings.about.updates.title")}
-        description={t("settings.about.updates.description")}
+        description={t(isIosHost() ? "settings.about.updates.ios_description" : "settings.about.updates.description")}
         contentClassName="grid gap-4"
       >
+        {!isIosHost() && <>
         <div className="flex items-center justify-between gap-4 rounded-lg border bg-muted/40 px-4 py-3">
           <div className="space-y-1">
             <p className="text-sm font-medium">
@@ -134,6 +135,7 @@ export function AboutTab() {
             </Button>
           )}
         </div>
+        </>}
       </Section>
 
       {/* The dictionary is someone else's work under a share-alike licence,
@@ -218,4 +220,3 @@ export function AboutTab() {
     </div>
   );
 }
-

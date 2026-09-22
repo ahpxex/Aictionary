@@ -93,8 +93,24 @@ All four TTS providers, including the keyless Edge default, work on Android —
 see "Edge TTS and proxies" below for why Edge needed its own client to get
 there.
 
-Known mobile gaps: the UI is still a desktop layout, and release APKs are
-unsigned until a keystore is configured.
+Mobile uses the responsive shell with safe-area insets and bottom navigation.
+Desktop-only settings remain hidden. iOS additionally hides the desktop updater
+and external dictionary-folder controls, and resolves the sandbox dictionary
+path on each launch because iOS updates can change the container UUID.
+
+#### Building for iOS / TestFlight
+
+The committed Xcode project lives in `src-tauri/gen/apple`; edit `project.yml`
+and regenerate with XcodeGen. iOS uses the SDK's SQLite (`libsqlite3.tbd`), while
+other platforms retain bundled SQLite. The deployment target is iOS 16.4 to
+match Tailwind v4's WebKit requirement.
+
+`scripts/release-ios.sh BUILD_NUMBER [--upload]` archives, exports, and optionally
+uploads using the existing App Store Connect API key in 1Password. Distribution
+signing uses a separate Apple Distribution certificate and App Store profile,
+also backed up in 1Password. See `docs/ios-release.md` for provisioning, simulator
+build caveats, and the external TestFlight review workflow. A public group link
+does not mean Apple has approved the build.
 
 #### Building for Android
 

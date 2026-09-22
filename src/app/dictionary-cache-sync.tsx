@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import { useSettings } from "@/features/settings/hooks/use-settings";
 import { planDictionaryDownload } from "@/shared/services/dictionary-download";
 import { DownloadDialog } from "@/shared/components/download-dialog";
@@ -16,6 +17,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { MIN_FULL_DICTIONARY_ENTRIES } from "@/shared/constants/dictionary";
+import { isIosHost } from "@/shared/lib/platform";
 
 /**
  * Ensures the dictionary cache path is populated once when the app boots.
@@ -41,11 +43,6 @@ export function DictionaryCacheSync() {
   );
   const [entryCount, setEntryCount] = useState<number | null>(null);
 
-  // Help verify that this component is actually mounting and running.
-  useEffect(() => {
-    console.log("[DictionaryCacheSync] Mounted with settings:", settings);
-  }, [settings]);
-
   useEffect(() => {
     let cancelled = false;
 
@@ -53,7 +50,9 @@ export function DictionaryCacheSync() {
       try {
         let cachePath = settings.dictionary.cachePath;
 
-        if (!cachePath) {
+        // iOS changes the app container UUID during updates. Re-resolve its
+        // sandbox path instead of reusing an absolute path from localStorage.
+        if (!cachePath || isIosHost()) {
           const defaultPath = await invoke<string>("get_default_dictionary_path");
           if (cancelled || !defaultPath) {
             return;
@@ -62,7 +61,7 @@ export function DictionaryCacheSync() {
           cachePath = defaultPath;
 
           updateDictionary((prev) => {
-            if (prev.cachePath) {
+            if (prev.cachePath === defaultPath || (prev.cachePath && !isIosHost())) {
               return prev;
             }
             return {
@@ -169,6 +168,7 @@ export function DictionaryCacheSync() {
       setDownloadDialogOpen(true);
     } catch (error) {
       console.warn("Failed to re-download dictionary cache:", error);
+      toast.error(t("settings.dictionary.toast.redownload_error"));
     }
   };
 

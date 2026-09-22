@@ -8,6 +8,7 @@ import { DictionaryCacheSync } from "@/app/dictionary-cache-sync";
 import { SystemSync } from "@/app/system-sync";
 import { UpdateCheckSync } from "@/app/update-check-sync";
 import { AnkiSync } from "@/app/anki-sync";
+import { isIosHost, isMobileHost } from "@/shared/lib/platform";
 
 export function AppProviders({ children }: PropsWithChildren) {
   return (
@@ -22,8 +23,8 @@ export function AppProviders({ children }: PropsWithChildren) {
         <AudioSync />
         <AnkiSync />
         <DictionaryCacheSync />
-        <SystemSync />
-        <UpdateCheckSync />
+        {!isMobileHost() && <SystemSync />}
+        {!isIosHost() && <UpdateCheckSync />}
         {children}
         <Toaster position="bottom-center" />
       </NextThemeProvider>

@@ -47,6 +47,17 @@ pub fn run() {
 
     let builder = tauri::Builder::default();
 
+    // Make the host available before the frontend's first render, including
+    // iPads whose browser user agent may otherwise look like a Mac.
+    #[cfg(target_os = "ios")]
+    let builder = builder.plugin(
+        tauri::plugin::Builder::<tauri::Wry, ()>::new("ios-host")
+            .js_init_script(
+                "Object.defineProperty(window, 'AictionaryHost', { value: Object.freeze({ platform: 'ios' }) });",
+            )
+            .build(),
+    );
+
     // MCP automation bridge for development tooling only; binds to
     // localhost so nothing is exposed on the network.
     #[cfg(all(debug_assertions, desktop))]

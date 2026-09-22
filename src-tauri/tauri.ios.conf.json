@@ -1,0 +1,9 @@
+{
+  "bundle": {
+    "iOS": {
+      "developmentTeam": "L7GVXT64TV",
+      "bundleVersion": "1",
+      "minimumSystemVersion": "16.4"
+    }
+  }
+}
