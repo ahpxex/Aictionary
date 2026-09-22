@@ -5,6 +5,16 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing version tag to build and publish
+        required: true
+        type: string
+
+# Manual recovery uses the original tagged source with the current workflow.
+# This lets CI fixes ship a pending release without moving a published tag.
+env:
+  RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
 
 jobs:
   build:
@@ -43,6 +53,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -200,13 +212,13 @@ jobs:
           fi
 
           mkdir -p release
-          DEST="release/Aictionary-${GITHUB_REF_NAME}_${{ matrix.os_name }}_${{ matrix.arch }}.${EXT}"
+          DEST="release/Aictionary-${RELEASE_TAG}_${{ matrix.os_name }}_${{ matrix.arch }}.${EXT}"
           cp "$ART" "$DEST"
 
           # Updater artifacts. On Linux and Windows the installer artifact
           # doubles as the update package, so only its .sig rides along under
           # the renamed name; macOS updates from a separate .app.tar.gz.
-          BASE="release/Aictionary-${GITHUB_REF_NAME}_${{ matrix.os_name }}_${{ matrix.arch }}"
+          BASE="release/Aictionary-${RELEASE_TAG}_${{ matrix.os_name }}_${{ matrix.arch }}"
           case "${{ matrix.os_name }}" in
             macos)
               UPD=$(find "$ART_DIR/macos" -maxdepth 1 -name '*.app.tar.gz' | head -n 1 || true)
@@ -225,7 +237,7 @@ jobs:
           if [ "${{ matrix.os_name }}" == "windows" ]; then
             BIN_PATH="src-tauri/target/release/aictionary-re.exe"
             if [ -f "$BIN_PATH" ]; then
-              ZIP_DEST="release/Aictionary-${GITHUB_REF_NAME}_windows_${{ matrix.arch }}_portable.zip"
+              ZIP_DEST="release/Aictionary-${RELEASE_TAG}_windows_${{ matrix.arch }}_portable.zip"
               cp "$BIN_PATH" "Aictionary.exe"
               powershell -Command "Compress-Archive -Path 'Aictionary.exe' -DestinationPath '$ZIP_DEST'"
               rm "Aictionary.exe"
@@ -237,7 +249,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Aictionary-${{ github.ref_name }}_${{ matrix.os_name }}_${{ matrix.arch }}
+          name: Aictionary-${{ env.RELEASE_TAG }}_${{ matrix.os_name }}_${{ matrix.arch }}
           path: ${{ env.RENAMED_ARTIFACT }}
 
   android:
@@ -251,6 +263,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -266,6 +280,8 @@ jobs:
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
 
       - name: Install NDK
         run: |
@@ -321,7 +337,7 @@ jobs:
           fi
 
           mkdir -p release
-          cp "$ART" "release/Aictionary-${GITHUB_REF_NAME}_android_universal.apk"
+          cp "$ART" "release/Aictionary-${RELEASE_TAG}_android_universal.apk"
 
       # key.properties points at a keystore in the runner temp dir; drop both so
       # nothing signing-related can be picked up by a later step.
@@ -332,7 +348,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Aictionary-${{ github.ref_name }}_android_universal
+          name: Aictionary-${{ env.RELEASE_TAG }}_android_universal
           path: release/*
 
   release:
@@ -344,6 +360,8 @@ jobs:
     steps:
       - name: Checkout release notes
         uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
 
       - name: Download artifacts
         uses: actions/download-artifact@v4
@@ -353,7 +371,7 @@ jobs:
 
       - name: Generate updater manifest
         env:
-          TAG: ${{ github.ref_name }}
+          TAG: ${{ env.RELEASE_TAG }}
           REPO: ${{ github.repository }}
         run: |
           # latest.json is what installed apps poll: per-platform download
@@ -395,7 +413,7 @@ jobs:
       - name: Generate Release Body
         run: |
           set -euo pipefail
-          NOTES="docs/releases/${{ github.ref_name }}.md"
+          NOTES="docs/releases/${RELEASE_TAG}.md"
           if [ -f "$NOTES" ]; then
             cat "$NOTES" > release_body.md
           else
@@ -412,14 +430,14 @@ jobs:
             case "$filename" in
               latest.json|*.app.tar.gz) continue ;;
             esac
-            echo "| [$filename](https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/$filename) |" >> release_body.md
+            echo "| [$filename](https://github.com/${{ github.repository }}/releases/download/${RELEASE_TAG}/$filename) |" >> release_body.md
           done
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
-          name: "Aictionary ${{ github.ref_name }}"
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: "Aictionary ${{ env.RELEASE_TAG }}"
           body_path: release_body.md
           files: dist/*
         env:
