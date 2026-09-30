@@ -116,7 +116,13 @@ export const SearchForm = forwardRef<SearchFormRef, SearchFormProps>(
               event.preventDefault();
               submit(suggestions[active]);
             }
-            if (event.key === "Escape") { setDismissed(true); setActive(-1); }
+            if (event.key === "Escape") {
+              // Closing the list consumes the key, so a surrounding window
+              // that also listens for Escape can tell it was already handled.
+              if (showSuggestions) event.preventDefault();
+              setDismissed(true);
+              setActive(-1);
+            }
             if (showSuggestions && (event.key === "ArrowDown" || event.key === "ArrowUp")) {
               event.preventDefault();
               setActive((previous) => event.key === "ArrowDown"

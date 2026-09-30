@@ -10,7 +10,11 @@ import { UpdateCheckSync } from "@/app/update-check-sync";
 import { AnkiSync } from "@/app/anki-sync";
 import { isIosHost, isMobileHost } from "@/shared/lib/platform";
 
-export function AppProviders({ children }: PropsWithChildren) {
+/**
+ * What every window needs: state, theme and language, and the runtime
+ * mirrors that audio, Anki and network services read outside React.
+ */
+export function WindowProviders({ children }: PropsWithChildren) {
   return (
     <JotaiProvider>
       <NextThemeProvider
@@ -22,12 +26,25 @@ export function AppProviders({ children }: PropsWithChildren) {
         <AppearanceSync />
         <AudioSync />
         <AnkiSync />
-        <DictionaryCacheSync />
-        {!isMobileHost() && <SystemSync />}
-        {!isIosHost() && <UpdateCheckSync />}
         {children}
         <Toaster position="bottom-center" />
       </NextThemeProvider>
     </JotaiProvider>
+  );
+}
+
+/**
+ * The main window. It also owns the app-wide duties that must run exactly
+ * once however many windows are open: dictionary setup, tray and autostart,
+ * and the update check.
+ */
+export function AppProviders({ children }: PropsWithChildren) {
+  return (
+    <WindowProviders>
+      <DictionaryCacheSync />
+      {!isMobileHost() && <SystemSync />}
+      {!isIosHost() && <UpdateCheckSync />}
+      {children}
+    </WindowProviders>
   );
 }

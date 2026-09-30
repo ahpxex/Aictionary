@@ -15,11 +15,14 @@ export type QuickQueryPayload = {
 export type ShortcutSetupReport = {
   quickQueryError: string | null;
   newQueryError: string | null;
+  popupQueryError: string | null;
 };
 
 interface UseGlobalShortcutsOptions {
   quickQuery: string;
   newQuery: string;
+  /** Toggles the popup window, which Rust handles without a JS round trip. */
+  popupQuery: string;
   enabled: boolean;
   onQuickQuery: (payload: QuickQueryPayload) => void;
   onNewQuery: () => void;
@@ -30,6 +33,7 @@ interface UseGlobalShortcutsOptions {
 export function useGlobalShortcuts({
   quickQuery,
   newQuery,
+  popupQuery,
   enabled,
   onQuickQuery,
   onNewQuery,
@@ -54,6 +58,7 @@ export function useGlobalShortcuts({
         const report = await invoke<ShortcutSetupReport>("setup_shortcuts", {
           quickQuery,
           newQuery,
+          popupQuery,
           enabled,
         });
         if (!cancelled) {
@@ -66,6 +71,7 @@ export function useGlobalShortcuts({
           handlers.current.onSetupReport?.({
             quickQueryError: message,
             newQueryError: message,
+            popupQueryError: message,
           });
         }
       }
@@ -76,7 +82,7 @@ export function useGlobalShortcuts({
     return () => {
       cancelled = true;
     };
-  }, [quickQuery, newQuery, enabled]);
+  }, [quickQuery, newQuery, popupQuery, enabled]);
 
   // Registered once for the lifetime of the app: the ref above keeps the
   // callbacks current without re-subscribing.

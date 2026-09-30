@@ -1,7 +1,9 @@
 import { useTranslation } from "react-i18next";
+import { cn } from "@/lib/utils";
 
 type NonsenseStateProps = {
   word: string;
+  className?: string;
 };
 
 /**
@@ -12,7 +14,7 @@ type NonsenseStateProps = {
  * cache it. Saying nothing was written is more useful than a fabricated
  * definition, and there is no reason to be dour about it.
  */
-export function NonsenseState({ word }: NonsenseStateProps) {
+export function NonsenseState({ word, className }: NonsenseStateProps) {
   const { t } = useTranslation();
 
   const lines = t("main.nonsense.lines", {
@@ -27,7 +29,12 @@ export function NonsenseState({ word }: NonsenseStateProps) {
     ) % lines.length;
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-3 py-24 text-center">
+    <div
+      className={cn(
+        "flex flex-1 flex-col items-center justify-center gap-3 py-24 text-center",
+        className
+      )}
+    >
       <p className="text-5xl select-none" aria-hidden="true">
         🫠
       </p>

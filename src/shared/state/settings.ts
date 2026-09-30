@@ -68,6 +68,9 @@ export const defaultSettings: AppSettings = {
   keyboard: {
     quickQuery: "Mod+Shift+D",
     newQuery: "Mod+Shift+K",
+    // Launcher-style chord. Mod+Shift+P would shadow the command palette of
+    // VS Code and friends in every other app, since global shortcuts win.
+    popupQuery: "Mod+Shift+Space",
     enabled: true,
   },
   about: {

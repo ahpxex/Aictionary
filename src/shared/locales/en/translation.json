@@ -127,6 +127,13 @@
       "scope": "English corpus frequency, not your lookup count. Unknown words and phrases have no score. Source data predates 2022."
     }
   },
+  "popup": {
+    "recent": "Recent",
+    "empty": "Type a word to look it up.",
+    "open_entry": "Open full entry",
+    "open_main": "Open main window",
+    "open_failed": "Could not open the main window."
+  },
   "statistics": {
     "title": "Statistics",
     "description": "Review your dictionary usage and export study materials.",
@@ -445,11 +452,13 @@
     "keyboard": {
       "shortcuts": {
         "title": "Shortcuts",
-        "description": "Configure global hotkeys for copying selections or opening a fresh query.",
+        "description": "Configure global hotkeys for copying selections, opening a fresh query, or the popup lookup window.",
         "enable_label": "Enable global shortcuts",
         "enable_helper": "When disabled, keyboard shortcuts are ignored until you turn them back on.",
         "quick_query": "Quick query",
         "new_query": "New query",
+        "popup_query": "Popup lookup",
+        "popup_query_helper": "Shows or hides the small lookup window over any app. Clicking the tray icon does the same.",
         "reset": "Reset to defaults"
       },
       "usage": {

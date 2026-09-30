@@ -1,23 +1,30 @@
 //! Tray icon setup and menu handling for the desktop build.
 //!
-//! This module wires a Tauri v2 tray icon with a simple menu:
-//! - Open: shows and focuses the main window.
-//! - Query: shows the main window and focuses the search box (reuses the
-//!   existing `new-query` event handled by the React app).
-//! - About: shows the main window and navigates to the Settings → About tab
-//!   via a dedicated event.
+//! A left click toggles the popup lookup window next to the icon. The menu,
+//! on a right click, covers the rest:
+//! - Main window: shows and focuses the main window.
+//! - Settings: shows the main window on its settings page via a dedicated
+//!   event.
 //! - Exit: cleanly exits the application.
+//!
+//! Linux delivers no tray click events, so there the icon always opens the
+//! menu and the popup is reached through its global shortcut.
 
 #![cfg(desktop)]
 
-use tauri::{menu::MenuBuilder, tray::TrayIconBuilder, AppHandle, Emitter, Manager};
+use tauri::{
+    menu::MenuBuilder,
+    tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
+    AppHandle, Emitter, Manager, Runtime,
+};
+
+use crate::popup;
 
 // Stable identifiers so both Rust and JS can rely on them.
 pub const TRAY_ID: &str = "main-tray";
 
 pub const MENU_ID_OPEN: &str = "tray-open";
-pub const MENU_ID_QUERY: &str = "tray-query";
-pub const MENU_ID_ABOUT: &str = "tray-about";
+pub const MENU_ID_SETTINGS: &str = "tray-settings";
 pub const MENU_ID_EXIT: &str = "tray-exit";
 
 /// Creates the tray icon and attaches its menu.
@@ -26,18 +33,30 @@ pub fn init_tray(app: &AppHandle) -> tauri::Result<()> {
 
     // Build the tray menu (IDs are used in the global menu handler).
     let menu = MenuBuilder::new(&handle)
-        .text(MENU_ID_OPEN, "Open")
-        .text(MENU_ID_QUERY, "New query")
-        .separator()
-        .text(MENU_ID_ABOUT, "About")
+        .text(MENU_ID_OPEN, "Main window")
+        .text(MENU_ID_SETTINGS, "Settings")
         .separator()
         .text(MENU_ID_EXIT, "Exit")
         .build()?;
 
-    // Build the tray icon itself.
+    // Build the tray icon itself. The left button belongs to the popup; the
+    // menu moves to the right button.
     let mut builder = TrayIconBuilder::with_id(TRAY_ID)
         .menu(&menu)
-        .show_menu_on_left_click(true)
+        .show_menu_on_left_click(false)
+        .on_tray_icon_event(|tray, event| {
+            // Act on release, the way a button does: the press is what takes
+            // focus away from an open panel.
+            if let TrayIconEvent::Click {
+                button: MouseButton::Left,
+                button_state: MouseButtonState::Up,
+                rect,
+                ..
+            } = event
+            {
+                popup::toggle_from_tray(tray.app_handle(), rect);
+            }
+        })
         .tooltip("AIctionary");
 
     // Template alpha is tinted by macOS for either menu-bar appearance.
@@ -64,17 +83,15 @@ pub fn register_menu_handler(app: &AppHandle) {
 
         if id == MENU_ID_OPEN {
             show_main_window(app_handle);
-        } else if id == MENU_ID_QUERY {
-            handle_query(app_handle);
-        } else if id == MENU_ID_ABOUT {
-            handle_about(app_handle);
+        } else if id == MENU_ID_SETTINGS {
+            handle_settings(app_handle);
         } else if id == MENU_ID_EXIT {
             app_handle.exit(0);
         }
     });
 }
 
-pub fn show_main_window(app: &AppHandle) {
+pub fn show_main_window<R: Runtime>(app: &AppHandle<R>) {
     if let Some(window) = app.get_webview_window("main") {
         let _ = window.show();
         let _ = window.unminimize();
@@ -82,19 +99,11 @@ pub fn show_main_window(app: &AppHandle) {
     }
 }
 
-fn handle_query(app: &AppHandle) {
+fn handle_settings(app: &AppHandle) {
     show_main_window(app);
 
-    // Reuse the same event that the global keyboard shortcut emits so
-    // the React side doesn't need a special code path for tray clicks.
-    let _ = app.emit("new-query", ());
-}
-
-fn handle_about(app: &AppHandle) {
-    show_main_window(app);
-
-    // Ask the frontend to navigate to Settings → About.
-    let _ = app.emit("open-settings-about", ());
+    // Ask the frontend to navigate to the settings page.
+    let _ = app.emit_to("main", "open-settings", ());
 }
 
 /// A small open book with a transparent background. The app icon's filled

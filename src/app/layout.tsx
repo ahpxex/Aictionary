@@ -17,6 +17,7 @@ import { useSettings } from "@/features/settings/hooks/use-settings";
 import { useDictionarySearch } from "@/features/main/hooks/use-dictionary-search";
 import { SearchForm } from "@/features/main/components/search-form";
 import { useGlobalShortcuts } from "@/shared/hooks/use-global-shortcuts";
+import type { DictionaryLookupResult } from "@/shared/types/dictionary";
 
 type NavItem = {
   to: string;
@@ -34,7 +35,7 @@ export function AppLayout() {
   const { t } = useTranslation();
   const { settings } = useSettings();
   const navigate = useNavigate();
-  const { search, result, reverseLookup } = useDictionarySearch();
+  const { search, showResult, result, reverseLookup } = useDictionarySearch();
 
   // Searching from any tab jumps back to the dictionary view.
   const handleSearch = (word: string) => {
@@ -106,8 +107,20 @@ export function AppLayout() {
           })
         );
       }
+      if (report.popupQueryError) {
+        toast.error(
+          t("settings.keyboard.toast.register_failed", {
+            shortcut: formatShortcut(settings.keyboard.popupQuery).join(" "),
+          })
+        );
+      }
     },
-    [settings.keyboard.newQuery, settings.keyboard.quickQuery, t]
+    [
+      settings.keyboard.newQuery,
+      settings.keyboard.popupQuery,
+      settings.keyboard.quickQuery,
+      t,
+    ]
   );
 
   // Global keyboard shortcuts are wired here so they work regardless of
@@ -115,22 +128,40 @@ export function AppLayout() {
   useGlobalShortcuts({
     quickQuery: settings.keyboard.quickQuery,
     newQuery: settings.keyboard.newQuery,
+    popupQuery: settings.keyboard.popupQuery,
     enabled: settings.keyboard.enabled,
     onQuickQuery: handleQuickQuery,
     onNewQuery: focusQueryBar,
     onSetupReport: handleSetupReport,
   });
 
-  // React to tray menu "About" clicks by navigating to Settings → About.
+  // React to the tray menu's "Settings" item.
   useEffect(() => {
-    const unlistenPromise = listen("open-settings-about", () => {
-      navigate("/settings/about");
+    const unlistenPromise = listen("open-settings", () => {
+      navigate("/settings");
     });
 
     return () => {
       unlistenPromise.then((unlisten) => unlisten());
     };
   }, [navigate]);
+
+  // The popup window hands its entry over when the user asks for all of it.
+  // Rust shows this window right after emitting, so the entry is already in
+  // place when it appears.
+  useEffect(() => {
+    const unlistenPromise = listen<DictionaryLookupResult>(
+      "open-lookup-result",
+      (event) => {
+        navigate("/");
+        showResult(event.payload);
+      }
+    );
+
+    return () => {
+      unlistenPromise.then((unlisten) => unlisten());
+    };
+  }, [navigate, showResult]);
 
   // Republish the Android system-bar insets as CSS variables before anything
   // measures itself against them.

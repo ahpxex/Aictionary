@@ -127,6 +127,13 @@
       "scope": "英文语料词频，不是你的查询次数。未收录的词和短语不显示分数。原始语料采集于 2022 年之前。"
     }
   },
+  "popup": {
+    "recent": "最近查询",
+    "empty": "输入单词开始查询。",
+    "open_entry": "查看完整释义",
+    "open_main": "打开主窗口",
+    "open_failed": "无法打开主窗口。"
+  },
   "statistics": {
     "title": "统计",
     "description": "查看您的词典使用情况并导出学习材料。",
@@ -445,11 +452,13 @@
     "keyboard": {
       "shortcuts": {
         "title": "快捷键",
-        "description": "配置全局快捷键，便于快速复制选中文本或打开新查询。",
+        "description": "配置全局快捷键，便于快速复制选中文本、打开新查询或呼出查词小窗。",
         "enable_label": "启用全局快捷键",
         "enable_helper": "关闭后，按下快捷键不会触发操作，重新开启即可恢复。",
         "quick_query": "快速查询",
         "new_query": "新查询",
+        "popup_query": "小窗查词",
+        "popup_query_helper": "在任意应用上方显示或隐藏查词小窗，点击托盘图标效果相同。",
         "reset": "重置为默认"
       },
       "usage": {
