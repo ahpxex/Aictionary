@@ -83,6 +83,8 @@ export type DictionarySettings = {
 export type KeyboardShortcutSettings = {
   quickQuery: string;
   newQuery: string;
+  /** Toggles the popup lookup window (desktop only). */
+  popupQuery: string;
   enabled: boolean;
 };
 

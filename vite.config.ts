@@ -14,6 +14,17 @@ export default defineConfig(async () => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  // Two pages: the main window, and the popup lookup window the desktop build
+  // creates in Rust. The popup gets its own entry so it loads neither the
+  // router nor the main window's app-wide sync components.
+  build: {
+    rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, "index.html"),
+        popup: path.resolve(__dirname, "popup.html"),
+      },
+    },
+  },
 
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //

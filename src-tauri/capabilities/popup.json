@@ -1,0 +1,19 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "popup-capability",
+  "description": "The popup lookup window: events, hiding itself, and the window appearance its theme sync drives",
+  "platforms": [
+    "macOS",
+    "windows",
+    "linux"
+  ],
+  "windows": [
+    "popup"
+  ],
+  "permissions": [
+    "core:default",
+    "core:window:allow-hide",
+    "core:window:allow-set-background-color",
+    "core:window:allow-set-theme"
+  ]
+}

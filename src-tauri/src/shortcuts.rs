@@ -144,14 +144,15 @@ struct QuickQueryPayload {
     copy_error: Option<CopyFailure>,
 }
 
-/// Per-shortcut registration outcome. Registration is attempted for both
-/// bindings independently so one bad accelerator cannot silently disable the
-/// other, and failures travel back to the UI instead of dying in a log line.
+/// Per-shortcut registration outcome. Registration is attempted for each
+/// binding independently so one bad accelerator cannot silently disable the
+/// others, and failures travel back to the UI instead of dying in a log line.
 #[derive(Debug, Clone, Default, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ShortcutSetupReport {
     quick_query_error: Option<String>,
     new_query_error: Option<String>,
+    popup_query_error: Option<String>,
 }
 
 /// Bring the main window forward.
@@ -174,6 +175,7 @@ pub async fn setup_shortcuts<R: Runtime>(
     app: AppHandle<R>,
     quick_query: String,
     new_query: String,
+    popup_query: String,
     enabled: bool,
 ) -> Result<ShortcutSetupReport, String> {
     use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
@@ -260,6 +262,27 @@ pub async fn setup_shortcuts<R: Runtime>(
         }
     }
 
+    // Register popup shortcut (toggle the popup lookup window)
+    match normalize_shortcut(&popup_query).parse::<Shortcut>() {
+        Ok(shortcut) => {
+            let app_handle = app.clone();
+            let registration = shortcuts.on_shortcut(shortcut, move |_app, _shortcut, event| {
+                if event.state != ShortcutState::Pressed {
+                    return;
+                }
+
+                crate::popup::toggle_from_shortcut(&app_handle);
+            });
+
+            if let Err(error) = registration {
+                report.popup_query_error = Some(error.to_string());
+            }
+        }
+        Err(error) => {
+            report.popup_query_error = Some(error.to_string());
+        }
+    }
+
     Ok(report)
 }
 
@@ -272,6 +295,7 @@ pub async fn setup_shortcuts<R: Runtime>(
     _app: AppHandle<R>,
     _quick_query: String,
     _new_query: String,
+    _popup_query: String,
     _enabled: bool,
 ) -> Result<ShortcutSetupReport, String> {
     Ok(ShortcutSetupReport::default())

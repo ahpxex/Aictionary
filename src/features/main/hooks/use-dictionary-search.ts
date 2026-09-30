@@ -31,6 +31,7 @@ import {
   hasLlmCredentials,
   LlmServiceError,
 } from "@/shared/services/llm-service";
+import type { DictionaryLookupResult } from "@/shared/types/dictionary";
 
 export function useDictionarySearch() {
   const { t } = useTranslation();
@@ -212,6 +213,20 @@ export function useDictionarySearch() {
     setReverseLookup(null);
   }, [setNonsenseQuery, setResult, setReverseLookup]);
 
+  /**
+   * Show a result that was looked up elsewhere - the popup window hands its
+   * entry over this way. The lookup is already in the shared history, so it
+   * is not recorded a second time.
+   */
+  const showResult = useCallback(
+    (lookup: DictionaryLookupResult) => {
+      setNonsenseQuery(null);
+      setReverseLookup(null);
+      setResult({ result: lookup });
+    },
+    [setNonsenseQuery, setResult, setReverseLookup]
+  );
+
   /** Leave the entry opened from a candidate and show the list again. */
   const returnToReverseLookup = useCallback(() => {
     setResult({ result: null });
@@ -230,6 +245,7 @@ export function useDictionarySearch() {
     result,
     search,
     clear,
+    showResult,
     returnToReverseLookup,
   };
 }

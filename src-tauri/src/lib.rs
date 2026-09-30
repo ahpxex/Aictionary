@@ -11,6 +11,8 @@ mod export;
 mod frequency;
 mod http;
 mod net;
+#[cfg(desktop)]
+mod popup;
 mod shortcuts;
 #[cfg(desktop)]
 mod tray;
@@ -33,6 +35,41 @@ fn set_tray_visibility(app: tauri::AppHandle, visible: bool) -> Result<(), Strin
 #[tauri::command]
 #[cfg(not(desktop))]
 fn set_tray_visibility(_app: tauri::AppHandle, _visible: bool) -> Result<(), String> {
+    Ok(())
+}
+
+/// Hand the popup's lookup to the main window and bring that window forward.
+///
+/// The result travels as an event emitted before the window is shown, so the
+/// entry is already in place when it appears. The popup steps aside first:
+/// hiding it here, rather than letting the focus change do it, keeps that
+/// hide from being mistaken for a dismissal by the next tray click.
+#[tauri::command]
+#[cfg(desktop)]
+fn open_main_window(
+    app: tauri::AppHandle,
+    result: Option<serde_json::Value>,
+) -> Result<(), String> {
+    use tauri::Emitter;
+
+    if let Some(result) = result {
+        app.emit_to("main", "open-lookup-result", result)
+            .map_err(|e| format!("Failed to hand the lookup to the main window: {e}"))?;
+    }
+    popup::hide(&app);
+    tray::show_main_window(&app);
+
+    Ok(())
+}
+
+// The popup only exists on desktop; mobile keeps the command so the handler
+// list is the same on every platform.
+#[tauri::command]
+#[cfg(not(desktop))]
+fn open_main_window(
+    _app: tauri::AppHandle,
+    _result: Option<serde_json::Value>,
+) -> Result<(), String> {
     Ok(())
 }
 
@@ -99,6 +136,10 @@ pub fn run() {
                 tray::init_tray(&handle)?;
                 tray::register_menu_handler(&handle);
 
+                // The popup lookup window, summoned by the tray icon and its
+                // global shortcut.
+                popup::init(&handle)?;
+
                 // Prevent exiting the app when the main window is closed:
                 // instead, hide the window so the app keeps running in the tray.
                 if let Some(main_window) = handle.get_webview_window("main") {
@@ -148,6 +189,8 @@ pub fn run() {
             shortcuts::open_shortcut_permission_settings,
             // Tray commands
             set_tray_visibility,
+            // Popup commands
+            open_main_window,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")

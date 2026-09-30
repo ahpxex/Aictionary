@@ -89,6 +89,10 @@ have to agree or the build breaks on one platform or the other:
    (`autostart`, `mcp-bridge`) and the dock/taskbar window permissions, gated
    by its `platforms` list.
 
+Windows follow the same rule: `tauri.conf.json` lists only the main window,
+because its window list applies to mobile too. Desktop-only windows such as
+the popup are built in Rust under `#[cfg(desktop)]`.
+
 All four TTS providers, including the keyless Edge default, work on Android —
 see "Edge TTS and proxies" below for why Edge needed its own client to get
 there.
@@ -130,6 +134,35 @@ system properties, so pass them via `GRADLE_OPTS`
 (`-Dhttp.proxyHost=... -Dhttp.proxyPort=...`). Leave `nonProxyHosts` out of
 `GRADLE_OPTS`: `gradlew` runs that variable through `eval`, which parses the
 option's `|` separators as shell pipes.
+
+### Popup lookup window
+
+A left click on the tray icon, or the `keyboard.popupQuery` global shortcut,
+toggles a small always-on-top lookup panel (`src-tauri/src/popup.rs`).
+
+- It is a second Vite page: `popup.html` → `src/popup.tsx` →
+  `src/features/popup`. It mounts `WindowProviders` (state, theme, language,
+  audio/Anki/network runtime) but not `AppProviders`, whose dictionary
+  setup, tray/autostart and update check must run once, in the main window.
+  Its permissions live in `capabilities/popup.json`.
+- It runs lookups and LLM generation in its own state; windows share
+  settings and history only through localStorage. "Open full entry" calls
+  `open_main_window` with the finished result, which Rust emits to the main
+  window as `open-lookup-result` before showing it. Nothing streams between
+  windows.
+- It hides on focus loss. A tray click on an open panel blurs it before the
+  click arrives, so a toggle within 300 ms of a blur-hide is treated as the
+  close it was meant to be.
+- Placement: beside the tray icon, on the side facing the screen centre
+  (below the macOS menu bar, above a Windows taskbar), clamped to the work
+  area; from the shortcut, launcher-style on the monitor under the pointer.
+  Linux delivers no tray click events, so there only the shortcut opens it.
+- tao's "physical" positions are only physical on Windows. On macOS and GTK
+  they are logical × the scale of whichever screen they came from, so the
+  pointer, tray rect and monitor bounds are converted into one desktop space
+  (logical there, physical on Windows) before they are compared. Tauri's
+  `monitor_from_point` skips that conversion on macOS and misses the monitor
+  on Retina displays — don't use it.
 
 ### Auto-updates
 
