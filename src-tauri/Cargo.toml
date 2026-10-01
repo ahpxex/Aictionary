@@ -1,6 +1,6 @@
 [package]
 name = "aictionary-re"
-version = "3.4.0"
+version = "3.5.0"
 description = "A desktop dictionary with offline lookups and audio pronunciation"
 authors = ["ahpxex <AHpx@yandex.com>"]
 license = "MIT"
