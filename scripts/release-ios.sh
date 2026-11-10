@@ -14,12 +14,8 @@ export_path="$project_dir/build/app-store"
 # The signing identity and matching profile must already be installed.
 # XcodeGen must not copy Externals/*.a into the application's resources.
 xcodegen generate --spec "$project_dir/project.yml"
-env -u http_proxy -u https_proxy -u all_proxy -u HTTP_PROXY -u HTTPS_PROXY -u ALL_PROXY \
-  bun tauri ios build --ci --archive-only --export-method app-store-connect --build-number "$1"
+bun tauri ios build --ci --archive-only --export-method app-store-connect --build-number "$1"
 
-export http_proxy=http://127.0.0.1:7890
-export https_proxy=http://127.0.0.1:7890
-export no_proxy=localhost,127.0.0.1,::1
 xcodebuild -exportArchive -archivePath "$archive_path" -exportPath "$export_path" \
   -exportOptionsPlist "$PWD/src-tauri/ios-export-options.plist"
 
