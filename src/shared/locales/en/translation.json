@@ -125,6 +125,11 @@
       "low": "Low frequency",
       "explanation": "About {{frequency}} occurrences per million words. The Zipf score uses a logarithmic scale; higher means more common.",
       "scope": "English corpus frequency, not your lookup count. Unknown words and phrases have no score. Source data predates 2022."
+    },
+    "deep_link": {
+      "unsupported": "Aictionary doesn't recognize this link.",
+      "missing_word": "This link doesn't say which word to look up.",
+      "word_too_long": "Linked lookups are limited to {{max}} characters."
     }
   },
   "popup": {

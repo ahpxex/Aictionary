@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSetAtom } from "jotai";
 import { invoke } from "@tauri-apps/api/core";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -18,6 +19,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { MIN_FULL_DICTIONARY_ENTRIES } from "@/shared/constants/dictionary";
 import { isIosHost } from "@/shared/lib/platform";
+import { dictionaryPathSettledAtom } from "@/shared/state/dictionary";
 
 /**
  * Ensures the dictionary cache path is populated once when the app boots.
@@ -42,6 +44,7 @@ export function DictionaryCacheSync() {
     null
   );
   const [entryCount, setEntryCount] = useState<number | null>(null);
+  const setPathSettled = useSetAtom(dictionaryPathSettledAtom);
 
   useEffect(() => {
     let cancelled = false;
@@ -54,7 +57,11 @@ export function DictionaryCacheSync() {
         // sandbox path instead of reusing an absolute path from localStorage.
         if (!cachePath || isIosHost()) {
           const defaultPath = await invoke<string>("get_default_dictionary_path");
-          if (cancelled || !defaultPath) {
+          if (cancelled) {
+            return;
+          }
+          if (!defaultPath) {
+            setPathSettled(true);
             return;
           }
 
@@ -76,6 +83,11 @@ export function DictionaryCacheSync() {
         }
 
         setResolvedCachePath(cachePath);
+        // The settings write above lands first, so anything waiting on this
+        // sees the resolved path when it runs. Whether the database is there
+        // and complete is reported separately below and does not hold
+        // lookups back: a missing dictionary is the lookup's error to show.
+        setPathSettled(true);
         console.log("[DictionaryCacheSync] Using cache path:", cachePath);
 
         // Check if cache actually has dictionary files at all.
@@ -134,6 +146,9 @@ export function DictionaryCacheSync() {
         }
       } catch (error) {
         console.warn("Failed to initialize dictionary cache path:", error);
+        if (!cancelled) {
+          setPathSettled(true);
+        }
       }
     };
 
@@ -142,7 +157,12 @@ export function DictionaryCacheSync() {
     return () => {
       cancelled = true;
     };
-  }, [settings.dictionary.cachePath, settings.dictionary.lastUpdated, updateDictionary]);
+  }, [
+    settings.dictionary.cachePath,
+    settings.dictionary.lastUpdated,
+    setPathSettled,
+    updateDictionary,
+  ]);
 
   const handleDownloadSuccess = () => {
     const timestamp = new Date().toISOString();

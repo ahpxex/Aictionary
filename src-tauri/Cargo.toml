@@ -54,6 +54,12 @@ uuid = { version = "1", features = ["v4"] }
 # target and never reaches for a platform trust store.
 webpki-roots = "1"
 rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
+# The `aictionary://` URL scheme on every platform. Its build script writes the
+# scheme into the iOS Info.plist and the Android manifest from tauri.conf.json.
+# Held to 2.4 alongside `@tauri-apps/plugin-deep-link` ~2.4: 2.5 and later
+# require tauri 2.12, and moving the framework is its own change. 2.4.9 is
+# the first release whose iOS custom URL schemes work.
+tauri-plugin-deep-link = "~2.4.10"
 
 # Desktop-only surface. Tray icons, global shortcuts, autostart and
 # single-instance handling are window-manager concepts with no Android/iOS
@@ -66,6 +72,8 @@ tauri-plugin-autostart = "2"
 # In-app updates: check + download + install; process gives the relaunch.
 tauri-plugin-updater = "2"
 tauri-plugin-process = "2"
+# `deep-link` forwards a URL that launched a second instance (Windows and Linux
+# start a new process per link) to the deep-link plugin of the running one.
 tauri-plugin-single-instance = { version = "2", features = ["deep-link"] }
 # Dev-only automation bridge; only initialized under cfg(debug_assertions).
 tauri-plugin-mcp-bridge = "0.12"

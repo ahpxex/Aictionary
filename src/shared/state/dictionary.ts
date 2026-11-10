@@ -22,6 +22,18 @@ export const generationPreviewAtom = atom<GenerationPreview | null>(null);
 /** Set when a Chinese query produced a candidate list instead of an entry. */
 export const reverseLookupAtom = atom<ReverseLookupResult | null>(null);
 
+/**
+ * Whether this launch has settled which dictionary directory to read.
+ *
+ * The persisted path cannot be trusted on the first render: it may be empty
+ * on a fresh install, and on iOS it is re-resolved every launch because an
+ * update moves the app container. Lookups that start themselves - a link
+ * opened from another app - wait for this instead of racing the
+ * resolution with a stale path. It also turns true when resolution fails, so
+ * such a lookup reports the failure instead of waiting forever.
+ */
+export const dictionaryPathSettledAtom = atom(false);
+
 export const queryHistoryAtom = atomWithStorage<QueryRecord[]>(
   "aictionary-query-history",
   []

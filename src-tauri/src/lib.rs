@@ -73,6 +73,30 @@ fn open_main_window(
     Ok(())
 }
 
+/// Bring the main window forward whenever an `aictionary://` link arrives.
+///
+/// The app usually lives in the tray with its window hidden, and a link that
+/// looks a word up out of sight would look like a link that did nothing. The
+/// lookup itself is the frontend's job; this only makes it visible.
+#[cfg(desktop)]
+fn register_deep_links(app: &tauri::AppHandle) {
+    use tauri_plugin_deep_link::DeepLinkExt;
+
+    // Installers register the scheme with the OS, but an AppImage that was
+    // never integrated, or a development build, has nobody to do that for it.
+    // Registering at runtime covers both. A failure only costs the scheme, so
+    // it is reported rather than allowed to stop the app from starting.
+    #[cfg(any(target_os = "linux", all(debug_assertions, windows)))]
+    if let Err(error) = app.deep_link().register_all() {
+        eprintln!("Failed to register the aictionary:// URL scheme: {error}");
+    }
+
+    let handle = app.clone();
+    app.deep_link().on_open_url(move |_event| {
+        tray::show_main_window(&handle);
+    });
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // rustls will not guess a CryptoProvider when the dependency graph offers
@@ -83,6 +107,16 @@ pub fn run() {
     let _ = rustls::crypto::ring::default_provider().install_default();
 
     let builder = tauri::Builder::default();
+
+    // Single-instance arbitration has to be the first plugin: a second launch
+    // must be caught and handed over before anything else initializes. On
+    // Windows and Linux an `aictionary://` link arrives exactly that way, as
+    // the only argument of a new process, and the plugin's `deep-link` feature
+    // passes it on to the deep-link plugin of the instance already running.
+    #[cfg(desktop)]
+    let builder = builder.plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+        tray::show_main_window(app);
+    }));
 
     // Make the host available before the frontend's first render, including
     // iPads whose browser user agent may otherwise look like a Mac.
@@ -107,7 +141,11 @@ pub fn run() {
     let builder = builder
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
-        .plugin(tauri_plugin_clipboard_manager::init());
+        .plugin(tauri_plugin_clipboard_manager::init())
+        // `aictionary://lookup?word=...` on every platform. The main window's
+        // frontend reads the URLs (`src/shared/hooks/use-deep-link-lookup.ts`);
+        // Rust only has to bring that window forward on desktop.
+        .plugin(tauri_plugin_deep_link::init());
 
     // Global shortcuts, autostart and single-instance arbitration are desktop
     // window-manager concepts; the mobile platforms have no equivalent and the
@@ -118,10 +156,7 @@ pub fn run() {
         .plugin(tauri_plugin_autostart::Builder::new().build())
         // In-app updates only exist on desktop; Android installs APKs.
         .plugin(tauri_plugin_updater::Builder::new().build())
-        .plugin(tauri_plugin_process::init())
-        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
-            tray::show_main_window(app);
-        }));
+        .plugin(tauri_plugin_process::init());
 
     builder
         .manage(http::HttpRequests::default())
@@ -139,6 +174,8 @@ pub fn run() {
                 // The popup lookup window, summoned by the tray icon and its
                 // global shortcut.
                 popup::init(&handle)?;
+
+                register_deep_links(handle);
 
                 // Prevent exiting the app when the main window is closed:
                 // instead, hide the window so the app keeps running in the tray.

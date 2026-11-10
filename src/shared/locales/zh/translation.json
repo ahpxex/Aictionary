@@ -125,6 +125,11 @@
       "low": "低频词",
       "explanation": "每百万词约出现 {{frequency}} 次。Zipf 使用对数刻度，分数越高越常见。",
       "scope": "英文语料词频，不是你的查询次数。未收录的词和短语不显示分数。原始语料采集于 2022 年之前。"
+    },
+    "deep_link": {
+      "unsupported": "无法识别这个 Aictionary 链接。",
+      "missing_word": "这个链接没有指明要查询的单词。",
+      "word_too_long": "通过链接查询的内容不能超过 {{max}} 个字符。"
     }
   },
   "popup": {

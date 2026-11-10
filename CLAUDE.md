@@ -164,6 +164,34 @@ toggles a small always-on-top lookup panel (`src-tauri/src/popup.rs`).
   `monitor_from_point` skips that conversion on macOS and misses the monitor
   on Retina displays — don't use it.
 
+### `aictionary://` URL scheme
+
+`aictionary://lookup?word=<term>` opens a word's entry from any app, shortcut,
+script or link, on every platform (`tauri-plugin-deep-link`).
+
+- The scheme is declared once, under `plugins.deep-link` in
+  `tauri.conf.json`. The plugin's build script writes it into the iOS
+  `Info.plist` (`CFBundleURLTypes`) and the Android manifest (the
+  `DEEP LINK PLUGIN` intent-filter block) whenever a mobile build runs; the
+  committed copies are that output, so builds leave them unchanged. The
+  desktop bundler registers it on macOS and in the Windows/Linux installers;
+  `register_deep_links` in `lib.rs` also registers it at runtime on Linux
+  (non-integrated AppImages) and in Windows debug builds.
+- The plugin is held to 2.4 on both sides (`~2.4.10` in Cargo and npm): 2.5
+  and later require tauri 2.12. Move it together with the framework.
+- On Windows and Linux a link starts a second process; single-instance (with
+  its `deep-link` feature, and registered as the first plugin) forwards it
+  to the running one. On desktop Rust only raises the main window.
+- The main window does the lookup (`useDeepLinkLookup`). A link that
+  launched the app is read with `getCurrent()`, later ones arrive as events.
+  Lookups wait for `dictionaryPathSettledAtom`, which `DictionaryCacheSync`
+  sets once this launch's dictionary path is known — on iOS the persisted
+  path is stale after every update.
+- Parsing lives in `src/shared/lib/lookup-url.ts`. Unknown actions, missing
+  words and queries over 100 characters are rejected with a toast instead of
+  guessed at: any page can open a link, and a miss goes to the user's paid
+  model.
+
 ### Auto-updates
 
 Desktop builds ship `tauri-plugin-updater` (desktop-only dependency, like the

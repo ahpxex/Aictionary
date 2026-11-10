@@ -1,5 +1,6 @@
 import { Outlet, NavLink, useNavigate } from "react-router";
 import { useCallback, useEffect } from "react";
+import { useAtomValue } from "jotai";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { toast } from "sonner";
@@ -17,6 +18,9 @@ import { useSettings } from "@/features/settings/hooks/use-settings";
 import { useDictionarySearch } from "@/features/main/hooks/use-dictionary-search";
 import { SearchForm } from "@/features/main/components/search-form";
 import { useGlobalShortcuts } from "@/shared/hooks/use-global-shortcuts";
+import { useDeepLinkLookup } from "@/shared/hooks/use-deep-link-lookup";
+import { MAX_LOOKUP_URL_WORD_LENGTH } from "@/shared/lib/lookup-url";
+import { dictionaryPathSettledAtom } from "@/shared/state/dictionary";
 import type { DictionaryLookupResult } from "@/shared/types/dictionary";
 
 type NavItem = {
@@ -162,6 +166,28 @@ export function AppLayout() {
       unlistenPromise.then((unlisten) => unlisten());
     };
   }, [navigate, showResult]);
+
+  // `aictionary://lookup?word=...` from another app, a shortcut or a link.
+  // On desktop Rust has already raised this window; a link that launched the
+  // app waits here until the dictionary path for this launch is known.
+  const dictionaryPathSettled = useAtomValue(dictionaryPathSettledAtom);
+  useDeepLinkLookup({
+    ready: dictionaryPathSettled,
+    onLookup: handleSearch,
+    onInvalid: (reason) => {
+      if (reason === "missing_word") {
+        toast.error(t("main.deep_link.missing_word"));
+      } else if (reason === "word_too_long") {
+        toast.error(
+          t("main.deep_link.word_too_long", {
+            max: MAX_LOOKUP_URL_WORD_LENGTH,
+          })
+        );
+      } else {
+        toast.error(t("main.deep_link.unsupported"));
+      }
+    },
+  });
 
   // Republish the Android system-bar insets as CSS variables before anything
   // measures itself against them.
