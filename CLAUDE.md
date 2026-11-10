@@ -274,6 +274,17 @@ The dictionary consumes the `distribution_entry_v5` contract of
   (pronunciation aggregation, rare-meaning folding with the contract's
   "never leave an entry empty" fallback rule, relation grouping) live in
   `src/shared/lib/dictionary-entry.ts`.
+- The distribution lists pos groups alphabetically and splits a part of
+  speech by etymology. The entry page does not show that order:
+  `organizeSections` merges groups into one section per part of speech
+  (continuous sense numbers) and orders sections by core, then common sense
+  count, proper names always last. The page reads header → glance (core then
+  common glosses per section, `glanceForSections`) → sections → study
+  material (memory hook, notes, etymology) → comparisons, with a sticky
+  section bar (`entry-navigation.tsx`). The streaming preview keeps the same
+  order so completion does not rearrange the page. Example sentences mark the
+  headword and its forms via `highlightTerms`; the contract has no
+  collocation field, so collocations cannot be marked yet.
 - LLM generation (`src/shared/services/llm-service.ts`) produces only
   explanatory fields; the full v5 envelope is assembled deterministically in
   code. User entries may carry an app-level `comparisons` extension field

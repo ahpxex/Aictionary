@@ -25,7 +25,10 @@
       "suggestions": "Word suggestions"
     },
     "entry": {
-      "back_to_top": "Back to top"
+      "back_to_top": "Back to top",
+      "glance": "At a glance",
+      "sections": "Entry sections",
+      "learn": "Study"
     },
     "reverse": {
       "back": "Back to matches for “{{term}}”",

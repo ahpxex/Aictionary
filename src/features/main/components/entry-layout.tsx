@@ -22,20 +22,32 @@ export function Row({
   rail,
   children,
   divider = false,
+  subDivider = false,
   variant = "label",
+  id,
   className = "",
 }: {
   rail?: ReactNode;
   children: ReactNode;
+  /** A full-width rule above the row: a new section starts here. */
   divider?: boolean;
+  /**
+   * A rule above the content column only, the spine running through it: a
+   * new part inside the same section, such as a second etymology group.
+   */
+  subDivider?: boolean;
   variant?: "label" | "marker";
+  /** Anchor for section navigation; the row then clears the sticky bar. */
+  id?: string;
   className?: string;
 }) {
   const isMarker = variant === "marker";
 
   return (
     <div
+      id={id}
       className={cn(
+        id && "scroll-mt-12",
         "grid md:grid-cols-[5.5rem_1fr]",
         // 2.75rem is the narrowest gutter that still fits a four-letter
         // part-of-speech tag at the tracked label size.
@@ -55,7 +67,8 @@ export function Row({
       <div
         className={cn(
           "md:border-l md:border-border md:py-4 md:pl-5",
-          isMarker ? "border-l border-border py-4 pl-3" : "pb-4"
+          isMarker ? "border-l border-border py-4 pl-3" : "pb-4",
+          subDivider && "border-t border-border"
         )}
       >
         {children}
@@ -67,6 +80,18 @@ export function Row({
 export function RailLabel({ children }: { children: ReactNode }) {
   return (
     <span className="text-[0.65rem] font-medium uppercase leading-5 tracking-[0.15em] text-muted-foreground">
+      {children}
+    </span>
+  );
+}
+
+/**
+ * A small bordered tag: sense labels, rarity, proper-name marks. One style for
+ * every kind so they read as metadata, never as part of the definition.
+ */
+export function Tag({ children }: { children: ReactNode }) {
+  return (
+    <span className="inline-flex items-center border border-border px-1.5 text-[0.65rem] leading-4 text-muted-foreground">
       {children}
     </span>
   );
