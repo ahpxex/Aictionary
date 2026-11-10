@@ -1,5 +1,4 @@
 import {
-  useCallback,
   useEffect,
   useRef,
   useState,
@@ -18,8 +17,10 @@ export function sectionAnchor(key: string): string {
 
 export type SectionNavItem = {
   key: string;
-  /** Short label; a part of speech renders as its code plus the Chinese name. */
+  /** Full label; a part of speech renders as its code plus the Chinese name. */
   label: string;
+  /** One or two characters for the narrow thumb index on phones. */
+  shortLabel: string;
   pos?: string;
 };
 
@@ -31,8 +32,8 @@ function scrollContainerOf(element: Element | null): HTMLElement | null {
 /**
  * Bring a section to the top of the entry's scroll region.
  *
- * Sections carry a `scroll-margin-top` that clears the sticky bar, so a
- * plain `scrollIntoView` lands the heading just below it.
+ * Sections carry a small `scroll-margin-top`, so the heading lands with a
+ * little air above it rather than flush against the top edge.
  */
 export function scrollToSection(key: string) {
   document
@@ -96,9 +97,21 @@ function NavLabel({ item }: { item: SectionNavItem }) {
 }
 
 /**
- * Which section is being read: the last one whose top has passed under the
- * sticky bar. At the very bottom the last section wins even if it is too
- * short to reach the top, otherwise its link could never light up.
+ * The short label of a part of speech: the first character of its Chinese
+ * name (形, 名, 动 ...), which is what a printed dictionary's thumb index
+ * uses, or its first three letters when there is no Chinese name.
+ */
+export function posShortLabel(pos: string): string {
+  return posLabelZh(pos)?.charAt(0) ?? pos.slice(0, 3).toUpperCase();
+}
+
+/** Sections land this far below the top (`scroll-mt-6` on their rows). */
+const SCROLL_MARGIN = 24;
+
+/**
+ * Which section is being read: the last one whose top has passed the top of
+ * the scroll region. At the very bottom the last section wins even if it is
+ * too short to reach the top, otherwise its entry could never light up.
  */
 function useActiveSection(
   items: SectionNavItem[],
@@ -150,19 +163,13 @@ function useActiveSection(
   return active;
 }
 
-/** Height of the bar; sections reserve it with `scroll-mt-12`. */
-const NAV_HEIGHT = 48;
-
-/** Sections land this far below the top on wide screens (`lg:scroll-mt-6`). */
-const TOC_SCROLL_MARGIN = 24;
-
 /**
- * The entry's two-column frame on wide screens: the entry, and a column for
- * its table of contents. Narrower than `lg` there is no room beside the
- * text, so the column disappears and the entry takes the full width.
+ * The entry and, beside it, the column its table of contents lives in.
  *
- * The streaming preview uses the same frame with an empty column, so the
- * text does not move sideways when generation finishes and the contents
+ * The column is there at every width, only narrower on small screens: a
+ * phone gets a thumb index of single characters, a wider window the full
+ * labels. The streaming preview uses the same frame with an empty column, so
+ * the text does not move sideways when generation finishes and the contents
  * appear.
  */
 export function EntryFrame({
@@ -173,26 +180,30 @@ export function EntryFrame({
   children: ReactNode;
 }) {
   return (
-    <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_11rem] lg:gap-10">
+    <div className="grid grid-cols-[minmax(0,1fr)_2rem] gap-3 md:grid-cols-[minmax(0,1fr)_8rem] md:gap-6 lg:grid-cols-[minmax(0,1fr)_11rem] lg:gap-10">
       <div className="min-w-0">{children}</div>
-      <aside className="hidden lg:block">{toc}</aside>
+      <aside>{toc}</aside>
     </div>
   );
 }
 
 /**
- * The table of contents beside a long entry on wide screens: one line per
- * section down the side, held in place while the entry scrolls, with the
- * section being read marked, like the running contents of a book.
+ * The entry's table of contents, held beside it while it scrolls: one line
+ * per section, the section being read marked, like the running contents of
+ * a book. On a phone the lines shrink to single characters along the edge.
  */
 export function EntryToc({ items }: { items: SectionNavItem[] }) {
   const { t } = useTranslation();
   const listRef = useRef<HTMLElement>(null);
-  const active = useActiveSection(items, listRef, TOC_SCROLL_MARGIN + 8);
+  const active = useActiveSection(items, listRef, SCROLL_MARGIN + 8);
 
   return (
-    <nav ref={listRef} aria-label={t("main.entry.sections")} className="sticky top-8">
-      <p className="mb-3 text-[0.65rem] font-medium uppercase tracking-[0.15em] text-muted-foreground">
+    <nav
+      ref={listRef}
+      aria-label={t("main.entry.sections")}
+      className="sticky top-4 md:top-8"
+    >
+      <p className="mb-3 hidden text-[0.65rem] font-medium uppercase tracking-[0.15em] text-muted-foreground md:block">
         {t("main.entry.contents")}
       </p>
       <ul className="flex flex-col">
@@ -202,106 +213,28 @@ export function EntryToc({ items }: { items: SectionNavItem[] }) {
             <li key={item.key}>
               <button
                 type="button"
+                title={item.label}
+                aria-label={item.label}
                 aria-current={isActive ? "location" : undefined}
                 onClick={() => scrollToSection(item.key)}
                 className={cn(
-                  "flex w-full items-baseline border-l py-1.5 pl-3 text-left text-sm transition-colors",
+                  "flex min-h-9 w-full items-center justify-center border-r-2 text-sm transition-colors md:min-h-0 md:items-baseline md:justify-start md:border-l md:border-r-0 md:py-1.5 md:pl-3 md:text-left",
                   isActive
                     ? "border-foreground text-foreground"
                     : "border-border text-muted-foreground hover:border-foreground/40 hover:text-foreground"
                 )}
               >
-                <NavLabel item={item} />
+                <span aria-hidden className="md:hidden">
+                  {item.shortLabel}
+                </span>
+                <span aria-hidden className="hidden md:inline">
+                  <NavLabel item={item} />
+                </span>
               </button>
             </li>
           );
         })}
       </ul>
     </nav>
-  );
-}
-
-/**
- * On narrower screens, where there is no room for a side column: a slim bar
- * pinned to the top of the entry once the glance block (or the header, when
- * there is none) has scrolled away, so any section stays one click away in a
- * long entry.
- *
- * It overlays the content instead of taking space: appearing or leaving
- * would otherwise shift everything under it by its own height. `revealAfter`
- * marks the point that has to leave the viewport first.
- */
-export function EntrySectionNav({
-  items,
-  revealAfter,
-}: {
-  items: SectionNavItem[];
-  revealAfter: RefObject<HTMLElement | null>;
-}) {
-  const { t } = useTranslation();
-  const barRef = useRef<HTMLDivElement>(null);
-  const [revealed, setRevealed] = useState(false);
-  const active = useActiveSection(items, barRef, NAV_HEIGHT + 8);
-
-  useEffect(() => {
-    const target = revealAfter.current;
-    const container = scrollContainerOf(barRef.current);
-    if (!target || !container) {
-      return;
-    }
-    const observer = new IntersectionObserver(
-      ([entry]) =>
-        setRevealed(
-          !entry.isIntersecting && entry.boundingClientRect.top < (entry.rootBounds?.top ?? 0)
-        ),
-      { root: container }
-    );
-    observer.observe(target);
-    return () => observer.disconnect();
-  }, [revealAfter]);
-
-  // Keep the active link in view when the bar scrolls sideways on a phone.
-  const activeRef = useCallback((node: HTMLButtonElement | null) => {
-    node?.scrollIntoView({ block: "nearest", inline: "nearest" });
-  }, []);
-
-  return (
-    <div ref={barRef} className="sticky top-0 z-20 h-0 lg:hidden">
-      <nav
-        aria-label={t("main.entry.sections")}
-        aria-hidden={!revealed}
-        inert={!revealed}
-        className={cn(
-          "absolute inset-x-0 top-0 -mx-4 border-b border-border bg-background px-4 transition-[opacity,transform] duration-200 md:-mx-6 md:px-6",
-          revealed
-            ? "translate-y-0 opacity-100"
-            : "pointer-events-none -translate-y-1 opacity-0"
-        )}
-      >
-        <ul className="flex h-12 items-stretch gap-5 overflow-x-auto [scrollbar-width:none]">
-          {items.map((item) => {
-            const isActive = item.key === active;
-            return (
-              <li key={item.key} className="flex shrink-0">
-                <button
-                  type="button"
-                  ref={isActive ? activeRef : undefined}
-                  aria-current={isActive ? "location" : undefined}
-                  onClick={() => scrollToSection(item.key)}
-                  className={cn(
-                    "relative flex items-center whitespace-nowrap text-sm transition-colors",
-                    isActive
-                      ? "text-foreground after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-foreground"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  <NavLabel item={item} />
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
-    </div>
   );
 }

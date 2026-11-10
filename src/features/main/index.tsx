@@ -44,11 +44,13 @@ export function MainPage() {
       <div
         className={cn(
           "mx-auto flex min-h-full w-full max-w-3xl flex-col px-4 py-6 md:px-6 md:py-8",
-          // An entry brings a contents column on wide screens (EntryFrame).
-          // The page widens by exactly that column plus its gap (11rem +
-          // 2.5rem on top of 48rem), so the text keeps the measure it has
-          // everywhere else.
-          (result || isGeneratingFromLlm) && "lg:max-w-[61.5rem]"
+          // An entry brings a contents column (EntryFrame). From `md` up the
+          // page widens by exactly that column plus its gap (8rem + 1.5rem,
+          // then 11rem + 2.5rem, on top of 48rem), so the text keeps the
+          // measure it has everywhere else. A phone has nothing to widen
+          // into, and its column is a narrow thumb index instead.
+          (result || isGeneratingFromLlm) &&
+            "md:max-w-[57.5rem] lg:max-w-[61.5rem]"
         )}
       >
         {!result &&

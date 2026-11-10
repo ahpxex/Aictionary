@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type {
   DictionaryExample,
@@ -28,8 +28,8 @@ import {
 import {
   EntryFrame,
   EntryGlance,
-  EntrySectionNav,
   EntryToc,
+  posShortLabel,
   sectionAnchor,
   type SectionNavItem,
 } from "@/features/main/components/entry-navigation";
@@ -48,6 +48,14 @@ const RELATION_CHIP_LIMIT = 12;
 
 const LEARN_KEY = "learn";
 const COMPARE_KEY = "compare";
+
+/*
+ * Thumb-index characters for the non-pos sections. Like 形/名/动, they follow
+ * the dictionary's language (Chinese definitions) rather than the UI's, and
+ * a single character is all a phone-width index column holds.
+ */
+const LEARN_SHORT = "学";
+const COMPARE_SHORT = "辨";
 
 /*
  * Type scale of an entry, top to bottom. Every element of the same kind uses
@@ -443,21 +451,28 @@ export function EntryView({
   const navItems = useMemo<SectionNavItem[]>(() => {
     const items: SectionNavItem[] = sections.map((section) => ({
       key: section.key,
-      label: section.pos,
+      label: [section.pos.toUpperCase(), posLabelZh(section.pos)]
+        .filter(Boolean)
+        .join(" "),
+      shortLabel: posShortLabel(section.pos),
       pos: section.pos,
     }));
     if (hasLearn) {
-      items.push({ key: LEARN_KEY, label: t("main.entry.learn") });
+      items.push({
+        key: LEARN_KEY,
+        label: t("main.entry.learn"),
+        shortLabel: LEARN_SHORT,
+      });
     }
     if (comparisons.length > 0) {
-      items.push({ key: COMPARE_KEY, label: t("main.comparison.title") });
+      items.push({
+        key: COMPARE_KEY,
+        label: t("main.comparison.title"),
+        shortLabel: COMPARE_SHORT,
+      });
     }
     return items;
   }, [comparisons.length, hasLearn, sections, t]);
-
-  // The bar appears once this has scrolled out of view: the glance block if
-  // there is one, the header otherwise.
-  const navThresholdRef = useRef<HTMLDivElement>(null);
 
   const entryTypeLabel =
     entry.entry_type !== "standard"
@@ -494,10 +509,6 @@ export function EntryView({
         />
 
         {glance.length > 0 && <EntryGlance rows={glance} />}
-        <div ref={navThresholdRef} aria-hidden />
-        {hasNavigation && (
-          <EntrySectionNav items={navItems} revealAfter={navThresholdRef} />
-        )}
 
         {sections.map((section) => (
           <PosSection

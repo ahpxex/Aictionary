@@ -314,10 +314,11 @@ The dictionary consumes the `distribution_entry_v5` contract of
   count, proper names always last. The page reads header → glance (core then
   common glosses per section, `glanceForSections`) → sections → study
   material (memory hook, notes, etymology) → comparisons. Navigation lives in
-  `entry-navigation.tsx`: from `lg` up, `EntryFrame` adds a sticky table of
-  contents in a side column (the page widens by that column, so the text
-  keeps its measure); below `lg` there is no room beside the text, and a
-  sticky top bar takes over once the glance block scrolls away. The streaming preview keeps the same
+  `entry-navigation.tsx`: `EntryFrame` always gives an entry a sticky table
+  of contents in a side column, at every width. From `md` up it shows full
+  labels and the page widens by the column, so the text keeps its measure;
+  on phones it narrows to a thumb index of single characters (形 名 动 …,
+  学, 辨). There is deliberately no top navigation bar. The streaming preview keeps the same
   order so completion does not rearrange the page. Example sentences mark the
   headword and its forms via `highlightTerms`; the contract has no
   collocation field, so collocations cannot be marked yet.
