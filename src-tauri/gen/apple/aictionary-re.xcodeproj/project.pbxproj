@@ -36,6 +36,7 @@
 		3FA3842EE62E45DDA8868507 /* aictionary-re_iOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "aictionary-re_iOS.entitlements"; sourceTree = "<group>"; };
 		3FBB63B1492F4A416756674B /* types.rs */ = {isa = PBXFileReference; path = types.rs; sourceTree = "<group>"; };
 		419A2B3FD56A922328298A7C /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
+		46D8697979097EB8564C30BA /* popup.rs */ = {isa = PBXFileReference; path = popup.rs; sourceTree = "<group>"; };
 		5455177B495FF1C00250A668 /* main.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = main.mm; sourceTree = "<group>"; };
 		5A01C223D1648526BD3C4A22 /* commands.rs */ = {isa = PBXFileReference; path = commands.rs; sourceTree = "<group>"; };
 		5DF70DD89DB9B590F4D61FA9 /* mod.rs */ = {isa = PBXFileReference; path = mod.rs; sourceTree = "<group>"; };
@@ -106,6 +107,7 @@
 				0B50871D004F304891DEC3C3 /* lib.rs */,
 				E6AFB0A6E80FC657BD37C5E8 /* main.rs */,
 				04A51401D34C6A520308DF06 /* net.rs */,
+				46D8697979097EB8564C30BA /* popup.rs */,
 				A1C9F397AF79F6B325ADFCE7 /* shortcuts.rs */,
 				E52DA7A3BF099A9BAC46E88C /* tray.rs */,
 				5F3A191B14C0C4F2790904E5 /* tts.rs */,
