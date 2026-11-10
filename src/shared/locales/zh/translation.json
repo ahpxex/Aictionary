@@ -25,7 +25,10 @@
       "suggestions": "单词联想"
     },
     "entry": {
-      "back_to_top": "回到顶部"
+      "back_to_top": "回到顶部",
+      "glance": "速览",
+      "sections": "词条导航",
+      "learn": "学习"
     },
     "reverse": {
       "back": "返回「{{term}}」的匹配列表",

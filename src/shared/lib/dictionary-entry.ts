@@ -141,3 +141,290 @@ export function groupRelationsByType(
   }
   return byType;
 }
+
+/**
+ * One part of speech on the page: every pos group that shares it, in the
+ * order they should be read.
+ *
+ * The distribution splits a part of speech by etymology, so "light" carries
+ * four separate verb groups. Shown one after another under the same heading
+ * they read as one list of senses, which is what a learner expects.
+ */
+export type EntrySection = {
+  /** Stable within an entry; used for the section's anchor. */
+  key: string;
+  pos: string;
+  properName: boolean;
+  groups: { group: DictionaryPosGroup; index: number }[];
+};
+
+const PRIORITY_RANK: Record<string, number> = { core: 0, common: 1, rare: 2 };
+
+/** The most important priority any of the group's senses carries. */
+function groupRank(group: DictionaryPosGroup): number {
+  return group.meanings.reduce(
+    (best, meaning) => Math.min(best, PRIORITY_RANK[meaning.priority] ?? 2),
+    3
+  );
+}
+
+function isProperNameGroup(group: DictionaryPosGroup): boolean {
+  return group.proper_name || group.pos.toLowerCase() === "name";
+}
+
+/**
+ * Arrange an entry's pos groups into sections, most useful first.
+ *
+ * The distribution lists groups alphabetically by part of speech, which puts
+ * "bank" the village ahead of "bank" the institution. Priorities in the data
+ * are truthful, so they decide instead: a section with more core senses comes
+ * first, then one with more senses outside the rare tier. Proper names - a
+ * surname, a place - go last whatever their priority, because they are rarely
+ * what someone looking up a word wants. Within a section, groups holding a
+ * core sense lead. Ties keep the distribution's order.
+ */
+export function organizeSections(entry: DictionaryEntry): EntrySection[] {
+  const byKey = new Map<string, EntrySection>();
+
+  entry.pos_groups.forEach((group, index) => {
+    const properName = isProperNameGroup(group);
+    const key = `${group.pos.toLowerCase()}${properName ? "-name" : ""}`;
+    const section = byKey.get(key);
+    if (section) {
+      section.groups.push({ group, index });
+    } else {
+      byKey.set(key, { key, pos: group.pos, properName, groups: [{ group, index }] });
+    }
+  });
+
+  const stats = (section: EntrySection) => {
+    let core = 0;
+    let nonRare = 0;
+    for (const { group } of section.groups) {
+      for (const meaning of group.meanings) {
+        if (meaning.priority === "core") core += 1;
+        if (meaning.priority !== "rare") nonRare += 1;
+      }
+    }
+    return { core, nonRare, first: section.groups[0].index };
+  };
+
+  const sections = [...byKey.values()];
+  for (const section of sections) {
+    section.groups.sort(
+      (a, b) => groupRank(a.group) - groupRank(b.group) || a.index - b.index
+    );
+  }
+
+  return sections
+    .map((section) => ({ section, ...stats(section) }))
+    .sort(
+      (a, b) =>
+        Number(a.section.properName) - Number(b.section.properName) ||
+        b.core - a.core ||
+        b.nonRare - a.nonRare ||
+        a.first - b.first
+    )
+    .map(({ section }) => section);
+}
+
+/** One line of the at-a-glance block: a section and its leading glosses. */
+export type GlanceRow = {
+  key: string;
+  pos: string;
+  glosses: string[];
+};
+
+/** Enough glosses to recognize the sense; the full list is a click away. */
+const GLANCE_GLOSS_LIMIT = 4;
+
+/**
+ * The at-a-glance block: each section's short glosses on one line, the way a
+ * pocket dictionary lists them, so the common meanings are readable before
+ * any scrolling.
+ *
+ * Takes plain pos/gloss lists rather than an entry so the streaming preview
+ * can build the same block from a half-finished generation. Sections without
+ * a gloss are left out. When the whole entry has fewer than two glosses the
+ * block would only repeat the sense printed right below it, so there is none.
+ */
+export function buildGlance(
+  sections: { key: string; pos: string | null | undefined; glosses: (string | null | undefined)[] }[]
+): GlanceRow[] {
+  const rows: GlanceRow[] = [];
+
+  for (const section of sections) {
+    const glosses: string[] = [];
+    for (const gloss of section.glosses) {
+      if (glosses.length === GLANCE_GLOSS_LIMIT) {
+        break;
+      }
+      const text = gloss?.trim();
+      if (text && !glosses.includes(text)) {
+        glosses.push(text);
+      }
+    }
+    const pos = section.pos?.trim();
+    if (pos && glosses.length > 0) {
+      rows.push({ key: section.key, pos, glosses });
+    }
+  }
+
+  const total = rows.reduce((sum, row) => sum + row.glosses.length, 0);
+  return total >= 2 ? rows : [];
+}
+
+/**
+ * Glance rows for a finished entry.
+ *
+ * Core senses come first, then common ones. Rare senses are left out per
+ * section rather than per group: a group of only rare senses is still
+ * printed in full below (the contract's fallback), but a summary of the
+ * common meanings has no use for it while its section has common ones. A
+ * section with nothing but rare senses lists those.
+ */
+export function glanceForSections(sections: EntrySection[]): GlanceRow[] {
+  return buildGlance(
+    sections.map((section) => {
+      const meanings = section.groups.flatMap(({ group }) => group.meanings);
+      const common = meanings.filter((meaning) => meaning.priority !== "rare");
+      // Core senses of every group before any common one, so a second
+      // etymology's core sense ("bank" the shore) is not crowded out by the
+      // first group's long tail.
+      const ranked = [...(common.length > 0 ? common : meanings)].sort(
+        (a, b) => (PRIORITY_RANK[a.priority] ?? 2) - (PRIORITY_RANK[b.priority] ?? 2)
+      );
+      return {
+        key: section.key,
+        pos: section.pos,
+        glosses: ranked.map((meaning) => meaning.short_gloss),
+      };
+    })
+  );
+}
+
+/**
+ * Relations of every group in a section, merged by type. The groups of one
+ * part of speech repeat each other's synonyms; listed once per section they
+ * stay readable.
+ */
+export function sectionRelations(section: EntrySection): Map<string, string[]> {
+  const merged = new Map<string, string[]>();
+  for (const { group } of section.groups) {
+    for (const [type, words] of groupRelationsByType(group)) {
+      const existing = merged.get(type) ?? [];
+      for (const word of words) {
+        if (!existing.includes(word)) {
+          existing.push(word);
+        }
+      }
+      merged.set(type, existing);
+    }
+  }
+  return merged;
+}
+
+export type TextSegment = { text: string; match: boolean };
+
+const escapeRegExp = (text: string) =>
+  text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/**
+ * Spellings of `word` an example sentence is likely to use: the regular
+ * inflections, with the usual spelling changes (make → making, study →
+ * studied, stop → stopped). Irregular forms come from the entry's own form
+ * list instead, so nothing here has to know English morphology in full.
+ */
+function regularInflections(word: string): string[] {
+  const variants = [word];
+  if (!/^[\p{L}'-]+$/u.test(word)) {
+    return variants;
+  }
+  for (const suffix of ["s", "es", "ed", "d", "ing", "'s", "er", "est"]) {
+    variants.push(word + suffix);
+  }
+  const last = word.slice(-1);
+  const stem = word.slice(0, -1);
+  if (last === "e") {
+    variants.push(`${stem}ing`, `${stem}ed`, `${stem}er`, `${stem}est`);
+  }
+  if (last === "y" && !/[aeiou]y$/i.test(word)) {
+    variants.push(`${stem}ies`, `${stem}ied`, `${stem}ier`, `${stem}iest`);
+  }
+  if (/[^aeiou][aeiou][bdgklmnprt]$/i.test(word)) {
+    variants.push(`${word}${last}ed`, `${word}${last}ing`, `${word}${last}er`);
+  }
+  return variants;
+}
+
+/**
+ * Split an example sentence so the headword and its forms can be set apart
+ * from the rest of the text.
+ *
+ * Matching is case-insensitive and whole-word: "light" marks "Light" and
+ * "lighting" but not "delight". Multi-word headwords match across any run of
+ * whitespace. The returned segments always concatenate back to `text`.
+ */
+export function highlightTerms(text: string, terms: string[]): TextSegment[] {
+  const spellings = new Set<string>();
+  for (const term of terms) {
+    const trimmed = term.trim();
+    if (trimmed.length < 2) {
+      continue;
+    }
+    for (const variant of regularInflections(trimmed)) {
+      spellings.add(variant.toLowerCase());
+    }
+  }
+
+  if (spellings.size === 0 || !text) {
+    return text ? [{ text, match: false }] : [];
+  }
+
+  // Longest first, so "lighting" wins over "light" at the same position.
+  const alternatives = [...spellings]
+    .sort((a, b) => b.length - a.length)
+    .map((spelling) => escapeRegExp(spelling).replace(/\s+/g, "\\s+"));
+  const pattern = new RegExp(
+    `(?<![\\p{L}\\p{N}])(?:${alternatives.join("|")})(?![\\p{L}\\p{N}])`,
+    "giu"
+  );
+
+  const segments: TextSegment[] = [];
+  let cursor = 0;
+  for (const match of text.matchAll(pattern)) {
+    const start = match.index ?? 0;
+    if (start > cursor) {
+      segments.push({ text: text.slice(cursor, start), match: false });
+    }
+    segments.push({ text: match[0], match: true });
+    cursor = start + match[0].length;
+  }
+  if (cursor < text.length) {
+    segments.push({ text: text.slice(cursor), match: false });
+  }
+  return segments;
+}
+
+/**
+ * The words to mark in a pos group's examples: the headword and the group's
+ * listed forms (lit, lighter, ...), minus the bookkeeping entries Wiktionary
+ * puts in form lists, which are not words that appear in a sentence.
+ */
+export function headwordTerms(
+  headword: string,
+  group: DictionaryPosGroup
+): string[] {
+  const terms = [headword];
+  for (const form of group.forms) {
+    const text = form.text.trim();
+    if (
+      text &&
+      /\p{L}/u.test(text) &&
+      !form.tags.some((tag) => tag === "table-tags" || tag === "inflection-template")
+    ) {
+      terms.push(text);
+    }
+  }
+  return terms;
+}
