@@ -8,6 +8,7 @@ AIctionary is a Tauri-based desktop dictionary application with AI-powered expla
 
 - You don't have to run any of the development servers.
 - Commit finished work directly with a clearly described commit message. Do not copy commit messages to the clipboard.
+- Work directly on `main`. Do not create feature branches or pull requests.
 
 ## Architecture
 
