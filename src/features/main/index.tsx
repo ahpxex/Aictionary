@@ -5,6 +5,7 @@ import { EntryView } from "@/features/main/components/entry-view";
 import { ScrollRegion } from "@/shared/components/scroll-region";
 import { GenerationPreviewPanel } from "@/features/main/components/generation-preview";
 import { NonsenseState } from "@/features/main/components/nonsense-state";
+import { GenerationOffer } from "@/features/main/components/generation-offer";
 import { ReverseLookupPanel } from "@/features/main/components/reverse-lookup-panel";
 
 export function MainPage() {
@@ -16,6 +17,7 @@ export function MainPage() {
     generationPreview,
     generationSummary,
     nonsenseQuery,
+    generationOffer,
     reverseLookup,
     result,
     search,
@@ -32,12 +34,18 @@ export function MainPage() {
         ? `nonsense:${nonsenseQuery}`
         : isGeneratingFromLlm
           ? `generating:${generatingWord ?? ""}`
-          : "empty";
+          : generationOffer
+            ? `offer:${generationOffer}`
+            : "empty";
 
   return (
     <ScrollRegion className="min-h-0 flex-1" resetKey={viewKey}>
       <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col px-4 py-6 md:px-6 md:py-8">
-        {!result && !isGeneratingFromLlm && !nonsenseQuery && !reverseLookup && (
+        {!result &&
+          !isGeneratingFromLlm &&
+          !nonsenseQuery &&
+          !generationOffer &&
+          !reverseLookup && (
           <div className="flex flex-1 flex-col items-center justify-center gap-2 py-16 text-center md:py-24">
             <p className="text-2xl font-bold tracking-tight text-muted-foreground/40">
               Aictionary
@@ -57,6 +65,13 @@ export function MainPage() {
 
         {nonsenseQuery && !isGeneratingFromLlm && (
           <NonsenseState word={nonsenseQuery} />
+        )}
+
+        {generationOffer && !result && !isGeneratingFromLlm && (
+          <GenerationOffer
+            word={generationOffer}
+            onGenerate={(word) => search(word)}
+          />
         )}
 
         {reverseLookup && !result && !isGeneratingFromLlm && (

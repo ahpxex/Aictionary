@@ -189,8 +189,12 @@ script or link, on every platform (`tauri-plugin-deep-link`).
   path is stale after every update.
 - Parsing lives in `src/shared/lib/lookup-url.ts`. Unknown actions, missing
   words and queries over 100 characters are rejected with a toast instead of
-  guessed at: any page can open a link, and a miss goes to the user's paid
-  model.
+  guessed at.
+- **A link never starts a generation.** Any app or web page can open one, so
+  link lookups run as `search(word, { origin: "link" })`: a dictionary miss
+  sets `generationOfferAtom` and shows `GenerationOffer`, and only its button
+  sends the request to the user's model. Keep it that way for any future
+  externally triggered lookup.
 
 ### Auto-updates
 

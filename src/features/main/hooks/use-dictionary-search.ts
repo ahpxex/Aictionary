@@ -10,6 +10,7 @@ import {
   generationPreviewAtom,
   generationSummaryAtom,
   nonsenseQueryAtom,
+  generationOfferAtom,
   generatingWordAtom,
   queryHistoryAtom,
   reverseLookupAtom,
@@ -33,6 +34,16 @@ import {
 } from "@/shared/services/llm-service";
 import type { DictionaryLookupResult } from "@/shared/types/dictionary";
 
+type SearchOptions = {
+  /** Keep the candidate list a reverse-lookup click came from. */
+  keepReverseLookup?: boolean;
+  /**
+   * Who asked. `"link"` is an `aictionary://` URL from outside the app: it
+   * may read the dictionary but never starts a generation by itself.
+   */
+  origin?: "user" | "link";
+};
+
 export function useDictionarySearch() {
   const { t } = useTranslation();
   const [isSearching, setIsSearching] = useAtom(isSearchingAtom);
@@ -42,6 +53,7 @@ export function useDictionarySearch() {
   const [generatingWord, setGeneratingWord] = useAtom(generatingWordAtom);
   const [generationSummary, setGenerationSummary] = useAtom(generationSummaryAtom);
   const [nonsenseQuery, setNonsenseQuery] = useAtom(nonsenseQueryAtom);
+  const [generationOffer, setGenerationOffer] = useAtom(generationOfferAtom);
   const [reverseLookup, setReverseLookup] = useAtom(reverseLookupAtom);
   const [history] = useAtom(queryHistoryAtom);
   const [result] = useAtom(currentResultAtom);
@@ -55,7 +67,7 @@ export function useDictionarySearch() {
   }, [settings.dictionary.cachePath]);
 
   const search = useCallback(
-    async (word: string, options?: { keepReverseLookup?: boolean }) => {
+    async (word: string, options?: SearchOptions) => {
       const normalized = word.trim();
       if (!normalized) {
         toast.error(t("main.search.empty_error"));
@@ -66,6 +78,7 @@ export function useDictionarySearch() {
       // to reset it, so a nonsense query's easter egg outlived every later
       // search that resolved from the dictionary and sat on top of it.
       setNonsenseQuery(null);
+      setGenerationOffer(null);
 
       // Chinese input flips the direction: instead of looking up an entry,
       // search the dictionary's Chinese glosses for English candidates.
@@ -120,6 +133,15 @@ export function useDictionarySearch() {
           const llm = resolveActiveLlmProvider(settings.llm);
           if (!hasLlmCredentials(llm)) {
             toast.error(t("main.llm.missing_config"));
+            return;
+          }
+
+          // A link only gets as far as the dictionary. Generating would
+          // spend the user's quota on a request any app or page can send,
+          // so the miss is offered instead and a click starts it.
+          if (options?.origin === "link") {
+            setResult({ result: null });
+            setGenerationOffer(normalized);
             return;
           }
 
@@ -200,6 +222,7 @@ export function useDictionarySearch() {
       setGenerationPreview,
       setGenerationSummary,
       setNonsenseQuery,
+      setGenerationOffer,
       setReverseLookup,
       settings.dictionary.cachePath,
       settings.llm,
@@ -210,8 +233,9 @@ export function useDictionarySearch() {
   const clear = useCallback(() => {
     setResult({ result: null });
     setNonsenseQuery(null);
+    setGenerationOffer(null);
     setReverseLookup(null);
-  }, [setNonsenseQuery, setResult, setReverseLookup]);
+  }, [setGenerationOffer, setNonsenseQuery, setResult, setReverseLookup]);
 
   /**
    * Show a result that was looked up elsewhere - the popup window hands its
@@ -221,10 +245,11 @@ export function useDictionarySearch() {
   const showResult = useCallback(
     (lookup: DictionaryLookupResult) => {
       setNonsenseQuery(null);
+      setGenerationOffer(null);
       setReverseLookup(null);
       setResult({ result: lookup });
     },
-    [setNonsenseQuery, setResult, setReverseLookup]
+    [setGenerationOffer, setNonsenseQuery, setResult, setReverseLookup]
   );
 
   /** Leave the entry opened from a candidate and show the list again. */
@@ -240,6 +265,7 @@ export function useDictionarySearch() {
     generationPreview,
     generationSummary,
     nonsenseQuery,
+    generationOffer,
     reverseLookup,
     history,
     result,

@@ -19,6 +19,13 @@ export const generationSummaryAtom = atom<string | null>(null);
 export const nonsenseQueryAtom = atom<string | null>(null);
 /** The entry taking shape while the model streams it back. */
 export const generationPreviewAtom = atom<GenerationPreview | null>(null);
+/**
+ * A word that missed the dictionary in a lookup the user did not type - an
+ * `aictionary://` link - waiting for the user's go-ahead to generate it.
+ * Generation spends the user's model quota, and any app or web page can open
+ * a link, so only a click inside the app may start it.
+ */
+export const generationOfferAtom = atom<string | null>(null);
 /** Set when a Chinese query produced a candidate list instead of an entry. */
 export const reverseLookupAtom = atom<ReverseLookupResult | null>(null);
 

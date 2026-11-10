@@ -130,6 +130,10 @@
       "unsupported": "无法识别这个 Aictionary 链接。",
       "missing_word": "这个链接没有指明要查询的单词。",
       "word_too_long": "通过链接查询的内容不能超过 {{max}} 个字符。"
+    },
+    "generation_offer": {
+      "description": "离线词典里没有这个词。要用 {{model}} 生成释义吗？这会向你配置的 AI 服务发送一次请求。",
+      "generate": "用 AI 生成"
     }
   },
   "popup": {

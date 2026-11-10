@@ -171,9 +171,14 @@ export function AppLayout() {
   // On desktop Rust has already raised this window; a link that launched the
   // app waits here until the dictionary path for this launch is known.
   const dictionaryPathSettled = useAtomValue(dictionaryPathSettledAtom);
+  // A link may come from any app or page, so it reads the dictionary but
+  // leaves generating a missing word to a click inside the app.
   useDeepLinkLookup({
     ready: dictionaryPathSettled,
-    onLookup: handleSearch,
+    onLookup: (word) => {
+      navigate("/");
+      search(word, { origin: "link" });
+    },
     onInvalid: (reason) => {
       if (reason === "missing_word") {
         toast.error(t("main.deep_link.missing_word"));
