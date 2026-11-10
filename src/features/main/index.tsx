@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { cn } from "@/lib/utils";
 import { ArrowLeft, ArrowUp } from "lucide-react";
 import { useDictionarySearch } from "@/features/main/hooks/use-dictionary-search";
 import { EntryView } from "@/features/main/components/entry-view";
@@ -40,7 +41,16 @@ export function MainPage() {
 
   return (
     <ScrollRegion className="min-h-0 flex-1" resetKey={viewKey}>
-      <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col px-4 py-6 md:px-6 md:py-8">
+      <div
+        className={cn(
+          "mx-auto flex min-h-full w-full max-w-3xl flex-col px-4 py-6 md:px-6 md:py-8",
+          // An entry brings a contents column on wide screens (EntryFrame).
+          // The page widens by exactly that column plus its gap (11rem +
+          // 2.5rem on top of 48rem), so the text keeps the measure it has
+          // everywhere else.
+          (result || isGeneratingFromLlm) && "lg:max-w-[61.5rem]"
+        )}
+      >
         {!result &&
           !isGeneratingFromLlm &&
           !nonsenseQuery &&

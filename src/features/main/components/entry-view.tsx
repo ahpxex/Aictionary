@@ -26,8 +26,10 @@ import {
   Tag,
 } from "@/features/main/components/entry-layout";
 import {
+  EntryFrame,
   EntryGlance,
   EntrySectionNav,
+  EntryToc,
   sectionAnchor,
   type SectionNavItem,
 } from "@/features/main/components/entry-navigation";
@@ -464,111 +466,115 @@ export function EntryView({
         })
       : null;
 
+  const hasNavigation = navItems.length > 1;
+
   return (
-    <article className="w-full">
-      <EntryHeader
-        headword={entry.headword}
-        summary={entry.headword_summary}
-        actions={<EntryActions entry={entry} />}
-        meta={
-          <>
-            <WordFrequency word={entry.headword} language={entry.headword_language.code} />
-            <Pronunciations pronunciations={pronunciations} />
-            {entryTypeLabel && (
-              <span className="text-[0.65rem] uppercase tracking-[0.15em] text-muted-foreground">
-                {entryTypeLabel}
-              </span>
-            )}
-            {source === "user" && (
-              <span className="text-[0.65rem] uppercase tracking-[0.15em] text-muted-foreground">
-                {t("main.word_summary.ai_generated")}
-              </span>
-            )}
-          </>
-        }
-      />
-
-      {glance.length > 0 && <EntryGlance rows={glance} />}
-      <div ref={navThresholdRef} aria-hidden />
-      {navItems.length > 1 && (
-        <EntrySectionNav items={navItems} revealAfter={navThresholdRef} />
-      )}
-
-      {sections.map((section) => (
-        <PosSection
-          key={`${entry.entry_id}-${section.key}`}
-          section={section}
+    <EntryFrame toc={hasNavigation && <EntryToc items={navItems} />}>
+      <article className="w-full">
+        <EntryHeader
           headword={entry.headword}
-          showPronunciations={!uniformPronunciations}
-          onSearchWord={onSearchWord}
-        />
-      ))}
-
-      {/* Study material follows the definitions it builds on. */}
-      {entry.memory_hook?.trim() && (
-        <Row
-          id={sectionAnchor(LEARN_KEY)}
-          divider
-          rail={<RailLabel>{t("main.word_summary.memory_hook")}</RailLabel>}
-        >
-          <p className="text-sm leading-relaxed">{entry.memory_hook}</p>
-        </Row>
-      )}
-
-      {entry.study_notes.length > 0 && (
-        <Row
-          id={entry.memory_hook?.trim() ? undefined : sectionAnchor(LEARN_KEY)}
-          divider
-          rail={<RailLabel>{t("main.word_summary.study_notes")}</RailLabel>}
-        >
-          <ul className="flex flex-col gap-1.5 text-sm leading-relaxed">
-            {entry.study_notes.map((note, index) => (
-              <li key={`note-${index}`} className="flex gap-2">
-                <span className="select-none text-muted-foreground">–</span>
-                <span>{note}</span>
-              </li>
-            ))}
-          </ul>
-        </Row>
-      )}
-
-      {entry.etymology_note?.trim() && (
-        <Row
-          id={
-            entry.memory_hook?.trim() || entry.study_notes.length > 0
-              ? undefined
-              : sectionAnchor(LEARN_KEY)
+          summary={entry.headword_summary}
+          actions={<EntryActions entry={entry} />}
+          meta={
+            <>
+              <WordFrequency word={entry.headword} language={entry.headword_language.code} />
+              <Pronunciations pronunciations={pronunciations} />
+              {entryTypeLabel && (
+                <span className="text-[0.65rem] uppercase tracking-[0.15em] text-muted-foreground">
+                  {entryTypeLabel}
+                </span>
+              )}
+              {source === "user" && (
+                <span className="text-[0.65rem] uppercase tracking-[0.15em] text-muted-foreground">
+                  {t("main.word_summary.ai_generated")}
+                </span>
+              )}
+            </>
           }
-          divider
-          rail={<RailLabel>{t("main.word_summary.etymology")}</RailLabel>}
-        >
-          <p className="text-sm leading-relaxed text-muted-foreground">
-            {entry.etymology_note}
-          </p>
-        </Row>
-      )}
+        />
 
-      {comparisons.length > 0 && (
-        <Row
-          id={sectionAnchor(COMPARE_KEY)}
-          divider
-          rail={<RailLabel>{t("main.comparison.title")}</RailLabel>}
-        >
-          <div className="flex flex-col gap-4">
-            {comparisons.map((comparison, index) => (
-              <div key={`comparison-${index}`} className="flex flex-col gap-1">
-                <h3 className="font-semibold">{comparison.word}</h3>
-                <p className="text-sm leading-relaxed text-muted-foreground">
-                  {comparison.analysis}
-                </p>
-              </div>
-            ))}
-          </div>
-        </Row>
-      )}
+        {glance.length > 0 && <EntryGlance rows={glance} />}
+        <div ref={navThresholdRef} aria-hidden />
+        {hasNavigation && (
+          <EntrySectionNav items={navItems} revealAfter={navThresholdRef} />
+        )}
 
-      {/* Closing hairline so the spine terminates on a full-width rule. */}
-      <div className="border-t border-border" />
-    </article>
+        {sections.map((section) => (
+          <PosSection
+            key={`${entry.entry_id}-${section.key}`}
+            section={section}
+            headword={entry.headword}
+            showPronunciations={!uniformPronunciations}
+            onSearchWord={onSearchWord}
+          />
+        ))}
+
+        {/* Study material follows the definitions it builds on. */}
+        {entry.memory_hook?.trim() && (
+          <Row
+            id={sectionAnchor(LEARN_KEY)}
+            divider
+            rail={<RailLabel>{t("main.word_summary.memory_hook")}</RailLabel>}
+          >
+            <p className="text-sm leading-relaxed">{entry.memory_hook}</p>
+          </Row>
+        )}
+
+        {entry.study_notes.length > 0 && (
+          <Row
+            id={entry.memory_hook?.trim() ? undefined : sectionAnchor(LEARN_KEY)}
+            divider
+            rail={<RailLabel>{t("main.word_summary.study_notes")}</RailLabel>}
+          >
+            <ul className="flex flex-col gap-1.5 text-sm leading-relaxed">
+              {entry.study_notes.map((note, index) => (
+                <li key={`note-${index}`} className="flex gap-2">
+                  <span className="select-none text-muted-foreground">–</span>
+                  <span>{note}</span>
+                </li>
+              ))}
+            </ul>
+          </Row>
+        )}
+
+        {entry.etymology_note?.trim() && (
+          <Row
+            id={
+              entry.memory_hook?.trim() || entry.study_notes.length > 0
+                ? undefined
+                : sectionAnchor(LEARN_KEY)
+            }
+            divider
+            rail={<RailLabel>{t("main.word_summary.etymology")}</RailLabel>}
+          >
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              {entry.etymology_note}
+            </p>
+          </Row>
+        )}
+
+        {comparisons.length > 0 && (
+          <Row
+            id={sectionAnchor(COMPARE_KEY)}
+            divider
+            rail={<RailLabel>{t("main.comparison.title")}</RailLabel>}
+          >
+            <div className="flex flex-col gap-4">
+              {comparisons.map((comparison, index) => (
+                <div key={`comparison-${index}`} className="flex flex-col gap-1">
+                  <h3 className="font-semibold">{comparison.word}</h3>
+                  <p className="text-sm leading-relaxed text-muted-foreground">
+                    {comparison.analysis}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </Row>
+        )}
+
+        {/* Closing hairline so the spine terminates on a full-width rule. */}
+        <div className="border-t border-border" />
+      </article>
+    </EntryFrame>
   );
 }

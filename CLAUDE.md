@@ -313,8 +313,11 @@ The dictionary consumes the `distribution_entry_v5` contract of
   (continuous sense numbers) and orders sections by core, then common sense
   count, proper names always last. The page reads header → glance (core then
   common glosses per section, `glanceForSections`) → sections → study
-  material (memory hook, notes, etymology) → comparisons, with a sticky
-  section bar (`entry-navigation.tsx`). The streaming preview keeps the same
+  material (memory hook, notes, etymology) → comparisons. Navigation lives in
+  `entry-navigation.tsx`: from `lg` up, `EntryFrame` adds a sticky table of
+  contents in a side column (the page widens by that column, so the text
+  keeps its measure); below `lg` there is no room beside the text, and a
+  sticky top bar takes over once the glance block scrolls away. The streaming preview keeps the same
   order so completion does not rearrange the page. Example sentences mark the
   headword and its forms via `highlightTerms`; the contract has no
   collocation field, so collocations cannot be marked yet.

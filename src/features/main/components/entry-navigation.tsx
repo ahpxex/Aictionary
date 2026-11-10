@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+  type RefObject,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { posLabelZh, type GlanceRow } from "@/shared/lib/dictionary-entry";
@@ -146,10 +153,79 @@ function useActiveSection(
 /** Height of the bar; sections reserve it with `scroll-mt-12`. */
 const NAV_HEIGHT = 48;
 
+/** Sections land this far below the top on wide screens (`lg:scroll-mt-6`). */
+const TOC_SCROLL_MARGIN = 24;
+
 /**
- * A slim bar pinned to the top of the entry once the glance block (or the
- * header, when there is none) has scrolled away, so any section stays one
- * click away in a long entry.
+ * The entry's two-column frame on wide screens: the entry, and a column for
+ * its table of contents. Narrower than `lg` there is no room beside the
+ * text, so the column disappears and the entry takes the full width.
+ *
+ * The streaming preview uses the same frame with an empty column, so the
+ * text does not move sideways when generation finishes and the contents
+ * appear.
+ */
+export function EntryFrame({
+  toc,
+  children,
+}: {
+  toc?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_11rem] lg:gap-10">
+      <div className="min-w-0">{children}</div>
+      <aside className="hidden lg:block">{toc}</aside>
+    </div>
+  );
+}
+
+/**
+ * The table of contents beside a long entry on wide screens: one line per
+ * section down the side, held in place while the entry scrolls, with the
+ * section being read marked, like the running contents of a book.
+ */
+export function EntryToc({ items }: { items: SectionNavItem[] }) {
+  const { t } = useTranslation();
+  const listRef = useRef<HTMLElement>(null);
+  const active = useActiveSection(items, listRef, TOC_SCROLL_MARGIN + 8);
+
+  return (
+    <nav ref={listRef} aria-label={t("main.entry.sections")} className="sticky top-8">
+      <p className="mb-3 text-[0.65rem] font-medium uppercase tracking-[0.15em] text-muted-foreground">
+        {t("main.entry.contents")}
+      </p>
+      <ul className="flex flex-col">
+        {items.map((item) => {
+          const isActive = item.key === active;
+          return (
+            <li key={item.key}>
+              <button
+                type="button"
+                aria-current={isActive ? "location" : undefined}
+                onClick={() => scrollToSection(item.key)}
+                className={cn(
+                  "flex w-full items-baseline border-l py-1.5 pl-3 text-left text-sm transition-colors",
+                  isActive
+                    ? "border-foreground text-foreground"
+                    : "border-border text-muted-foreground hover:border-foreground/40 hover:text-foreground"
+                )}
+              >
+                <NavLabel item={item} />
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
+  );
+}
+
+/**
+ * On narrower screens, where there is no room for a side column: a slim bar
+ * pinned to the top of the entry once the glance block (or the header, when
+ * there is none) has scrolled away, so any section stays one click away in a
+ * long entry.
  *
  * It overlays the content instead of taking space: appearing or leaving
  * would otherwise shift everything under it by its own height. `revealAfter`
@@ -190,7 +266,7 @@ export function EntrySectionNav({
   }, []);
 
   return (
-    <div ref={barRef} className="sticky top-0 z-20 h-0">
+    <div ref={barRef} className="sticky top-0 z-20 h-0 lg:hidden">
       <nav
         aria-label={t("main.entry.sections")}
         aria-hidden={!revealed}

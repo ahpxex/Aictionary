@@ -28,7 +28,8 @@
       "back_to_top": "回到顶部",
       "glance": "速览",
       "sections": "词条导航",
-      "learn": "学习"
+      "learn": "学习",
+      "contents": "目录"
     },
     "reverse": {
       "back": "返回「{{term}}」的匹配列表",

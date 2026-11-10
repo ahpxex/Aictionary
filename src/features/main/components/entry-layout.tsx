@@ -47,7 +47,8 @@ export function Row({
     <div
       id={id}
       className={cn(
-        id && "scroll-mt-12",
+        // Clear the top bar on narrow screens; wide ones have no bar.
+        id && "scroll-mt-12 lg:scroll-mt-6",
         "grid md:grid-cols-[5.5rem_1fr]",
         // 2.75rem is the narrowest gutter that still fits a four-letter
         // part-of-speech tag at the tracked label size.

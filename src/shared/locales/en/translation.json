@@ -28,7 +28,8 @@
       "back_to_top": "Back to top",
       "glance": "At a glance",
       "sections": "Entry sections",
-      "learn": "Study"
+      "learn": "Study",
+      "contents": "Contents"
     },
     "reverse": {
       "back": "Back to matches for “{{term}}”",
