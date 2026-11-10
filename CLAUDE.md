@@ -151,6 +151,11 @@ toggles a small always-on-top lookup panel (`src-tauri/src/popup.rs`).
   `open_main_window` with the finished result, which Rust emits to the main
   window as `open-lookup-result` before showing it. Nothing streams between
   windows.
+- The macOS menu bar icon is `src-tauri/icons/tray-template.png`: the logo's
+  silhouette as a template image, 36 px because tray-icon draws it 18 pt tall
+  (a smaller bitmap blurs on Retina). Regenerate it with
+  `scripts/build-tray-icon.py` whenever `icons/icon.png` changes. Windows and
+  Linux use the colored app icon.
 - It hides on focus loss. A tray click on an open panel blurs it before the
   click arrives, so a toggle within 300 ms of a blur-hide is treated as the
   close it was meant to be.

@@ -62,7 +62,7 @@ pub fn init_tray(app: &AppHandle) -> tauri::Result<()> {
     // Template alpha is tinted by macOS for either menu-bar appearance.
     #[cfg(target_os = "macos")]
     {
-        builder = builder.icon(template_icon()).icon_as_template(true);
+        builder = builder.icon(template_icon()?).icon_as_template(true);
     }
     #[cfg(not(target_os = "macos"))]
     if let Some(icon) = app.default_window_icon() {
@@ -106,19 +106,14 @@ fn handle_settings(app: &AppHandle) {
     let _ = app.emit_to("main", "open-settings", ());
 }
 
-/// A small open book with a transparent background. The app icon's filled
-/// blue tile cannot serve as a template: its alpha would become a solid box.
+/// The app logo as a menu bar template: its silhouette, with the "a" cut out.
+///
+/// Generated from `icons/icon.png` by `scripts/build-tray-icon.py` at 36 px,
+/// which is exactly the 18 pt tray-icon draws menu bar images at on a Retina
+/// display - a smaller bitmap would be scaled up and blur. Using the logo
+/// rather than a generic glyph keeps the icon recognizable among the others
+/// in the menu bar as the same app as in the Dock.
 #[cfg(target_os = "macos")]
-fn template_icon() -> tauri::image::Image<'static> {
-    let mut rgba = vec![0; 22 * 22 * 4];
-    for y in 4..18 {
-        for x in 3..19 {
-            let edge = x == 3 || x == 10 || x == 11 || x == 18 || y == 4 || y == 17;
-            let text = (y == 8 || y == 11) && ((5..9).contains(&x) || (13..17).contains(&x));
-            if edge || text {
-                rgba[(y * 22 + x) * 4 + 3] = 255;
-            }
-        }
-    }
-    tauri::image::Image::new_owned(rgba, 22, 22)
+fn template_icon() -> tauri::Result<tauri::image::Image<'static>> {
+    tauri::image::Image::from_bytes(include_bytes!("../icons/tray-template.png"))
 }
